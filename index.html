@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบคะแนนพฤติกรรมนักเรียน</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+:root{--bg:#F5F4EF;--surface:#FFFFFF;--border:#E2E0D8;--text:#1A1A18;--muted:#7A7A72;--green:#27500A;--green-bg:#EAF3DE;--green-bd:#C0DD97;--red:#791F1F;--red-bg:#FCEBEB;--red-bd:#F7C1C1;--blue:#0C447C;--blue-bg:#E6F1FB;--blue-bd:#B5D4F4;--amber:#633806;--amber-bg:#FAEEDA;--amber-bd:#FAC775;--r:12px;--rs:8px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.app{max-width:480px;margin:0 auto;padding:1.25rem}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.25rem}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:var(--rs);border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:'Sarabun',sans-serif;font-size:14px;cursor:pointer;transition:opacity .15s}
+.btn:hover{opacity:.8}.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-green{background:var(--green-bg);color:var(--green);border-color:var(--green-bd)}
+.btn-red{background:var(--red-bg);color:var(--red);border-color:var(--red-bd)}
+.btn-blue{background:var(--blue-bg);color:var(--blue);border-color:var(--blue-bd)}
+.btn-amber{background:var(--amber-bg);color:var(--amber);border-color:var(--amber-bd)}
+.btn-full{width:100%;justify-content:center;font-size:15px;padding:11px}
+.btn-back{background:none;border:none;color:var(--muted);font-family:'Sarabun',sans-serif;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:1rem;padding:0}
+input,textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--rs);font-family:'Sarabun',sans-serif;font-size:14px;background:var(--bg);color:var(--text);outline:none}
+input:focus,textarea:focus{border-color:#aaa}
+textarea{resize:vertical;min-height:72px}
+label{font-size:13px;color:var(--muted);display:block;margin-bottom:4px}
+.form-row{margin-bottom:1rem}
+.sec{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.75rem;margin-top:1.25rem}
+.sec:first-child{margin-top:0}
+.badge{display:inline-block;font-size:12px;padding:3px 10px;border-radius:20px;font-weight:500}
+.bp{background:var(--green-bg);color:var(--green)}.bm{background:var(--red-bg);color:var(--red)}
+.bb{background:var(--blue-bg);color:var(--blue)}.ba{background:var(--amber-bg);color:var(--amber)}
+.log-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:14px;gap:8px}
+.log-item:last-child{border-bottom:none}
+.ldate{font-size:12px;color:var(--muted);white-space:nowrap}
+.srow{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s}
+.srow:last-child{border-bottom:none}
+.srow:hover{background:var(--bg);margin:0 -1.25rem;padding-left:1.25rem;padding-right:1.25rem}
+.avatar{width:38px;height:38px;border-radius:50%;background:var(--blue-bg);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--blue);flex-shrink:0;overflow:hidden}
+.avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:1.25rem;overflow-x:auto}
+.tab{background:none;border:none;border-bottom:2px solid transparent;padding:9px 14px;font-family:'Sarabun',sans-serif;font-size:13px;color:var(--muted);cursor:pointer;white-space:nowrap;margin-bottom:-1px}
+.tab.on{color:var(--text);border-bottom-color:var(--text);font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1.25rem}
+.sc{background:var(--bg);border-radius:var(--rs);padding:.6rem .5rem;text-align:center}
+.sl{font-size:11px;color:var(--muted);margin-bottom:3px}
+.sv{font-size:1.25rem;font-weight:600}
+.hw-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.hwc{border-radius:var(--rs);padding:10px 12px;cursor:pointer}
+.hwd{background:var(--green-bg);border:1px solid var(--green-bd)}.hwm{background:var(--red-bg);border:1px solid var(--red-bd)}
+.hwd .hn{color:var(--green);font-size:13px;font-weight:500}.hwm .hn{color:var(--red);font-size:13px;font-weight:500}
+.hwd .hs{color:var(--green);font-size:11px;margin-top:4px}.hwm .hs{color:var(--red);font-size:11px;margin-top:4px}
+.hdate{font-size:11px;color:var(--muted);margin-top:2px}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem}
+.pbtn{background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:10px 12px;text-align:left;cursor:pointer;font-family:'Sarabun',sans-serif}
+.pbtn:hover{border-color:#aaa}
+.ritem{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)}
+.ritem:last-child{border-bottom:none}
+.pcard{background:var(--amber-bg);border:1px solid var(--amber-bd);border-radius:var(--rs);padding:12px;margin-bottom:8px}
+.merr{background:var(--red-bg);color:var(--red);border-radius:var(--rs);padding:10px 14px;font-size:14px;margin-bottom:1rem}
+.mok{background:var(--green-bg);color:var(--green);border-radius:var(--rs);padding:10px 14px;font-size:14px;margin-bottom:1rem}
+.ndot{width:8px;height:8px;background:#E24B4A;border-radius:50%;display:inline-block;margin-left:4px;vertical-align:middle}
+.lwrap{max-width:320px;margin:3rem auto}
+.ltitle{font-size:20px;font-weight:600;text-align:center;margin-bottom:1.5rem}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;max-width:380px;margin:0 auto}
+.mcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:2rem 1rem;text-align:center;cursor:pointer;transition:box-shadow .2s}
+.mcard:hover{box-shadow:0 4px 16px rgba(0,0,0,.08)}
+.loading{text-align:center;padding:3rem;color:var(--muted)}
+.hrow{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;gap:8px;flex-wrap:wrap}
+.ptitle{font-size:20px;font-weight:600}
+.pbig{width:80px;height:80px;border-radius:50%;background:var(--blue-bg);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:600;color:var(--blue);overflow:hidden;flex-shrink:0}
+.pbig img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+</style>
+</head>
+<body>
+<div class="app" id="app"><div class="loading"><i class="ti ti-loader" style="font-size:32px"></i><br><br>กำลังโหลด...</div></div>
+
+<script>
+const TEACHER_PASS='071636552';
+const SUBJECTS=['วิทยาศาสตร์','เศรษฐศาสตร์การเงิน','ภาษาอังกฤษพื้นฐาน','ภาษาอังกฤษเพื่อชีวิต','พลศึกษา','ดนตรี','ศิลปะ','นาฏศิลป์','ภาษาไทย','สุขศึกษา','คอมพิวเตอร์','ประวัติศาสตร์'];
+const PP=[{label:'ช่วยเหลือครู',score:1},{label:'ช่วยเหลือเพื่อน',score:1},{label:'ส่งงานก่อนกำหนด',score:2},{label:'ทำความสะอาดห้อง',score:1},{label:'ตอบคำถามได้ดี',score:1},{label:'เป็นตัวแทนโรงเรียน',score:3}];
+const PM=[{label:'ล้อชื่อพ่อแม่เพื่อน',score:-2},{label:'ทะเลาะวิวาท',score:-3},{label:'ไม่ส่งการบ้าน',score:-1},{label:'มาสาย',score:-1},{label:'ใช้โทรศัพท์ในห้อง',score:-1},{label:'พูดจาหยาบคาย',score:-2}];
+const REWARDS=[{id:'r1',name:'หยุดส่งการบ้าน 1 วัน',cost:5},{id:'r2',name:'นั่งที่ไหนก็ได้ 1 วัน',cost:3},{id:'r3',name:'ของรางวัลพิเศษ',cost:10},{id:'r4',name:'ไม่ต้องเข้าแถว 1 วัน',cost:4},{id:'r5',name:'ดูหนังในชั้นเรียน',cost:15},{id:'r6',name:'ขนมพิเศษ',cost:2}];
+
+let S={view:'menu',role:null,sid:null,tab:'score',msg:'',mtype:'',addMode:'plus'};
+let DB={students:{},requests:{}};
+let pollTimer=null;
+
+function today(){const d=new Date();const y=d.getFullYear()+543;const m=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];return`${d.getDate()} ${m[d.getMonth()]} ${y}`;}
+function tot(s){return(s.logs||[]).reduce((a,l)=>a+(l.score||0),0);}
+function ini(n){const p=(n||'').replace(/ด\.[ชญ]\. /,'').split(' ');return p.map(x=>x[0]||'').join('').slice(0,2);}
+function avHtml(s,sz=38,fs=14){if(s.photo)return`<div class="avatar" style="width:${sz}px;height:${sz}px"><img src="${s.photo}" alt=""></div>`;return`<div class="avatar" style="width:${sz}px;height:${sz}px;font-size:${fs}px">${ini(s.name)}</div>`;}
+function hwSum(hw){if(!hw)return{done:0,total:SUBJECTS.length};const done=SUBJECTS.filter(s=>hw[s]&&hw[s].done).length;return{done,total:SUBJECTS.length};}
+function pendSid(sid){return Object.entries(DB.requests||{}).filter(([,r])=>r.studentId===sid&&r.status==='pending').map(([id,r])=>({id,...r}));}
+function pendAll(){return Object.entries(DB.requests||{}).filter(([,r])=>r.status==='pending').map(([id,r])=>({id,...r}));}
+
+// ===== API =====
+async function api(method,path,body){
+  const res=await fetch('/api'+path,{method,headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
+  return res.json();
+}
+async function loadDB(){const data=await api('GET','/data');DB=data||{students:{},requests:{}};render();}
+function startPoll(){if(pollTimer)clearInterval(pollTimer);pollTimer=setInterval(loadDB,3000);}
+function stopPoll(){if(pollTimer)clearInterval(pollTimer);pollTimer=null;}
+
+// ===== Render =====
+function render(){
+  const root=document.getElementById('app');root.innerHTML='';
+  const el=document.createElement('div');
+  if(S.view==='menu')el.innerHTML=vMenu();
+  else if(S.view==='tlogin')el.innerHTML=vTLogin();
+  else if(S.view==='tlist')el.innerHTML=vTList();
+  else if(S.view==='tstudent')el.innerHTML=vTStudent();
+  else if(S.view==='taddlog')el.innerHTML=vAddLog();
+  else if(S.view==='taddstudent')el.innerHTML=vAddStudent();
+  else if(S.view==='tpending')el.innerHTML=vPendingAll();
+  else if(S.view==='plogin')el.innerHTML=vPLogin();
+  else if(S.view==='pview')el.innerHTML=vPView();
+  root.appendChild(el);
+}
+
+function vMenu(){return`
+  <div style="text-align:center;margin:2rem 0 2.5rem">
+    <div style="font-size:24px;font-weight:700;margin-bottom:.4rem">ระบบคะแนนพฤติกรรม</div>
+    <div style="font-size:14px;color:var(--muted)">เข้าสู่ระบบในฐานะใคร?</div>
+  </div>
+  <div class="mgrid">
+    <div class="mcard" onclick="go('tlogin')">
+      <i class="ti ti-school" style="font-size:36px;color:var(--muted);display:block;margin-bottom:.75rem"></i>
+      <div style="font-weight:600;margin-bottom:.25rem">ครู</div>
+      <div style="font-size:12px;color:var(--muted)">จัดการคะแนน</div>
+    </div>
+    <div class="mcard" onclick="go('plogin')">
+      <i class="ti ti-users" style="font-size:36px;color:var(--muted);display:block;margin-bottom:.75rem"></i>
+      <div style="font-weight:600;margin-bottom:.25rem">ผู้ปกครอง</div>
+      <div style="font-size:12px;color:var(--muted)">ดูคะแนนบุตรหลาน</div>
+    </div>
+  </div>`;}
+
+function vTLogin(){return`
+  <div class="lwrap">
+    <button class="btn-back" onclick="go('menu')"><i class="ti ti-arrow-left"></i> กลับ</button>
+    <div class="ltitle">เข้าสู่ระบบครู</div>
+    ${S.msg?`<div class="merr">${S.msg}</div>`:''}
+    <div class="card">
+      <div class="form-row"><label>รหัสผ่านครู</label>
+        <input type="password" id="tp" placeholder="กรอกรหัสผ่าน" onkeydown="if(event.key==='Enter')doTLogin()">
+      </div>
+      <button class="btn btn-full" onclick="doTLogin()">เข้าสู่ระบบ</button>
+    </div>
+  </div>`;}
+
+function vTList(){
+  const pc=pendAll().length;
+  const rows=Object.entries(DB.students).map(([sid,s])=>{
+    const t=tot(s);const col=t>=0?'var(--green)':'var(--red)';
+    const hw=hwSum(s.hw);const ok=hw.done===hw.total;
+    const p=pendSid(sid).length;
+    return`<div class="srow" onclick="selStu('${sid}')">
+      <div style="display:flex;align-items:center;gap:12px">
+        ${avHtml(s,38,13)}
+        <div>
+          <div style="font-size:14px;font-weight:500">${s.name||''}${p>0?'<span class="ndot"></span>':''}</div>
+          <div style="font-size:12px;color:var(--muted)">รหัส: ${s.code||''}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:12px;background:${ok?'var(--green-bg)':'var(--red-bg)'};color:${ok?'var(--green)':'var(--red)'};padding:3px 8px;border-radius:20px">${hw.done}/${hw.total}</span>
+        <div style="font-size:1.1rem;font-weight:600;color:${col}">${t>=0?'+':''}${t}</div>
+      </div>
+    </div>`;
+  }).join('')||'<div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:14px">ยังไม่มีนักเรียน</div>';
+  return`
+    <div class="hrow">
+      <div class="ptitle">รายชื่อนักเรียน</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${pc>0?`<button class="btn btn-amber" onclick="go('tpending')"><i class="ti ti-bell"></i> คำขอ (${pc})</button>`:''}
+        <button class="btn" onclick="go('taddstudent')"><i class="ti ti-plus"></i> เพิ่ม</button>
+        <button class="btn" onclick="doTLogout()"><i class="ti ti-logout"></i> ออก</button>
+      </div>
+    </div>
+    <div class="card">${rows}</div>`;}
+
+function vTStudent(){
+  const s=DB.students[S.sid];if(!s)return'<div class="loading">ไม่พบข้อมูล</div>';
+  const t=tot(s);const hw=hwSum(s.hw);
+  const logs=(s.logs||[]);
+  const rl=(s.redeemLogs||[]);
+  const pend=pendSid(S.sid);
+  const TABS=[{k:'score',l:'คะแนน',i:'ti-star',dot:pend.length>0},{k:'hw',l:'ส่งงาน',i:'ti-clipboard-check'},{k:'redeem',l:'แลกคะแนน',i:'ti-gift'},{k:'photo',l:'รูปโปรไฟล์',i:'ti-photo'}];
+  let content='';
+  if(S.tab==='score'){
+    const ph=pend.map(req=>`
+      <div class="pcard">
+        <div style="font-size:13px;font-weight:600;color:var(--amber);margin-bottom:5px">ขอเพิ่มคะแนน: "${req.desc}"</div>
+        <div style="font-size:12px;color:var(--amber);margin-bottom:8px">เสนอ +${req.score} คะแนน · ${req.date}</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-green" style="font-size:13px;padding:6px 12px" onclick="doApprove('${req.id}')"><i class="ti ti-check"></i> อนุมัติ</button>
+          <button class="btn btn-red" style="font-size:13px;padding:6px 12px" onclick="doReject('${req.id}')"><i class="ti ti-x"></i> ปฏิเสธ</button>
+        </div>
+      </div>`).join('');
+    const lh=logs.map(l=>`
+      <div class="log-item">
+        <div><span class="badge ${l.score>=0?'bp':'bm'}">${l.score>=0?'+':''}${l.score}</span><span style="margin-left:8px">${l.desc}</span></div>
+        <div class="ldate">${l.date}</div>
+      </div>`).join('')||'<div style="text-align:center;padding:1rem;color:var(--muted);font-size:14px">ยังไม่มีประวัติ</div>';
+    content=`${pend.length>0?`<div class="sec">คำขอรออนุมัติ (${pend.length})</div>${ph}`:''}
+      <div style="display:flex;gap:8px;margin-bottom:1.25rem">
+        <button class="btn btn-green" style="flex:1;justify-content:center" onclick="openLog('plus')"><i class="ti ti-plus"></i> เพิ่มคะแนน</button>
+        <button class="btn btn-red" style="flex:1;justify-content:center" onclick="openLog('minus')"><i class="ti ti-minus"></i> ตัดคะแนน</button>
+      </div>
+      <div class="sec">ประวัติคะแนน</div><div class="card">${lh}</div>`;
+  }else if(S.tab==='hw'){
+    content=`<div style="font-size:13px;color:var(--muted);margin-bottom:1rem">คลิกที่วิชาเพื่อสลับสถานะ</div>
+      <div class="hw-grid">${SUBJECTS.map(subj=>{
+        const it=(s.hw||{})[subj]||{done:false,date:today()};
+        return`<div class="hwc ${it.done?'hwd':'hwm'}" onclick="doToggleHw('${subj}')">
+          <div style="display:flex;justify-content:space-between">
+            <div class="hn">${subj}</div>
+            <i class="ti ${it.done?'ti-circle-check':'ti-circle-x'}" style="font-size:16px"></i>
+          </div>
+          <div class="hs">${it.done?'ส่งแล้ว':'ยังไม่ส่ง'}</div>
+          <div class="hdate">เช็ค: ${it.date}</div>
+        </div>`;
+      }).join('')}</div>`;
+  }else if(S.tab==='redeem'){
+    const rh=REWARDS.map(r=>{const can=t>=r.cost;return`
+      <div class="ritem">
+        <div><div style="font-size:14px;font-weight:500">${r.name}</div><div style="font-size:12px;color:var(--muted);margin-top:2px"><i class="ti ti-star"></i> ${r.cost} คะแนน</div></div>
+        <button class="btn btn-blue" style="font-size:13px;padding:7px 14px" onclick="doRedeem('${r.name}',${r.cost})" ${!can?'disabled':''}>แลก</button>
+      </div>`;}).join('');
+    const rhl=rl.map(l=>`<div class="log-item"><div><span class="badge bb">-${l.cost}</span><span style="margin-left:8px">${l.name}</span></div><div class="ldate">${l.date}</div></div>`).join('')||'';
+    content=`<div class="card">${rh}</div>${rhl?`<div class="sec">ประวัติการแลก</div><div class="card">${rhl}</div>`:''}`;
+  }else if(S.tab==='photo'){
+    content=`<div style="display:flex;flex-direction:column;align-items:center;gap:1rem;padding:1.5rem 0">
+      <div class="pbig">${s.photo?`<img src="${s.photo}" alt="">`:`<span>${ini(s.name)}</span>`}</div>
+      <div style="font-size:15px;font-weight:600">${s.name}</div>
+      <label class="btn" style="cursor:pointer"><i class="ti ti-upload"></i> เลือกรูปภาพ
+        <input type="file" accept="image/*" style="display:none" onchange="doUploadPhoto(this)">
+      </label>
+      ${s.photo?`<button class="btn btn-red" style="font-size:13px" onclick="doRemovePhoto()">ลบรูป</button>`:''}
+    </div>`;}
+  return`
+    <button class="btn-back" onclick="go('tlist')"><i class="ti ti-arrow-left"></i> กลับ</button>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:1.25rem">
+      ${avHtml(s,52,18)}
+      <div><div style="font-size:18px;font-weight:600">${s.name}</div><div style="font-size:13px;color:var(--muted)">รหัสผู้ปกครอง: <strong>${s.code}</strong></div></div>
+    </div>
+    <div class="stats">
+      <div class="sc"><div class="sl">คะแนนรวม</div><div class="sv" style="color:${t>=0?'var(--green)':'var(--red)'}">${t>=0?'+':''}${t}</div></div>
+      <div class="sc"><div class="sl">ส่งงาน</div><div class="sv" style="color:var(--green)">${hw.done}</div></div>
+      <div class="sc"><div class="sl">ยังไม่ส่ง</div><div class="sv" style="color:${hw.total-hw.done>0?'var(--red)':'var(--green)'}">${hw.total-hw.done}</div></div>
+      <div class="sc"><div class="sl">แลกแล้ว</div><div class="sv" style="color:var(--blue)">${rl.length}</div></div>
+    </div>
+    <div class="tabs">${TABS.map(tb=>`<button class="tab ${S.tab===tb.k?'on':''}" onclick="setTab('${tb.k}')"><i class="ti ${tb.i}"></i> ${tb.l}${tb.dot?'<span class="ndot"></span>':''}</button>`).join('')}</div>
+    ${content}`;}
+
+function vAddLog(){
+  const s=DB.students[S.sid];const isP=S.addMode==='plus';
+  const pr=(isP?PP:PM).map(p=>`
+    <button class="pbtn" onclick="doPreset(${p.score},'${p.label}')">
+      <div style="font-weight:500;font-size:13px;margin-bottom:3px">${p.label}</div>
+      <div style="font-size:12px;color:${isP?'var(--green)':'var(--red)'}">${p.score>=0?'+':''}${p.score} คะแนน</div>
+    </button>`).join('');
+  return`
+    <button class="btn-back" onclick="go('tstudent')"><i class="ti ti-arrow-left"></i> กลับ</button>
+    <div style="font-size:18px;font-weight:600;margin-bottom:1.5rem">${isP?'เพิ่มคะแนน':'ตัดคะแนน'} — ${s?s.name:''}</div>
+    <div class="sec">${isP?'พฤติกรรมดี':'พฤติกรรมไม่พึงประสงค์'}</div>
+    <div class="pgrid">${pr}</div>
+    <div class="sec">กรอกเอง</div>
+    <div class="card">
+      <div class="form-row"><label>รายละเอียด</label><input type="text" id="cd" placeholder="${isP?'เช่น ช่วยจัดห้องประชุม':'เช่น ส่งเสียงดัง'}"></div>
+      <div class="form-row"><label>คะแนน</label><input type="number" id="cs" placeholder="${isP?'เช่น 2':'เช่น -1'}"></div>
+      <button class="btn btn-full" onclick="doAddCustom()"><i class="ti ti-device-floppy"></i> บันทึก</button>
+    </div>`;}
+
+function vAddStudent(){return`
+  <button class="btn-back" onclick="go('tlist')"><i class="ti ti-arrow-left"></i> กลับ</button>
+  <div style="font-size:18px;font-weight:600;margin-bottom:1.5rem">เพิ่มนักเรียน</div>
+  ${S.msg?`<div class="${S.mtype==='ok'?'mok':'merr'}">${S.msg}</div>`:''}
+  <div class="card">
+    <div class="form-row"><label>ชื่อ-นามสกุล</label><input type="text" id="nn" placeholder="เช่น ด.ช. วิชัย มีทอง"></div>
+    <div class="form-row"><label>รหัสสำหรับผู้ปกครอง</label><input type="text" id="nc" placeholder="เช่น 3456"></div>
+    <button class="btn btn-full" onclick="doAddStudent()"><i class="ti ti-plus"></i> เพิ่มนักเรียน</button>
+  </div>`;}
+
+function vPendingAll(){
+  const all=pendAll();
+  const cards=all.map(req=>{
+    const s=DB.students[req.studentId];
+    return`<div class="pcard">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        ${s?avHtml(s,32,12):''}
+        <div style="font-size:14px;font-weight:600">${s?s.name:''}</div>
+      </div>
+      <div style="font-size:13px;color:var(--amber);margin-bottom:3px">ความดีที่ทำ: "${req.desc}"</div>
+      <div style="font-size:12px;color:var(--amber);margin-bottom:8px">เสนอ +${req.score} คะแนน · ${req.date}</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-green" style="font-size:13px;padding:6px 12px" onclick="doApprove('${req.id}')"><i class="ti ti-check"></i> อนุมัติ</button>
+        <button class="btn btn-red" style="font-size:13px;padding:6px 12px" onclick="doReject('${req.id}')"><i class="ti ti-x"></i> ปฏิเสธ</button>
+      </div>
+    </div>`;}).join('')||'<div style="text-align:center;padding:2rem;color:var(--muted)">ไม่มีคำขอ</div>';
+  return`<button class="btn-back" onclick="go('tlist')"><i class="ti ti-arrow-left"></i> กลับ</button>
+    <div style="font-size:18px;font-weight:600;margin-bottom:1.5rem">คำขอรออนุมัติ</div>${cards}`;}
+
+function vPLogin(){return`
+  <div class="lwrap">
+    <button class="btn-back" onclick="go('menu')"><i class="ti ti-arrow-left"></i> กลับ</button>
+    <div class="ltitle">เข้าสู่ระบบผู้ปกครอง</div>
+    ${S.msg?`<div class="merr">${S.msg}</div>`:''}
+    <div class="card">
+      <div class="form-row"><label>รหัสประจำตัวนักเรียน</label>
+        <input type="text" id="pc" placeholder="กรอกรหัส" onkeydown="if(event.key==='Enter')doPLogin()">
+      </div>
+      <button class="btn btn-full" onclick="doPLogin()">เข้าสู่ระบบ</button>
+      <div style="margin-top:1rem;font-size:12px;color:var(--muted);text-align:center">รหัสได้รับจากครูประจำชั้น</div>
+    </div>
+  </div>`;}
+
+function vPView(){
+  const s=DB.students[S.sid];if(!s){S.view='plogin';return vPLogin();}
+  const t=tot(s);const hw=hwSum(s.hw);
+  const logs=(s.logs||[]);const rl=(s.redeemLogs||[]);
+  const myReqs=Object.entries(DB.requests||{}).filter(([,r])=>r.studentId===S.sid).map(([id,r])=>({id,...r})).reverse();
+  const TABS=[{k:'score',l:'คะแนน',i:'ti-star'},{k:'hw',l:'ส่งงาน',i:'ti-clipboard-check'},{k:'redeem',l:'แลกคะแนน',i:'ti-gift'},{k:'request',l:'ขอคะแนน',i:'ti-pencil-plus'}];
+  let content='';
+  if(S.tab==='score'){
+    const lh=logs.map(l=>`<div class="log-item"><div><span class="badge ${l.score>=0?'bp':'bm'}">${l.score>=0?'+':''}${l.score}</span><span style="margin-left:8px">${l.desc}</span></div><div class="ldate">${l.date}</div></div>`).join('')||'<div style="text-align:center;padding:1rem;color:var(--muted);font-size:14px">ยังไม่มีประวัติ</div>';
+    content=`<div class="card">${lh}</div>`;
+  }else if(S.tab==='hw'){
+    content=`<div class="hw-grid">${SUBJECTS.map(subj=>{const it=(s.hw||{})[subj]||{done:false,date:today()};return`<div class="hwc ${it.done?'hwd':'hwm'}" style="cursor:default"><div style="display:flex;justify-content:space-between"><div class="hn">${subj}</div><i class="ti ${it.done?'ti-circle-check':'ti-circle-x'}" style="font-size:16px"></i></div><div class="hs">${it.done?'ส่งแล้ว':'ยังไม่ส่ง'}</div><div class="hdate">เช็ค: ${it.date}</div></div>`;}).join('')}</div>`;
+  }else if(S.tab==='redeem'){
+    const rh=REWARDS.map(r=>{const can=t>=r.cost;return`<div class="ritem"><div><div style="font-size:14px;font-weight:500">${r.name}</div><div style="font-size:12px;color:var(--muted);margin-top:2px"><i class="ti ti-star"></i> ${r.cost} คะแนน</div></div><button class="btn btn-blue" style="font-size:13px;padding:7px 14px" onclick="doRedeemP('${r.name}',${r.cost})" ${!can?'disabled':''}>แลก</button></div>`;}).join('');
+    const rhl=rl.map(l=>`<div class="log-item"><div><span class="badge bb">-${l.cost}</span><span style="margin-left:8px">${l.name}</span></div><div class="ldate">${l.date}</div></div>`).join('')||'';
+    content=`<div class="card">${rh}</div>${rhl?`<div class="sec">ประวัติการแลก</div><div class="card">${rhl}</div>`:''}`;
+  }else if(S.tab==='request'){
+    const rh=myReqs.map(r=>`<div class="log-item"><div><span class="badge ${r.status==='pending'?'ba':r.status==='approved'?'bp':'bm'}">${r.status==='pending'?'รอ':r.status==='approved'?'อนุมัติ':'ปฏิเสธ'}</span><span style="margin-left:8px">${r.desc}</span></div><div class="ldate">${r.date}</div></div>`).join('')||'';
+    content=`<div class="card" style="margin-bottom:1rem">
+      <div class="sec">ส่งความดีให้ครูอนุมัติ</div>
+      <div class="form-row"><label>ความดีที่ทำ</label><textarea id="gd" placeholder="เช่น ช่วยเก็บขยะในโรงเรียน"></textarea></div>
+      <div class="form-row"><label>คะแนนที่ขอ (1-5)</label><input type="number" id="gs" min="1" max="5" placeholder="เช่น 2"></div>
+      <button class="btn btn-full" onclick="doSubmitDeed()"><i class="ti ti-send"></i> ส่งให้ครูอนุมัติ</button>
+    </div>${myReqs.length>0?`<div class="sec">ประวัติคำขอ</div><div class="card">${rh}</div>`:''}`;
+  }
+  return`
+    <button class="btn-back" onclick="doPLogout()"><i class="ti ti-logout"></i> ออกจากระบบ</button>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:1.25rem">
+      <div class="pbig">${s.photo?`<img src="${s.photo}" alt="">`:`<span style="font-size:20px">${ini(s.name)}</span>`}</div>
+      <div><div style="font-size:18px;font-weight:600">${s.name}</div><div style="font-size:13px;color:var(--muted)">ข้อมูลคะแนนพฤติกรรม</div></div>
+    </div>
+    <div class="stats">
+      <div class="sc"><div class="sl">คะแนนรวม</div><div class="sv" style="color:${t>=0?'var(--green)':'var(--red)'}">${t>=0?'+':''}${t}</div></div>
+      <div class="sc"><div class="sl">ส่งงาน</div><div class="sv" style="color:var(--green)">${hw.done}</div></div>
+      <div class="sc"><div class="sl">ยังไม่ส่ง</div><div class="sv" style="color:${hw.total-hw.done>0?'var(--red)':'var(--green)'}">${hw.total-hw.done}</div></div>
+      <div class="sc"><div class="sl">แลกแล้ว</div><div class="sv" style="color:var(--blue)">${rl.length}</div></div>
+    </div>
+    <div class="tabs">${TABS.map(tb=>`<button class="tab ${S.tab===tb.k?'on':''}" onclick="setTab('${tb.k}')"><i class="ti ${tb.i}"></i> ${tb.l}</button>`).join('')}</div>
+    ${content}`;}
+
+// ===== Actions =====
+function go(v){S.view=v;S.msg='';S.tab='score';render();}
+function setTab(t){S.tab=t;render();}
+
+function doTLogin(){
+  const v=document.getElementById('tp')?.value||'';
+  if(v===TEACHER_PASS){S.view='tlist';S.msg='';S.role='teacher';startPoll();render();}
+  else{S.msg='รหัสผ่านไม่ถูกต้อง';render();}
+}
+function doTLogout(){stopPoll();S.role=null;S.view='menu';render();}
+function selStu(sid){S.sid=sid;S.tab='score';S.view='tstudent';render();}
+function openLog(mode){S.addMode=mode;S.view='taddlog';render();}
+
+async function doPreset(score,desc){
+  const s=DB.students[S.sid];if(!s)return;
+  const logs=[{desc,score,date:today()},...(s.logs||[])];
+  await api('PATCH',`/students/${S.sid}`,{logs});
+  await loadDB();S.view='tstudent';S.tab='score';
+}
+
+async function doAddCustom(){
+  const desc=document.getElementById('cd')?.value?.trim()||'';
+  const score=parseInt(document.getElementById('cs')?.value||'');
+  if(!desc||isNaN(score)){alert('กรุณากรอกข้อมูลให้ครบ');return;}
+  const s=DB.students[S.sid];if(!s)return;
+  const logs=[{desc,score,date:today()},...(s.logs||[])];
+  await api('PATCH',`/students/${S.sid}`,{logs});
+  await loadDB();S.view='tstudent';S.tab='score';
+}
+
+async function doAddStudent(){
+  const name=document.getElementById('nn')?.value?.trim()||'';
+  const code=document.getElementById('nc')?.value?.trim()||'';
+  if(!name||!code){alert('กรุณากรอกข้อมูลให้ครบ');return;}
+  if(Object.values(DB.students).some(s=>s.code===code)){alert('รหัสนี้มีอยู่แล้ว');return;}
+  const hw={};SUBJECTS.forEach(subj=>{hw[subj]={done:false,date:today()};});
+  const sid='s'+Date.now();
+  await api('POST','/students',{id:sid,student:{name,code,photo:null,hw,logs:[],redeemLogs:[]}});
+  await loadDB();S.msg=`เพิ่ม "${name}" สำเร็จ`;S.mtype='ok';render();
+}
+
+async function doToggleHw(subj){
+  const s=DB.students[S.sid];if(!s)return;
+  const cur=(s.hw||{})[subj]||{done:false};
+  await api('PATCH',`/students/${S.sid}/hw/${encodeURIComponent(subj)}`,{done:!cur.done,date:today()});
+  await loadDB();
+}
+
+async function doRedeem(name,cost){
+  const s=DB.students[S.sid];if(!s||tot(s)<cost){alert('คะแนนไม่พอ');return;}
+  const logs=[{desc:`แลก: ${name}`,score:-cost,date:today()},...(s.logs||[])];
+  const redeemLogs=[{name,cost,date:today()},...(s.redeemLogs||[])];
+  await api('PATCH',`/students/${S.sid}`,{logs,redeemLogs});
+  await loadDB();
+}
+const doRedeemP=doRedeem;
+
+async function doSubmitDeed(){
+  const desc=document.getElementById('gd')?.value?.trim()||'';
+  const score=parseInt(document.getElementById('gs')?.value||'');
+  if(!desc||isNaN(score)||score<1){alert('กรุณากรอกข้อมูลให้ครบ');return;}
+  await api('POST','/requests',{studentId:S.sid,desc,score,date:today(),status:'pending'});
+  await loadDB();alert('ส่งคำขอเรียบร้อย รอการอนุมัติจากครู');
+}
+
+async function doApprove(rid){
+  const req=(DB.requests||{})[rid];if(!req)return;
+  await api('PATCH',`/requests/${rid}`,{status:'approved'});
+  const s=DB.students[req.studentId];if(s){
+    const logs=[{desc:`ความดี: ${req.desc}`,score:req.score,date:today()},...(s.logs||[])];
+    await api('PATCH',`/students/${req.studentId}`,{logs});
+  }
+  await loadDB();
+}
+
+async function doReject(rid){
+  await api('PATCH',`/requests/${rid}`,{status:'rejected'});
+  await loadDB();
+}
+
+function doUploadPhoto(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async(e)=>{await api('PATCH',`/students/${S.sid}`,{photo:e.target.result});await loadDB();};
+  reader.readAsDataURL(file);
+}
+async function doRemovePhoto(){await api('PATCH',`/students/${S.sid}`,{photo:null});await loadDB();}
+
+function doPLogin(){
+  const code=document.getElementById('pc')?.value?.trim()||'';
+  const entry=Object.entries(DB.students).find(([,s])=>s.code===code);
+  if(!entry){S.msg='รหัสไม่ถูกต้อง';render();return;}
+  S.sid=entry[0];S.view='pview';S.tab='score';S.msg='';S.role='parent';startPoll();render();
+}
+function doPLogout(){stopPoll();S.sid=null;S.role=null;S.view='menu';render();}
+
+// Start
+loadDB();
+</script>
+</body>
+</html>
