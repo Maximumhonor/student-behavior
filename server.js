@@ -4,7 +4,7 @@ const path = require('path');
 const app = express();
 
 app.use(express.json({ limit: '10mb' }));
-app.use(express.static('.'));
+app.use(express.static('public'));
 
 const DB_FILE = path.join(__dirname, '.data', 'db.json');
 
@@ -85,6 +85,15 @@ app.patch('/api/students/:id/hw/:subject', (req, res) => {
   if (!db.students[id]) return res.status(404).json({ error: 'not found' });
   if (!db.students[id].hw) db.students[id].hw = {};
   db.students[id].hw[subject] = req.body;
+  writeDB(db);
+  res.json({ ok: true });
+});
+
+// ลบนักเรียน
+app.delete('/api/students/:id', (req, res) => {
+  const db = readDB();
+  if (!db.students[req.params.id]) return res.status(404).json({ error: 'not found' });
+  delete db.students[req.params.id];
   writeDB(db);
   res.json({ ok: true });
 });
