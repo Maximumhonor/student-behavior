@@ -4,7 +4,7 @@ const path = require('path');
 const app = express();
 
 app.use(express.json({ limit: '10mb' }));
-app.use(express.static('.', {
+app.use(express.static('public', {
   setHeaders: (res, filePath) => {
     if(filePath.endsWith('sw.js')){
       res.setHeader('Service-Worker-Allowed', '/');
@@ -108,6 +108,9 @@ app.delete('/api/students/:id', (req, res) => {
   res.json({ ok: true });
 });
 
+// Ping endpoint - ป้องกัน server หลับ
+app.get('/api/ping', (req, res) => res.json({ ok: true, time: new Date().toISOString() }));
+
 // คำขอ (good deeds)
 app.post('/api/requests', (req, res) => {
   const db = readDB();
@@ -128,4 +131,17 @@ app.patch('/api/requests/:id', (req, res) => {
 
 const listener = app.listen(process.env.PORT || 3000, () => {
   console.log('Server running on port ' + listener.address().port);
+  // Ping ตัวเองทุก 14 นาที ป้องกัน Render หลับ
+  const SELF_URL = process.env.RENDER_EXTERNAL_URL || 'http://localhost:' + (process.env.PORT || 3000);
+  setInterval(() => {
+    const https = require('https');
+    const http = require('http');
+    try {
+      const url = new URL(SELF_URL + '/api/ping');
+      const lib = url.protocol === 'https:' ? https : http;
+      lib.get(url.toString(), (res) => {
+        console.log('Self-ping OK:', res.statusCode);
+      }).on('error', (e) => console.log('Ping error:', e.message));
+    } catch(e) { console.log('Ping setup error:', e.message); }
+  }, 14 * 60 * 1000);
 });
