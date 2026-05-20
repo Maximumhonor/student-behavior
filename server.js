@@ -4,7 +4,17 @@ const path = require('path');
 const app = express();
 
 app.use(express.json({ limit: '10mb' }));
-app.use(express.static('.'));
+app.use(express.static('public', {
+  setHeaders: (res, filePath) => {
+    if(filePath.endsWith('sw.js')){
+      res.setHeader('Service-Worker-Allowed', '/');
+      res.setHeader('Cache-Control', 'no-cache');
+    }
+    if(filePath.endsWith('manifest.json')){
+      res.setHeader('Content-Type', 'application/manifest+json');
+    }
+  }
+}));
 
 const DB_FILE = path.join(__dirname, '.data', 'db.json');
 
