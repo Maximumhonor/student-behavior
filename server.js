@@ -4,7 +4,7 @@ const path = require('path');
 const app = express();
 
 app.use(express.json({ limit: '10mb' }));
-app.use(express.static('public', {
+app.use(express.static('.', {
   setHeaders: (res, filePath) => {
     if(filePath.endsWith('sw.js')){
       res.setHeader('Service-Worker-Allowed', '/');
