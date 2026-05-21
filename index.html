@@ -396,6 +396,13 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px;font-wei
 <script>
 const TEACHER_PASS='071636552';
 const SUBJECTS=['วิทยาศาสตร์','เศรษฐศาสตร์การเงิน','ภาษาอังกฤษ','สุขศึกษาและพลศึกษา','ดนตรี','ศิลปะ','นาฏศิลป์','ภาษาไทย','คอมพิวเตอร์','ประวัติศาสตร์','เกมเมอร์','จิตอาสา'];
+let S={view:'loading',role:null,sid:null,tab:'score',msg:'',search:'',newName:'',newId:''};
+function today(){
+  const d=new Date();
+  const months=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()+543}`;
+}
+let DB={students:{},requests:{}};
 const DEFAULT_REWARDS=[
   {id:'r1',name:'ขอย้ายที่นั่งภาวร',cost:20},
   {id:'r2',name:'ขอย้ายที่นั่ง 1 วัน',cost:5},
