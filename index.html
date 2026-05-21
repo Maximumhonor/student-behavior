@@ -119,6 +119,10 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px;font-wei
 .lwrap{max-width:340px;margin:2rem auto}
 .ltitle{font-size:21px;font-weight:700;text-align:center;margin-bottom:1.5rem;font-family:'Prompt',sans-serif;color:var(--text)}
 .mgrid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;max-width:900px;margin:0 auto;width:100%}
+@media(min-width:600px){.av-grid{grid-template-columns:repeat(6,1fr)!important}}
+@media(min-width:900px){.av-grid{grid-template-columns:repeat(8,1fr)!important}}
+@media(min-width:1200px){.av-grid{grid-template-columns:repeat(10,1fr)!important}}
+@media(min-width:1600px){.av-grid{grid-template-columns:repeat(13,1fr)!important}}
 @media(max-width:480px){
   .mgrid{gap:.75rem}
   .mcard{padding:1.5rem 1rem!important;border-radius:18px!important}
@@ -752,7 +756,7 @@ function vTList(){
     <div class="sw" style="position:sticky;top:56px;z-index:99;background:var(--bg);padding-bottom:.5rem"><i class="ti ti-search"></i>
       <input type="text" placeholder="ค้นหาชื่อหรือเลขประจำตัว" oninput="S.search=this.value;render()" value="${S.search||''}">
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;width:100%" class="av-grid">${cards}</div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;width:100%" class="av-grid">${cards}</div>
     ${isDesktop?'</div></div>':''}`;
 }
 
