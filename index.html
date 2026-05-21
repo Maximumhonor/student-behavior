@@ -405,6 +405,24 @@ const SUBJECTS=['วิทยาศาสตร์','เศรษฐศาสต
 let S={view:'loading',role:null,sid:null,tab:'score',msg:'',search:'',newName:'',newId:''};
 let pollTimer=null;
 
+function isGirl(name){return name&&name.includes('เด็กหญิง');}
+function shortName(name){return (name||'').replace('เด็กชาย','').replace('เด็กหญิง','').trim();}
+function fmtId(id){if(!id)return'-';const s=String(id);return s.length===13?s.replace(/(\d{1})(\d{4})(\d{5})(\d{2})(\d{1})/,'$1-$2-$3-$4-$5'):s;}
+function hwSum(hw){if(!hw)return 0;return Object.values(hw).filter(v=>v&&v.done).length;}
+function pendSid(sid){return Object.values(DB.requests||{}).filter(r=>r.studentId===sid&&r.status==='pending');}
+function accentOf(s){return isGirl(s.name)?'var(--pink)':'var(--blue)';}
+function avHtml(s,size,fontSize){
+  const animal=s.animal||getStudentAnimal(s);
+  const g=isGirl(s.name);
+  const sz=size||64;
+  return drawAnimalSVG(animal,g,sz);
+}
+
+function tot(s){
+  if(!s||!s.logs) return 0;
+  return s.logs.reduce((sum,l)=>sum+(l.score||0),0);
+}
+
 function pendAll(){
   return Object.values(DB.requests||{}).filter(r=>r.status==='pending');
 }
