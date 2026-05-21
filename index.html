@@ -408,7 +408,7 @@ let pollTimer=null;
 function isGirl(name){return name&&name.includes('เด็กหญิง');}
 function shortName(name){return (name||'').replace('เด็กชาย','').replace('เด็กหญิง','').trim();}
 function fmtId(id){if(!id)return'-';const s=String(id);return s.length===13?s.replace(/(\d{1})(\d{4})(\d{5})(\d{2})(\d{1})/,'$1-$2-$3-$4-$5'):s;}
-function hwSum(hw){if(!hw)return 0;return Object.values(hw).filter(v=>v&&v.done).length;}
+function hwSum(hw){if(!hw)return{done:0,total:0};const vals=Object.values(hw);return{done:vals.filter(v=>v&&v.done).length,total:vals.length};}
 function pendSid(sid){return Object.values(DB.requests||{}).filter(r=>r.studentId===sid&&r.status==='pending');}
 function accentOf(s){return isGirl(s.name)?'var(--pink)':'var(--blue)';}
 function avHtml(s,size,fontSize){
@@ -692,7 +692,7 @@ function vTList(){
       <div style="position:absolute;top:6px;left:8px;font-size:10px;font-weight:700;color:var(--muted);line-height:1">${s.no||''}</div>
       <div style="width:76px;height:76px;border-radius:50%;overflow:hidden;border:3px solid ${g?'#F4BFDA':'#B5D1F5'};box-shadow:0 2px 8px rgba(0,0,0,.1)">${avatarContent}</div>
       <div style="font-size:12px;font-weight:600;color:var(--text);text-align:center;line-height:1.3;width:100%;padding:0 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${firstName}</div>
-      <div style="font-size:13px;font-weight:700;color:${scoreCol}">${t>=0?'+':''}${t}</div>
+      <div style="font-size:17px;font-weight:800;color:${scoreCol}">${t>=0?'+':''}${t}</div>
     </div>`;
   }).join('');
 
