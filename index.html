@@ -460,6 +460,7 @@ async function loadDB(){
     await api('POST','/data',DB);
   }
   const ls=document.getElementById('loading-screen');if(ls)ls.style.display='none';
+  if(S.view==='loading')S.view='menu';
   render();
 }
 function startPoll(){if(pollTimer)clearInterval(pollTimer);pollTimer=setInterval(loadDB,3000);}
