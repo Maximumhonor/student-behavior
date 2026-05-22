@@ -933,7 +933,7 @@ function vTStudent(){
 
 function vAddLog(){
   const s=DB.students[S.sid];const isP=S.addMode==='plus';
-  const pr=(isP?PP:PM).map(p=>`<button class="pbtn" onclick="doPreset(${p.score},'${p.label}')"><div style="font-weight:500;font-size:13px;margin-bottom:3px">${p.label}</div><div style="font-size:12px;color:${isP?'var(--green)':'var(--red)'}">${p.score>=0?'+':''}${p.score} คะแนน</div></button>`).join('');
+  const pr=(isP?PP:PM).map(p=>`<button class="pbtn" onclick="doPreset(${p.score},'${p.lb}')"><div style="font-weight:500;font-size:13px;margin-bottom:3px">${p.lb}</div><div style="font-size:12px;color:${isP?'var(--green)':'var(--red)'}">${p.score>=0?'+':''}${p.score} คะแนน</div></button>`).join('');
   return`
     <button class="btn-back" onclick="go('tstudent')"><i class="ti ti-arrow-left"></i> กลับ</button>
     <div style="font-size:18px;font-weight:600;margin-bottom:1.5rem">${isP?'เพิ่มคะแนน':'ตัดคะแนน'} — ${s?shortName(s.name):''}</div>
