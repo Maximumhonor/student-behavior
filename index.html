@@ -780,7 +780,7 @@ function vTStudent(){
   const s=DB.students[S.sid];if(!s)return'';
   const t=tot(s);const hw=hwSum(s.hw);const g=isGirl(s.name);
   const logs=s.logs||[];const rl=s.redeemLogs||[];const pend=pendSid(S.sid);
-  const chatMsgs=Object.values(DB.messages||{}).filter(m=>m.studentId===S.sid);const unreadFromParent=chatMsgs.filter(m=>m.from==='parent'&&!m.read).length;const pendRedeemCount=Object.values(DB.redeemRequests||{}).filter(r=>r.studentId===S.sid&&r.status==='pending').length;const TABS=[{k:'score',l:'คะแนน',i:'ti-star',dot:pend.length>0},{k:'hw',l:'ส่งงาน',i:'ti-clipboard-check'},{k:'redeem',l:'แลกคะแนน',i:'ti-gift',dot:pendRedeemCount>0},{k:'chat',l:'ข้อความ',i:'ti-message-2',dot:unreadFromParent>0}];
+  const chatMsgs=Object.values(DB.messages||{}).filter(m=>m.studentId===S.sid);const unreadFromParent=chatMsgs.filter(m=>m.from==='parent'&&!m.read).length;const pendRedeemCount=Object.values(DB.redeemRequests||{}).filter(r=>r.studentId===S.sid&&r.status==='pending').length;const TABS=[{k:'score',l:'คะแนน',i:'ti-star',dot:pend.length>0},{k:'hw',l:'ส่งงาน',i:'ti-clipboard-check'},{k:'redeem',l:'แลกคะแนน',i:'ti-gift',dot:pendRedeemCount>0},{k:'radar',l:'สเตตัส',i:'ti-chart-radar'},{k:'chat',l:'ข้อความ',i:'ti-message-2',dot:unreadFromParent>0}];
   let content='';
   if(S.tab==='score'){
     const ph=pend.map(req=>`<div class="pcard">
@@ -933,7 +933,7 @@ function vTStudent(){
 
 function vAddLog(){
   const s=DB.students[S.sid];const isP=S.addMode==='plus';
-  const pr=(isP?PP:PM).map(p=>`<button class="pbtn" onclick="doPreset(${p.score},'${p.lb}')"><div style="font-weight:500;font-size:13px;margin-bottom:3px">${p.lb}</div><div style="font-size:12px;color:${isP?'var(--green)':'var(--red)'}">${p.score>=0?'+':''}${p.score} คะแนน</div></button>`).join('');
+  const pr=(isP?PP:PM).map(p=>`<button class="pbtn" onclick="doPreset(${p.sc},'${p.lb}')"><div style="font-weight:500;font-size:13px;margin-bottom:3px">${p.lb}</div><div style="font-size:12px;color:${isP?'var(--green)':'var(--red)'}">${p.sc>=0?'+':''}${p.sc} คะแนน</div></button>`).join('');
   return`
     <button class="btn-back" onclick="go('tstudent')"><i class="ti ti-arrow-left"></i> กลับ</button>
     <div style="font-size:18px;font-weight:600;margin-bottom:1.5rem">${isP?'เพิ่มคะแนน':'ตัดคะแนน'} — ${s?shortName(s.name):''}</div>
@@ -1108,7 +1108,7 @@ function vPView(){
       <div class="sc"><div class="sl">ยังไม่ส่ง</div><div class="sv" style="color:${hw.total-hw.done>0?'var(--red)':'var(--green)'}">${hw.total-hw.done}</div></div>
       <div class="sc"><div class="sl">แลกแล้ว</div><div class="sv" style="color:var(--blue)">${rl.length}</div></div>
     </div>
-    <div class="tabs">${TABS.map(tb=>`<button class="tab ${S.tab===tb.k?'on':''}" onclick="setTab('${tb.k}')"><i class="ti ${tb.i}"></i> ${tb.l}</button>`).join('')}</div>
+    <div class="tabs">${TABS.map(tb=>`<button class="tab ${S.tab===tb.k?'on':''}" onclick="setTab('${tb.k}')"><i class="ti ${tb.i}"></i> ${tb.l}${tb.dot?'<span class=\"ndot\"></span>':''}</button>`).join('')}</div>
     ${content}`;}
 
 function go(v){
