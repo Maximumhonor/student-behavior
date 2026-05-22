@@ -427,6 +427,21 @@ function tot(s){
   return s.logs.reduce((sum,l)=>sum+(l.score||0),0);
 }
 
+const PP=[
+  {sc:1,lb:'ตอบคำถามได้'},
+  {sc:2,lb:'ช่วยเหลือครู'},
+  {sc:3,lb:'ทำงานส่ง'},
+  {sc:5,lb:'หัวหน้าห้อง'},
+  {sc:10,lb:'ทำดีเด่น'}
+];
+const PM=[
+  {sc:-1,lb:'ลืมการบ้าน'},
+  {sc:-2,lb:'คุยในห้อง'},
+  {sc:-3,lb:'นั่ง 2 ขา'},
+  {sc:-5,lb:'ทะเลาะวิวาท'},
+  {sc:-10,lb:'ผิดระเบียบร้ายแรง'}
+];
+
 function pendAll(){
   return Object.values(DB.requests||{}).filter(r=>r.status==='pending');
 }
