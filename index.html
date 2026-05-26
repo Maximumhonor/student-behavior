@@ -1154,6 +1154,7 @@ function doTLogout(){stopPoll();S.role=null;S.view='menu';render();}
 
 // ===== MONITOR (ฝ่ายการเรียน) =====
 function vMLogin(){
+  const saved=localStorage.getItem('monitor_pin')||'';
   return`
   <div class="lwrap">
     <button class="btn-back" onclick="go('menu')"><i class="ti ti-arrow-left"></i> กลับ</button>
@@ -1162,16 +1163,22 @@ function vMLogin(){
     ${S.msg?`<div class="merr">${S.msg}</div>`:''}
     <div class="card">
       <div class="frow"><label>PIN ฝ่ายการเรียน</label>
-        <input type="password" id="mp" placeholder="กรอก PIN 5 หลัก" maxlength="5" inputmode="numeric" onkeydown="if(event.key==='Enter')doMLogin()">
+        <input type="password" id="mp" placeholder="กรอก PIN 5 หลัก" maxlength="5" inputmode="numeric" value="${saved}" onkeydown="if(event.key==='Enter')doMLogin()">
       </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);margin-bottom:.75rem;cursor:pointer">
+        <input type="checkbox" id="m_remember" ${saved?'checked':''} style="width:16px;height:16px;accent-color:var(--green)"> จำรหัสในเครื่องนี้
+      </label>
       <button class="btn btn-g btn-full" onclick="doMLogin()"><i class="ti ti-login"></i> เข้าสู่ระบบ</button>
     </div>
   </div>`;}
 
 function doMLogin(){
   const v=document.getElementById('mp')?.value?.trim()||'';
+  const remember=document.getElementById('m_remember')?.checked;
   const grp=MONITOR_GROUPS.find(g=>g.pin===v);
   if(grp){
+    if(remember) localStorage.setItem('monitor_pin',v);
+    else localStorage.removeItem('monitor_pin');
     S.view='mlist';S.msg='';S.role='monitor';
     S.monitorGroup=grp;
     startPoll();render();
