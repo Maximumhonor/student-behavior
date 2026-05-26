@@ -538,7 +538,8 @@ function startPoll(){if(pollTimer)clearInterval(pollTimer);pollTimer=setInterval
 function stopPoll(){if(pollTimer){clearInterval(pollTimer);pollTimer=null;}}
 
 function render(){
-  // Save all active input state before re-render
+  // Save scroll position and active input before re-render
+  const scrollY = window.scrollY||window.pageYOffset||0;
   const active = document.activeElement;
   const prevId = active?.id||'';
   const prevVal = active?.value||'';
@@ -562,6 +563,8 @@ function render(){
   else if(S.view==='plogin')el.innerHTML=vPLogin();
   else if(S.view==='pview')el.innerHTML=vPView();
   root.appendChild(el);
+  // Restore scroll position
+  window.scrollTo(0, scrollY);
   // Restore focus to any input/textarea that was active before render
   if(prevId && (prevTag==='INPUT'||prevTag==='TEXTAREA')){
     const inp = document.getElementById(prevId);
@@ -1657,41 +1660,48 @@ function seedAllScores(){
 }
 loadDB();
 
-function openLightbox(src){
-  const lb=document.getElementById('lightbox');
+// Lightbox state
+let _lbScale=1,_lbDist=0,_lbLastTap=0,_lbInit=false;
+function _initLightbox(){
+  if(_lbInit)return;
+  _lbInit=true;
   const img=document.getElementById('lightbox-img');
-  img.src=src;
-  img.style.transform='scale(1)';
-  lb.classList.add('show');
-  document.body.style.overflow='hidden';
-  // Pinch-zoom support
-  let startDist=0,curScale=1;
   img.addEventListener('touchstart',e=>{
     if(e.touches.length===2){
-      startDist=Math.hypot(e.touches[1].clientX-e.touches[0].clientX,e.touches[1].clientY-e.touches[0].clientY);
+      _lbDist=Math.hypot(e.touches[1].clientX-e.touches[0].clientX,e.touches[1].clientY-e.touches[0].clientY);
     }
   },{passive:true});
   img.addEventListener('touchmove',e=>{
     if(e.touches.length===2){
       e.preventDefault();
-      const dist=Math.hypot(e.touches[1].clientX-e.touches[0].clientX,e.touches[1].clientY-e.touches[0].clientY);
-      curScale=Math.min(Math.max(curScale*(dist/startDist),.5),5);
-      img.style.transform=`scale(${curScale})`;
-      startDist=dist;
+      const d=Math.hypot(e.touches[1].clientX-e.touches[0].clientX,e.touches[1].clientY-e.touches[0].clientY);
+      _lbScale=Math.min(Math.max(_lbScale*(d/_lbDist),1),5);
+      img.style.transform=`scale(${_lbScale})`;
+      _lbDist=d;
     }
   },{passive:false});
-  // Double tap to reset
-  let lastTap=0;
   img.addEventListener('touchend',()=>{
     const now=Date.now();
-    if(now-lastTap<300){curScale=curScale>1?1:2;img.style.transform=`scale(${curScale})`;}
-    lastTap=now;
+    if(now-_lbLastTap<300){_lbScale=_lbScale>1?1:2;img.style.transform=`scale(${_lbScale})`;}
+    _lbLastTap=now;
   });
+}
+function openLightbox(src){
+  const lb=document.getElementById('lightbox');
+  const img=document.getElementById('lightbox-img');
+  _lbScale=1;
+  img.src=src;
+  img.style.transform='scale(1)';
+  lb.classList.add('show');
+  document.body.style.overflow='hidden';
+  _initLightbox();
 }
 function closeLightbox(e){
   if(e&&e.target===document.getElementById('lightbox-img'))return;
   document.getElementById('lightbox').classList.remove('show');
   document.body.style.overflow='';
+  _lbScale=1;
+  document.getElementById('lightbox-img').style.transform='scale(1)';
 }
 </script>
 <script>
