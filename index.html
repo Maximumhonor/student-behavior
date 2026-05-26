@@ -184,6 +184,8 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px;font-wei
         <style>
       @keyframes loadProg{0%{width:5%}40%{width:65%}80%{width:85%}100%{width:98%}}
       @keyframes fadeDot{0%,80%,100%{opacity:0}40%{opacity:1}}
+      @keyframes minHand{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+      @keyframes hrHand{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
       @keyframes sunSpin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
       @keyframes cloudDrift1{0%{transform:translateX(0)}100%{transform:translateX(25px)}}
       @keyframes cloudDrift2{0%{transform:translateX(0)}100%{transform:translateX(-25px)}}
@@ -213,12 +215,10 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px;font-wei
   <!-- GROUND -->
   <rect x="0" y="105" width="320" height="45" fill="#5D8A3C"/>
   <rect x="0" y="105" width="320" height="5"  fill="#4A7A2E"/>
-  <!-- Running track lines -->
-  <rect x="0" y="118" width="320" height="32" fill="#1565C0" opacity=".85"/>
-  <line x1="0" y1="124" x2="320" y2="124" stroke="#E8D5A3" stroke-width="1.2"/>
-  <line x1="0" y1="130" x2="320" y2="130" stroke="#E8D5A3" stroke-width="1.2"/>
-  <line x1="0" y1="136" x2="320" y2="136" stroke="#E8D5A3" stroke-width="1.2"/>
-  <line x1="0" y1="142" x2="320" y2="142" stroke="#E8D5A3" stroke-width="1.2"/>
+  <!-- Sandy ground -->
+  <rect x="0" y="118" width="320" height="32" fill="#D2B07A"/>
+  <rect x="0" y="118" width="320" height="3" fill="#C9A96E" opacity=".7"/>
+  <rect x="0" y="146" width="320" height="4" fill="#C9A96E" opacity=".5"/>
 
   <!-- ===== SCHOOL BUILDING ===== -->
   <!-- Left wing (2 storey) -->
@@ -261,8 +261,14 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px;font-wei
   <rect x="124" y="14" width="52" height="6" fill="#1565C0"/>
   <!-- Clock -->
   <circle cx="150" cy="32" r="9" fill="white" stroke="#1565C0" stroke-width="1"/>
-  <line x1="150" y1="32" x2="150" y2="25" stroke="#333" stroke-width="1.2" stroke-linecap="round"/>
-  <line x1="150" y1="32" x2="155" y2="35" stroke="#333" stroke-width="1.2" stroke-linecap="round"/>
+  <!-- เข็มยาว (นาที) หมุนรอบ 6 วินาที -->
+  <g style="transform-origin:150px 32px;animation:minHand 1.5s linear infinite">
+    <line x1="150" y1="32" x2="150" y2="24" stroke="#222" stroke-width="1.2" stroke-linecap="round"/>
+  </g>
+  <!-- เข็มสั้น (ชั่วโมง) หมุนรอบ 72 วินาที (ช้ากว่า 12x) -->
+  <g style="transform-origin:150px 32px;animation:hrHand 18s linear infinite">
+    <line x1="150" y1="32" x2="154" y2="36" stroke="#444" stroke-width="1.6" stroke-linecap="round"/>
+  </g>
   <circle cx="150" cy="32" r="1.5" fill="#333"/>
   <!-- Tower windows -->
   <rect x="130" y="46" width="14" height="22" fill="#B3E5FC" stroke="#999" stroke-width="0.8" rx="0.5"/>
@@ -281,8 +287,9 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px;font-wei
   <rect x="172" y="50" width="80" height="6" fill="#1565C0"/>
   <!-- SCHOOL sign -->
   <rect x="178" y="56" width="68" height="18" fill="#1565C0" rx="1"/>
-  <text x="212" y="63" text-anchor="middle" font-size="5.5" fill="white" font-family="Arial" font-weight="bold">โรงเรียน</text>
-  <text x="212" y="71" text-anchor="middle" font-size="5.5" fill="white" font-family="Arial" font-weight="bold">รัตนโกสินทร์ ๙</text>
+  <!-- ขอบดำ (stroke) ใหญ่ขึ้น -->
+  <text x="212" y="63" text-anchor="middle" font-size="7.5" fill="white" font-family="'Prompt','Sarabun',sans-serif" font-weight="bold" stroke="black" stroke-width="0.7" paint-order="stroke">โรงเรียน</text>
+  <text x="212" y="72" text-anchor="middle" font-size="7.5" fill="white" font-family="'Prompt','Sarabun',sans-serif" font-weight="bold" stroke="black" stroke-width="0.7" paint-order="stroke">รัตนโกสินทร์ ๙</text>
   <!-- Right wing windows -->
   <rect x="178" y="78" width="20" height="12" fill="#B3E5FC" stroke="#999" stroke-width="0.8" rx="0.5"/>
   <rect x="204" y="78" width="20" height="12" fill="#B3E5FC" stroke="#999" stroke-width="0.8" rx="0.5"/>
@@ -296,106 +303,80 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px;font-wei
   <!-- Ground floor base line -->
   <rect x="30" y="104" width="222" height="2" fill="#1565C0" opacity=".5"/>
 
-  <!-- Trees (round cute style) -->
-  <g transform="translate(18,90)"><rect x="-3" y="10" width="6" height="14" fill="#8B6914"/><circle cx="0" cy="6" r="11" fill="#4CAF50" stroke="#388E3C" stroke-width="1"/><circle cx="-4" cy="9" r="7" fill="#66BB6A"/><circle cx="4" cy="8" r="7" fill="#66BB6A"/></g>
-  <g transform="translate(292,88)"><rect x="-3" y="10" width="6" height="16" fill="#8B6914"/><circle cx="0" cy="5" r="12" fill="#4CAF50" stroke="#388E3C" stroke-width="1"/><circle cx="-5" cy="9" r="7" fill="#66BB6A"/><circle cx="5" cy="8" r="7" fill="#66BB6A"/></g>
-  <!-- Triangle trees (beside building) -->
-  <g transform="translate(15,96)"><rect x="-2" y="0" width="4" height="10" fill="#8B6914"/><polygon points="0,-14 8,0 -8,0" fill="#388E3C"/><polygon points="0,-8 5,0 -5,0" fill="#4CAF50"/></g>
-  <g transform="translate(308,94)"><rect x="-2" y="0" width="4" height="10" fill="#8B6914"/><polygon points="0,-14 8,0 -8,0" fill="#388E3C"/><polygon points="0,-8 5,0 -5,0" fill="#4CAF50"/></g>
+  <!-- ===== TREES & BUSHES ===== -->
 
-  <!-- ===== WALKING STUDENTS ===== -->
-  <!-- Student 1 (boy, walking right) -->
-  <g id="student1">
-    <animateTransform attributeName="transform" type="translate" values="-50,0; 380,0" dur="5s" repeatCount="indefinite"/>
-    <!-- shadow -->
-    <ellipse cx="9" cy="120" rx="8" ry="2" fill="rgba(0,0,0,.15)"/>
-    <!-- bag (black) -->
-    <rect x="12" y="100" width="6" height="9" rx="1.5" fill="#212121"/>
-    <rect x="13" y="100" width="4" height="1.5" rx="1" fill="#424242"/>
-    <!-- torso white shirt -->
-    <rect x="3" y="100" width="11" height="11" rx="2.5" fill="white" stroke="#E0E0E0" stroke-width="0.5"/>
-    <rect x="3" y="100" width="11" height="4" rx="2.5" fill="#1565C0"/>
-    <!-- brown shorts -->
-    <rect x="3" y="111" width="11" height="7" rx="2" fill="#795548"/>
-    <!-- legs walking animation -->
-    <g>
-      <rect x="4" y="118" width="4" height="8" rx="2" fill="#FFCA80">
-        <animateTransform attributeName="transform" type="rotate" values="18,6,118;-18,6,118;18,6,118" dur="0.55s" repeatCount="indefinite"/>
-      </rect>
-    </g>
-    <g>
-      <rect x="9" y="118" width="4" height="8" rx="2" fill="#FFCA80">
-        <animateTransform attributeName="transform" type="rotate" values="-18,11,118;18,11,118;-18,11,118" dur="0.55s" repeatCount="indefinite"/>
-      </rect>
-    </g>
-    <!-- black shoes -->
-    <ellipse cx="6" cy="126" rx="4" ry="1.8" fill="#212121"/>
-    <ellipse cx="11" cy="126" rx="4" ry="1.8" fill="#212121"/>
-    <!-- arms swinging -->
-    <rect x="-1" y="101" width="3.5" height="9" rx="1.7" fill="#FFCA80">
-      <animateTransform attributeName="transform" type="rotate" values="-25,1,101;25,1,101;-25,1,101" dur="0.55s" repeatCount="indefinite"/>
-    </rect>
-    <rect x="14" y="101" width="3.5" height="9" rx="1.7" fill="#FFCA80">
-      <animateTransform attributeName="transform" type="rotate" values="25,15,101;-25,15,101;25,15,101" dur="0.55s" repeatCount="indefinite"/>
-    </rect>
-    <!-- head -->
-    <circle cx="9" cy="95" r="7" fill="#FFCA80"/>
-    <!-- hair -->
-    <path d="M2,92 Q9,85 16,92 Q16,95 14,94 Q9,91 4,94 Q2,95 2,92Z" fill="#4E342E"/>
-    <!-- eyes -->
-    <circle cx="7" cy="95" r="1.3" fill="#3E2723"/>
-    <circle cx="11" cy="95" r="1.3" fill="#3E2723"/>
-    <circle cx="7.4" cy="94.6" r=".4" fill="white"/>
-    <circle cx="11.4" cy="94.6" r=".4" fill="white"/>
-    <!-- cheeks -->
-    <circle cx="5.5" cy="97" r="1.8" fill="#FF8A65" opacity=".4"/>
-    <circle cx="12.5" cy="97" r="1.8" fill="#FF8A65" opacity=".4"/>
-    <!-- smile -->
-    <path d="M6.5,98.5 Q9,100.5 11.5,98.5" stroke="#BF360C" stroke-width="0.9" fill="none" stroke-linecap="round"/>
-    <!-- ears -->
-    <ellipse cx="2" cy="95" rx="1.5" ry="2" fill="#FFB74D"/>
-    <ellipse cx="16" cy="95" rx="1.5" ry="2" fill="#FFB74D"/>
+  <!-- ── LEFT SIDE ── -->
+  <!-- Tree L1 (big, x=8) -->
+  <g>
+    <rect x="5.5" y="88" width="5" height="17" rx="2" fill="#5D4037"/>
+    <circle cx="8" cy="80" r="13" fill="#1B5E20"/>
+    <circle cx="2"  cy="85" r="9"  fill="#2E7D32"/>
+    <circle cx="14" cy="84" r="9"  fill="#2E7D32"/>
+    <circle cx="8"  cy="75" r="8"  fill="#388E3C"/>
+    <circle cx="4"  cy="70" r="6"  fill="#43A047"/>
+    <circle cx="12" cy="69" r="6"  fill="#43A047"/>
+    <circle cx="8"  cy="65" r="5"  fill="#66BB6A"/>
+  </g>
+  <!-- Bush L1 (x=24) -->
+  <g>
+    <circle cx="24" cy="107" r="6"  fill="#2E7D32"/>
+    <circle cx="30" cy="108" r="5"  fill="#388E3C"/>
+    <circle cx="18" cy="108" r="5"  fill="#388E3C"/>
+    <circle cx="24" cy="103" r="4"  fill="#4CAF50"/>
+  </g>
+  <!-- Tree L2 (medium, x=40) -->
+  <g>
+    <rect x="38" y="93" width="4" height="12" rx="1.5" fill="#6D4C1F"/>
+    <circle cx="40" cy="84" r="10" fill="#2E7D32"/>
+    <circle cx="34" cy="88" r="7"  fill="#388E3C"/>
+    <circle cx="46" cy="87" r="7"  fill="#388E3C"/>
+    <circle cx="40" cy="79" r="6"  fill="#4CAF50"/>
+    <circle cx="36" cy="76" r="4"  fill="#66BB6A"/>
+    <circle cx="44" cy="75" r="4"  fill="#66BB6A"/>
+  </g>
+  <!-- Bush L2 (x=55) -->
+  <g>
+    <circle cx="55" cy="108" r="5"  fill="#33691E"/>
+    <circle cx="62" cy="109" r="4"  fill="#388E3C"/>
+    <circle cx="48" cy="109" r="4"  fill="#43A047"/>
+    <circle cx="55" cy="104" r="3.5" fill="#4CAF50"/>
   </g>
 
-  <!-- Student 2 (girl, offset behind) -->
-  <g id="student2">
-    <animateTransform attributeName="transform" type="translate" values="-100,0; 330,0" dur="5s" repeatCount="indefinite"/>
-    <ellipse cx="9" cy="120" rx="8" ry="2" fill="rgba(0,0,0,.13)"/>
-    <rect x="-3" y="100" width="6" height="9" rx="1.5" fill="#212121"/>
-    <rect x="-2" y="100" width="4" height="1.5" rx="1" fill="#424242"/>
-    <rect x="3" y="100" width="11" height="11" rx="2.5" fill="white" stroke="#E0E0E0" stroke-width="0.5"/>
-    <rect x="3" y="100" width="11" height="4" rx="2.5" fill="#1565C0"/>
-    <!-- girl skirt navy -->
-    <polygon points="3,111 14,111 17,118 0,118" fill="#1565C0"/>
-    <!-- legs -->
-    <rect x="4" y="116" width="4" height="9" rx="2" fill="#FFCA80">
-      <animateTransform attributeName="transform" type="rotate" values="-15,6,116;15,6,116;-15,6,116" dur="0.55s" begin="0.15s" repeatCount="indefinite"/>
-    </rect>
-    <rect x="9" y="116" width="4" height="9" rx="2" fill="#FFCA80">
-      <animateTransform attributeName="transform" type="rotate" values="15,11,116;-15,11,116;15,11,116" dur="0.55s" begin="0.15s" repeatCount="indefinite"/>
-    </rect>
-    <ellipse cx="6"  cy="125" rx="4" ry="1.8" fill="#212121"/>
-    <ellipse cx="11" cy="125" rx="4" ry="1.8" fill="#212121"/>
-    <rect x="-1" y="101" width="3.5" height="9" rx="1.7" fill="#FFCA80">
-      <animateTransform attributeName="transform" type="rotate" values="20,1,101;-20,1,101;20,1,101" dur="0.55s" begin="0.15s" repeatCount="indefinite"/>
-    </rect>
-    <rect x="14" y="101" width="3.5" height="9" rx="1.7" fill="#FFCA80">
-      <animateTransform attributeName="transform" type="rotate" values="-20,15,101;20,15,101;-20,15,101" dur="0.55s" begin="0.15s" repeatCount="indefinite"/>
-    </rect>
-    <circle cx="9" cy="95" r="7" fill="#FFCA80"/>
-    <path d="M2,92 Q9,85 16,92 Q16,95 14,94 Q9,91 4,94 Q2,95 2,92Z" fill="#3E2723"/>
-    <rect x="2"  y="93" width="2.2" height="12" rx="1" fill="#3E2723"/>
-    <rect x="13" y="93" width="2.2" height="12" rx="1" fill="#3E2723"/>
-
-    <circle cx="7" cy="95" r="1.3" fill="#3E2723"/>
-    <circle cx="11" cy="95" r="1.3" fill="#3E2723"/>
-    <circle cx="7.4" cy="94.6" r=".4" fill="white"/>
-    <circle cx="11.4" cy="94.6" r=".4" fill="white"/>
-    <circle cx="5.5" cy="97" r="1.8" fill="#FF8A65" opacity=".4"/>
-    <circle cx="12.5" cy="97" r="1.8" fill="#FF8A65" opacity=".4"/>
-    <path d="M6.5,98.5 Q9,100.5 11.5,98.5" stroke="#BF360C" stroke-width="0.9" fill="none" stroke-linecap="round"/>
-    <ellipse cx="2" cy="95" rx="1.5" ry="2" fill="#FFB74D"/>
-    <ellipse cx="16" cy="95" rx="1.5" ry="2" fill="#FFB74D"/>
+  <!-- ── RIGHT SIDE ── -->
+  <!-- Tree R1 (big, x=312) -->
+  <g>
+    <rect x="309.5" y="88" width="5" height="17" rx="2" fill="#5D4037"/>
+    <circle cx="312" cy="80" r="13" fill="#1B5E20"/>
+    <circle cx="306" cy="85" r="9"  fill="#2E7D32"/>
+    <circle cx="318" cy="84" r="9"  fill="#2E7D32"/>
+    <circle cx="312" cy="75" r="8"  fill="#388E3C"/>
+    <circle cx="308" cy="70" r="6"  fill="#43A047"/>
+    <circle cx="316" cy="69" r="6"  fill="#43A047"/>
+    <circle cx="312" cy="65" r="5"  fill="#66BB6A"/>
+  </g>
+  <!-- Bush R1 (x=296) -->
+  <g>
+    <circle cx="296" cy="107" r="6"  fill="#2E7D32"/>
+    <circle cx="290" cy="108" r="5"  fill="#388E3C"/>
+    <circle cx="302" cy="108" r="5"  fill="#388E3C"/>
+    <circle cx="296" cy="103" r="4"  fill="#4CAF50"/>
+  </g>
+  <!-- Tree R2 (medium, x=280) -->
+  <g>
+    <rect x="278" y="93" width="4" height="12" rx="1.5" fill="#6D4C1F"/>
+    <circle cx="280" cy="84" r="10" fill="#2E7D32"/>
+    <circle cx="274" cy="88" r="7"  fill="#388E3C"/>
+    <circle cx="286" cy="87" r="7"  fill="#388E3C"/>
+    <circle cx="280" cy="79" r="6"  fill="#4CAF50"/>
+    <circle cx="276" cy="76" r="4"  fill="#66BB6A"/>
+    <circle cx="284" cy="75" r="4"  fill="#66BB6A"/>
+  </g>
+  <!-- Bush R2 (x=265) -->
+  <g>
+    <circle cx="265" cy="108" r="5"  fill="#33691E"/>
+    <circle cx="258" cy="109" r="4"  fill="#388E3C"/>
+    <circle cx="272" cy="109" r="4"  fill="#43A047"/>
+    <circle cx="265" cy="104" r="3.5" fill="#4CAF50"/>
   </g>
 </svg>
     </div>
@@ -603,11 +584,11 @@ function vMenu(){
             <div style="font-size:12px;color:${pSaved?'var(--green)':'var(--muted)'}">${pSaved?'✓ บันทึกไว้แล้ว':'ID + รหัสผ่านเข้าระบบ'}</div>
           </div>
         </div>
-        <div class="mcard mcard-m" onclick="go('mlogin')" style="cursor:pointer;padding:1.1rem 2rem;display:flex;align-items:center;justify-content:center;gap:1rem;border-radius:16px">
-          <div class="la la-m" style="width:44px;height:44px;flex-shrink:0"><i class="ti ti-clipboard-list" style="font-size:22px"></i></div>
-          <div style="text-align:left">
-            <div style="font-weight:700;font-size:clamp(14px,3.5vw,18px);font-family:Prompt,sans-serif">ฝ่ายการเรียน</div>
-            <div style="font-size:12px;color:var(--muted)">เช็คส่งงานรายวิชา</div>
+        <div class="mcard mcard-m" onclick="go('mlogin')" style="cursor:pointer;padding:1.25rem 2rem;display:flex;align-items:center;justify-content:center;gap:1.25rem;border-radius:16px">
+          <div class="la la-m" style="width:52px;height:52px;flex-shrink:0;display:flex;align-items:center;justify-content:center"><i class="ti ti-clipboard-list" style="font-size:28px"></i></div>
+          <div style="text-align:center">
+            <div style="font-weight:700;font-size:clamp(16px,4vw,20px);font-family:Prompt,sans-serif">ฝ่ายการเรียน</div>
+            <div style="font-size:13px;color:var(--muted);margin-top:2px">เช็คส่งงานรายวิชา</div>
           </div>
         </div>
       </div>
