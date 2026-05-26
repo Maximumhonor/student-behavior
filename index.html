@@ -133,6 +133,8 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px;font-wei
 .mcard:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
 .mcard-t{border-top:4px solid var(--blue)}
 .mcard-p{border-top:4px solid var(--pink)}
+.mcard-m{border-top:4px solid var(--green)}
+.la-m{width:64px;height:64px;border-radius:50%;background:var(--green-bg);display:flex;align-items:center;justify-content:center;color:var(--green);margin-bottom:.75rem}
 .hrow{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.375rem;gap:8px;flex-wrap:wrap}.hrow-sticky{position:sticky;top:0;z-index:100;background:var(--bg);padding:.75rem 0;margin:-0.75rem 0 1rem;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .ptitle{font-size:20px;font-weight:700;font-family:'Prompt',sans-serif}
 .pbig{border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
@@ -405,8 +407,18 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px;font-wei
 
 <script>
 const TEACHER_PASS='071636552';
+const MONITOR_GROUPS=[
+  {pin:'28374',noFrom:1,noTo:5},
+  {pin:'91053',noFrom:6,noTo:10},
+  {pin:'46782',noFrom:11,noTo:15},
+  {pin:'73519',noFrom:16,noTo:20},
+  {pin:'30947',noFrom:21,noTo:25},
+  {pin:'85261',noFrom:26,noTo:30},
+  {pin:'62438',noFrom:31,noTo:35},
+  {pin:'17896',noFrom:36,noTo:39},
+];
 const SUBJECTS=['วิทยาศาสตร์','เศรษฐศาสตร์การเงิน','ภาษาอังกฤษ','สุขศึกษาและพลศึกษา','ดนตรี','ศิลปะ','นาฏศิลป์','ภาษาไทย','คอมพิวเตอร์','ประวัติศาสตร์','เกมเมอร์','จิตอาสา'];
-let S={view:'loading',role:null,sid:null,tab:'score',msg:'',search:'',newName:'',newId:''};
+let S={view:'loading',role:null,sid:null,tab:'score',msg:'',search:'',newName:'',newId:'',monitorGroup:null};
 let pollTimer=null;
 
 function isGirl(name){return name&&name.includes('เด็กหญิง');}
@@ -537,6 +549,10 @@ function render(){
   else if(S.view==='taddlog')el.innerHTML=vAddLog();
   else if(S.view==='taddstudent')el.innerHTML=vAddStudent();
   else if(S.view==='tpending')el.innerHTML=vPendingAll();
+  else if(S.view==='mlogin')el.innerHTML=vMLogin();
+  else if(S.view==='mlist')el.innerHTML=vMList();
+  else if(S.view==='mstudent')el.innerHTML=vMStudent();
+  else if(S.view==='maddlog')el.innerHTML=vMAddLog();
   else if(S.view==='plogin')el.innerHTML=vPLogin();
   else if(S.view==='pview')el.innerHTML=vPView();
   root.appendChild(el);
@@ -573,6 +589,11 @@ function vMenu(){
           <div class="la la-t"><i class="ti ti-chalkboard" style="font-size:36px"></i></div>
           <div style="font-weight:700;margin-bottom:.5rem;font-size:clamp(16px,4vw,22px);font-family:Prompt,sans-serif">ครู</div>
           <div style="font-size:12px;color:${tSaved?'var(--green)':'var(--muted)'}">${tSaved?'✓ บันทึกไว้แล้ว':'จัดการคะแนนและส่งงาน'}</div>
+        </div>
+        <div class="mcard mcard-m" onclick="go('mlogin')" style="cursor:pointer">
+          <div class="la la-m"><i class="ti ti-clipboard-list" style="font-size:36px"></i></div>
+          <div style="font-weight:700;margin-bottom:.5rem;font-size:clamp(16px,4vw,22px);font-family:Prompt,sans-serif">ฝ่ายการเรียน</div>
+          <div style="font-size:12px;color:var(--muted)">เช็คงานและจัดการคะแนน</div>
         </div>
         <div class="mcard mcard-p" onclick="go('plogin')" style="cursor:pointer">
           <div class="la la-p"><i class="ti ti-users" style="font-size:36px"></i></div>
@@ -765,6 +786,7 @@ function vTList(){
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         ${pc>0?`<button class="btn btn-a" style="font-size:13px" onclick="go('tpending')"><i class="ti ti-bell"></i> คำขอ (${pc})</button>`:''}
         <button class="btn" style="font-size:13px" onclick="go('taddstudent')"><i class="ti ti-plus"></i> เพิ่ม</button>
+        <button class="btn" style="font-size:13px" onclick="doSetMonitorPin()"><i class="ti ti-key"></i> PIN ฝ่ายเรียน</button>
         <button class="btn" style="font-size:13px" onclick="doTLogout()"><i class="ti ti-logout"></i> ออก</button>
       </div>
     </div>
@@ -1139,6 +1161,128 @@ function doTLogin(){
   }else{S.msg='รหัสผ่านไม่ถูกต้อง';render();}
 }
 function doTLogout(){stopPoll();S.role=null;S.view='menu';render();}
+
+// ===== MONITOR (ฝ่ายการเรียน) =====
+function vMLogin(){
+  return`
+  <div class="lwrap">
+    <button class="btn-back" onclick="go('menu')"><i class="ti ti-arrow-left"></i> กลับ</button>
+    <div class="la la-m"><i class="ti ti-clipboard-list" style="font-size:36px"></i></div>
+    <div class="ltitle">ฝ่ายการเรียน</div>
+    ${S.msg?`<div class="merr">${S.msg}</div>`:''}
+    <div class="card">
+      <div class="frow"><label>PIN ฝ่ายการเรียน</label>
+        <input type="password" id="mp" placeholder="กรอก PIN 5 หลัก" maxlength="5" inputmode="numeric" onkeydown="if(event.key==='Enter')doMLogin()">
+      </div>
+      <button class="btn btn-g btn-full" onclick="doMLogin()"><i class="ti ti-login"></i> เข้าสู่ระบบ</button>
+    </div>
+  </div>`;}
+
+function doMLogin(){
+  const v=document.getElementById('mp')?.value?.trim()||'';
+  const grp=MONITOR_GROUPS.find(g=>g.pin===v);
+  if(grp){
+    S.view='mlist';S.msg='';S.role='monitor';
+    S.monitorGroup=grp;
+    startPoll();render();
+  } else {
+    S.msg='PIN ไม่ถูกต้อง';render();
+  }
+}
+function doMLogout(){stopPoll();S.role=null;S.monitorGroup=null;S.view='menu';render();}
+
+function vMList(){
+  const grp=S.monitorGroup;
+  if(!grp)return'';
+  const entries=Object.entries(DB.students)
+    .filter(([,s])=>{const no=parseInt(s.no)||0;return no>=grp.noFrom&&no<=grp.noTo;})
+    .sort(([,a],[,b])=>(parseInt(a.no)||999)-(parseInt(b.no)||999));
+
+  const doneCount=entries.filter(([,s])=>SUBJECTS.every(subj=>s.hw?.[subj]?.done)).length;
+
+  const cards=entries.map(([sid,s])=>{
+    const hw=s.hw||{};
+    const total=SUBJECTS.length;
+    const done=SUBJECTS.filter(subj=>hw[subj]?.done).length;
+    const all=done===total;
+    const g=isGirl(s.name);
+    const animal=getStudentAnimal(s);
+    const avatarContent=s.photo
+      ?`<img src="${s.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
+      :drawAnimalSVG(animal,g,60);
+    const shortN=s.name.replace('เด็กชาย','ด.ช.').replace('เด็กหญิง','ด.ญ.');
+    return`<div onclick="S.sid='${sid}';S.view='mstudent';render()" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;padding:1rem .5rem .85rem;border-radius:16px;background:var(--surface);border:2px solid ${all?'var(--green-bd)':'var(--border-soft)'};box-shadow:var(--shadow-sm);transition:all .2s;position:relative"
+      onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+      <div style="position:absolute;top:5px;left:7px;font-size:10px;font-weight:700;color:var(--muted)">${s.no||''}</div>
+      <div style="width:60px;height:60px;border-radius:50%;overflow:hidden;border:2px solid ${g?'#F4BFDA':'#B5D1F5'}">${avatarContent}</div>
+      <div style="font-size:11px;font-weight:600;color:var(--text);text-align:center;width:100%;padding:0 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${shortN}</div>
+      <div style="font-size:13px;font-weight:700;color:${all?'var(--green)':done>0?'var(--amber)':'var(--red)'}">
+        ${all?'✓ ครบ':`${done}/${total}`}
+      </div>
+    </div>`;
+  }).join('');
+
+  return`
+    <div class="hrow hrow-sticky">
+      <div class="ptitle">เลขที่ ${grp.noFrom}–${grp.noTo} <span style="font-size:13px;font-weight:400;color:var(--muted)">(ส่งครบ ${doneCount}/${entries.length} คน)</span></div>
+      <button class="btn btn-r" style="font-size:13px" onclick="doMLogout()"><i class="ti ti-logout"></i> ออก</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(${Math.min(entries.length,5)},1fr);gap:10px;width:100%;max-width:500px;margin:0 auto">${cards}</div>`;}
+
+function vMStudent(){
+  const s=DB.students[S.sid];if(!s)return'';
+  const grp=S.monitorGroup;
+  const g=isGirl(s.name);
+  const hw=s.hw||{};
+
+  const hwCards=SUBJECTS.map(subj=>{
+    const it=hw[subj]||{done:false,date:today()};
+    return`<div class="hwc ${it.done?'hwd':'hwm'}" onclick="doMToggleHw('${subj}')">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="hn">${subj}</div>
+        <i class="ti ${it.done?'ti-circle-check':'ti-circle-x'}" style="font-size:18px"></i>
+      </div>
+      <div class="hs">${it.done?'ส่งแล้ว':'ยังไม่ส่ง'}</div>
+      <div class="hdate">เช็ค: ${it.date}</div>
+    </div>`;
+  }).join('');
+
+  const doneCount=SUBJECTS.filter(subj=>hw[subj]?.done).length;
+
+  return`
+    <button class="btn-back" onclick="S.view='mlist';render()"><i class="ti ti-arrow-left"></i> กลับ</button>
+    <div style="display:flex;align-items:center;gap:.75rem;padding:.75rem 0 1rem">
+      <div style="width:56px;height:56px;border-radius:50%;overflow:hidden;border:2px solid ${g?'#F4BFDA':'#B5D1F5'};flex-shrink:0">
+        ${s.photo?`<img src="${s.photo}" style="width:100%;height:100%;object-fit:cover">`:drawAnimalSVG(getStudentAnimal(s),g,56)}
+      </div>
+      <div>
+        <div style="font-size:18px;font-weight:700">${s.name}</div>
+        <div style="font-size:13px;color:var(--muted)">เลขที่ ${s.no||'-'} · ส่งงานแล้ว ${doneCount}/${SUBJECTS.length} วิชา</div>
+      </div>
+    </div>
+    <button class="btn btn-pk" style="width:100%;justify-content:center;margin-bottom:1rem" onclick="doMMarkAllDone()">
+      <i class="ti ti-checks"></i> ส่งงานครบทุกวิชา
+    </button>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:.75rem">แตะที่วิชาเพื่อสลับสถานะ</div>
+    <div class="hw-grid">${hwCards}</div>`;}
+
+async function doMToggleHw(subj){
+  const s=DB.students[S.sid];if(!s)return;
+  s.hw=s.hw||{};
+  s.hw[subj]=s.hw[subj]||{done:false,date:today()};
+  s.hw[subj].done=!s.hw[subj].done;
+  s.hw[subj].date=today();
+  await api('PATCH',`/students/${S.sid}`,{hw:s.hw});
+  render();}
+
+async function doMMarkAllDone(){
+  const s=DB.students[S.sid];if(!s)return;
+  s.hw=s.hw||{};
+  SUBJECTS.forEach(subj=>{s.hw[subj]={done:true,date:today()};});
+  await api('PATCH',`/students/${S.sid}`,{hw:s.hw});
+  render();}
+
+
 function selStu(sid){S.sid=sid;S.tab='score';S.view='tstudent';render();}
 function openEdit(sid){S.editSid=sid;render();}
 async function doSaveEdit(sid){
