@@ -214,7 +214,7 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px;font-wei
   <rect x="0" y="105" width="320" height="45" fill="#5D8A3C"/>
   <rect x="0" y="105" width="320" height="5"  fill="#4A7A2E"/>
   <!-- Running track lines -->
-  <rect x="0" y="118" width="320" height="32" fill="#C0392B" opacity=".85"/>
+  <rect x="0" y="118" width="320" height="32" fill="#1565C0" opacity=".85"/>
   <line x1="0" y1="124" x2="320" y2="124" stroke="#E8D5A3" stroke-width="1.2"/>
   <line x1="0" y1="130" x2="320" y2="130" stroke="#E8D5A3" stroke-width="1.2"/>
   <line x1="0" y1="136" x2="320" y2="136" stroke="#E8D5A3" stroke-width="1.2"/>
@@ -222,9 +222,9 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px;font-wei
 
   <!-- ===== SCHOOL BUILDING ===== -->
   <!-- Left wing (2 storey) -->
-  <rect x="30" y="48" width="98" height="58" fill="#F5C842" stroke="#C0392B" stroke-width="1.5"/>
+  <rect x="30" y="48" width="98" height="58" fill="#C2185B" stroke="#1565C0" stroke-width="1.5"/>
   <!-- Left wing roof (red) -->
-  <rect x="30" y="44" width="98" height="6" fill="#C0392B"/>
+  <rect x="30" y="44" width="98" height="6" fill="#1565C0"/>
   <!-- Left wing windows row 1 -->
   <rect x="36" y="54" width="16" height="10" fill="#B3E5FC" stroke="#999" stroke-width="0.8" rx="0.5"/>
   <rect x="56" y="54" width="16" height="10" fill="#B3E5FC" stroke="#999" stroke-width="0.8" rx="0.5"/>
@@ -257,10 +257,10 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px;font-wei
   <polygon points="71.5,36 80,39 71.5,42" fill="#FFD600"/>
 
   <!-- Center tower (tall) -->
-  <rect x="124" y="18" width="52" height="88" fill="#F5C842" stroke="#C0392B" stroke-width="1.5"/>
-  <rect x="124" y="14" width="52" height="6" fill="#C0392B"/>
+  <rect x="124" y="18" width="52" height="88" fill="#C2185B" stroke="#1565C0" stroke-width="1.5"/>
+  <rect x="124" y="14" width="52" height="6" fill="#1565C0"/>
   <!-- Clock -->
-  <circle cx="150" cy="32" r="9" fill="white" stroke="#C0392B" stroke-width="1"/>
+  <circle cx="150" cy="32" r="9" fill="white" stroke="#1565C0" stroke-width="1"/>
   <line x1="150" y1="32" x2="150" y2="25" stroke="#333" stroke-width="1.2" stroke-linecap="round"/>
   <line x1="150" y1="32" x2="155" y2="35" stroke="#333" stroke-width="1.2" stroke-linecap="round"/>
   <circle cx="150" cy="32" r="1.5" fill="#333"/>
@@ -277,10 +277,10 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px;font-wei
   <rect x="140" y="88" width="20" height="18" fill="#B3E5FC" stroke="#999" stroke-width="0.8"/>
 
   <!-- Right wing (SCHOOL sign) -->
-  <rect x="172" y="54" width="80" height="52" fill="#F5C842" stroke="#C0392B" stroke-width="1.5"/>
-  <rect x="172" y="50" width="80" height="6" fill="#C0392B"/>
+  <rect x="172" y="54" width="80" height="52" fill="#C2185B" stroke="#1565C0" stroke-width="1.5"/>
+  <rect x="172" y="50" width="80" height="6" fill="#1565C0"/>
   <!-- SCHOOL sign -->
-  <rect x="178" y="56" width="68" height="18" fill="#C0392B" rx="1"/>
+  <rect x="178" y="56" width="68" height="18" fill="#1565C0" rx="1"/>
   <text x="212" y="63" text-anchor="middle" font-size="5.5" fill="white" font-family="Arial" font-weight="bold">โรงเรียน</text>
   <text x="212" y="71" text-anchor="middle" font-size="5.5" fill="white" font-family="Arial" font-weight="bold">รัตนโกสินทร์ ๙</text>
   <!-- Right wing windows -->
@@ -294,7 +294,7 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px;font-wei
   <line x1="228" y1="90" x2="228" y2="106" stroke="#90CAF9" stroke-width="0.7"/>
 
   <!-- Ground floor base line -->
-  <rect x="30" y="104" width="222" height="2" fill="#C0392B" opacity=".5"/>
+  <rect x="30" y="104" width="222" height="2" fill="#1565C0" opacity=".5"/>
 
   <!-- Trees (round cute style) -->
   <g transform="translate(18,90)"><rect x="-3" y="10" width="6" height="14" fill="#8B6914"/><circle cx="0" cy="6" r="11" fill="#4CAF50" stroke="#388E3C" stroke-width="1"/><circle cx="-4" cy="9" r="7" fill="#66BB6A"/><circle cx="4" cy="8" r="7" fill="#66BB6A"/></g>
@@ -538,8 +538,7 @@ function startPoll(){if(pollTimer)clearInterval(pollTimer);pollTimer=setInterval
 function stopPoll(){if(pollTimer){clearInterval(pollTimer);pollTimer=null;}}
 
 function render(){
-  // Save scroll position and active input before re-render
-  const scrollY = window.scrollY||window.pageYOffset||0;
+  // Save all active input state before re-render
   const active = document.activeElement;
   const prevId = active?.id||'';
   const prevVal = active?.value||'';
@@ -563,8 +562,6 @@ function render(){
   else if(S.view==='plogin')el.innerHTML=vPLogin();
   else if(S.view==='pview')el.innerHTML=vPView();
   root.appendChild(el);
-  // Restore scroll position
-  window.scrollTo(0, scrollY);
   // Restore focus to any input/textarea that was active before render
   if(prevId && (prevTag==='INPUT'||prevTag==='TEXTAREA')){
     const inp = document.getElementById(prevId);
@@ -1660,48 +1657,41 @@ function seedAllScores(){
 }
 loadDB();
 
-// Lightbox state
-let _lbScale=1,_lbDist=0,_lbLastTap=0,_lbInit=false;
-function _initLightbox(){
-  if(_lbInit)return;
-  _lbInit=true;
+function openLightbox(src){
+  const lb=document.getElementById('lightbox');
   const img=document.getElementById('lightbox-img');
+  img.src=src;
+  img.style.transform='scale(1)';
+  lb.classList.add('show');
+  document.body.style.overflow='hidden';
+  // Pinch-zoom support
+  let startDist=0,curScale=1;
   img.addEventListener('touchstart',e=>{
     if(e.touches.length===2){
-      _lbDist=Math.hypot(e.touches[1].clientX-e.touches[0].clientX,e.touches[1].clientY-e.touches[0].clientY);
+      startDist=Math.hypot(e.touches[1].clientX-e.touches[0].clientX,e.touches[1].clientY-e.touches[0].clientY);
     }
   },{passive:true});
   img.addEventListener('touchmove',e=>{
     if(e.touches.length===2){
       e.preventDefault();
-      const d=Math.hypot(e.touches[1].clientX-e.touches[0].clientX,e.touches[1].clientY-e.touches[0].clientY);
-      _lbScale=Math.min(Math.max(_lbScale*(d/_lbDist),1),5);
-      img.style.transform=`scale(${_lbScale})`;
-      _lbDist=d;
+      const dist=Math.hypot(e.touches[1].clientX-e.touches[0].clientX,e.touches[1].clientY-e.touches[0].clientY);
+      curScale=Math.min(Math.max(curScale*(dist/startDist),.5),5);
+      img.style.transform=`scale(${curScale})`;
+      startDist=dist;
     }
   },{passive:false});
+  // Double tap to reset
+  let lastTap=0;
   img.addEventListener('touchend',()=>{
     const now=Date.now();
-    if(now-_lbLastTap<300){_lbScale=_lbScale>1?1:2;img.style.transform=`scale(${_lbScale})`;}
-    _lbLastTap=now;
+    if(now-lastTap<300){curScale=curScale>1?1:2;img.style.transform=`scale(${curScale})`;}
+    lastTap=now;
   });
-}
-function openLightbox(src){
-  const lb=document.getElementById('lightbox');
-  const img=document.getElementById('lightbox-img');
-  _lbScale=1;
-  img.src=src;
-  img.style.transform='scale(1)';
-  lb.classList.add('show');
-  document.body.style.overflow='hidden';
-  _initLightbox();
 }
 function closeLightbox(e){
   if(e&&e.target===document.getElementById('lightbox-img'))return;
   document.getElementById('lightbox').classList.remove('show');
   document.body.style.overflow='';
-  _lbScale=1;
-  document.getElementById('lightbox-img').style.transform='scale(1)';
 }
 </script>
 <script>
