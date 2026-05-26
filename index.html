@@ -552,7 +552,6 @@ function render(){
   else if(S.view==='mlogin')el.innerHTML=vMLogin();
   else if(S.view==='mlist')el.innerHTML=vMList();
   else if(S.view==='mstudent')el.innerHTML=vMStudent();
-  else if(S.view==='maddlog')el.innerHTML=vMAddLog();
   else if(S.view==='plogin')el.innerHTML=vPLogin();
   else if(S.view==='pview')el.innerHTML=vPView();
   root.appendChild(el);
@@ -584,21 +583,25 @@ function vMenu(){
         <div style="font-size:clamp(18px,5vw,26px);font-weight:700;font-family:'Prompt',sans-serif;color:white;margin-bottom:.4rem">ระบบคะแนนพฤติกรรมและการส่งงาน<br>ของนักเรียน ป.6/1</div>
         <div style="font-size:15px;color:rgba(255,255,255,.9)">เข้าสู่ระบบในฐานะใคร?</div>
       </div>
-      <div class="mgrid" style="width:100%;max-width:900px">
-        <div class="mcard mcard-t" onclick="go('tlogin')" style="cursor:pointer">
-          <div class="la la-t"><i class="ti ti-chalkboard" style="font-size:36px"></i></div>
-          <div style="font-weight:700;margin-bottom:.5rem;font-size:clamp(16px,4vw,22px);font-family:Prompt,sans-serif">ครู</div>
-          <div style="font-size:12px;color:${tSaved?'var(--green)':'var(--muted)'}">${tSaved?'✓ บันทึกไว้แล้ว':'จัดการคะแนนและส่งงาน'}</div>
+      <div style="width:100%;max-width:900px;display:flex;flex-direction:column;gap:1rem">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+          <div class="mcard mcard-t" onclick="go('tlogin')" style="cursor:pointer">
+            <div class="la la-t"><i class="ti ti-chalkboard" style="font-size:36px"></i></div>
+            <div style="font-weight:700;margin-bottom:.5rem;font-size:clamp(16px,4vw,22px);font-family:Prompt,sans-serif">ครู</div>
+            <div style="font-size:12px;color:${tSaved?'var(--green)':'var(--muted)'}">${tSaved?'✓ บันทึกไว้แล้ว':'จัดการคะแนนและส่งงาน'}</div>
+          </div>
+          <div class="mcard mcard-p" onclick="go('plogin')" style="cursor:pointer">
+            <div class="la la-p"><i class="ti ti-users" style="font-size:36px"></i></div>
+            <div style="font-weight:700;margin-bottom:.5rem;font-size:clamp(14px,3.5vw,22px);font-family:Prompt,sans-serif">นักเรียน/ผู้ปกครอง</div>
+            <div style="font-size:12px;color:${pSaved?'var(--green)':'var(--muted)'}">${pSaved?'✓ บันทึกไว้แล้ว':'ID + รหัสผ่านเข้าระบบ'}</div>
+          </div>
         </div>
-        <div class="mcard mcard-m" onclick="go('mlogin')" style="cursor:pointer">
-          <div class="la la-m"><i class="ti ti-clipboard-list" style="font-size:36px"></i></div>
-          <div style="font-weight:700;margin-bottom:.5rem;font-size:clamp(16px,4vw,22px);font-family:Prompt,sans-serif">ฝ่ายการเรียน</div>
-          <div style="font-size:12px;color:var(--muted)">เช็คงานและจัดการคะแนน</div>
-        </div>
-        <div class="mcard mcard-p" onclick="go('plogin')" style="cursor:pointer">
-          <div class="la la-p"><i class="ti ti-users" style="font-size:36px"></i></div>
-          <div style="font-weight:700;margin-bottom:.5rem;font-size:clamp(14px,3.5vw,22px);font-family:Prompt,sans-serif">นักเรียน/ผู้ปกครอง</div>
-          <div style="font-size:12px;color:${pSaved?'var(--green)':'var(--muted)'}">${pSaved?'✓ บันทึกไว้แล้ว':'ID + รหัสผ่านเข้าระบบ'}</div>
+        <div class="mcard mcard-m" onclick="go('mlogin')" style="cursor:pointer;padding:1.1rem 2rem;display:flex;align-items:center;justify-content:center;gap:1rem;border-radius:16px">
+          <div class="la la-m" style="width:44px;height:44px;flex-shrink:0"><i class="ti ti-clipboard-list" style="font-size:22px"></i></div>
+          <div style="text-align:left">
+            <div style="font-weight:700;font-size:clamp(14px,3.5vw,18px);font-family:Prompt,sans-serif">ฝ่ายการเรียน</div>
+            <div style="font-size:12px;color:var(--muted)">เช็คส่งงานรายวิชา</div>
+          </div>
         </div>
       </div>
     </div>
@@ -786,7 +789,6 @@ function vTList(){
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         ${pc>0?`<button class="btn btn-a" style="font-size:13px" onclick="go('tpending')"><i class="ti ti-bell"></i> คำขอ (${pc})</button>`:''}
         <button class="btn" style="font-size:13px" onclick="go('taddstudent')"><i class="ti ti-plus"></i> เพิ่ม</button>
-        <button class="btn" style="font-size:13px" onclick="doSetMonitorPin()"><i class="ti ti-key"></i> PIN ฝ่ายเรียน</button>
         <button class="btn" style="font-size:13px" onclick="doTLogout()"><i class="ti ti-logout"></i> ออก</button>
       </div>
     </div>
@@ -1130,7 +1132,7 @@ function vPView(){
       <div class="sc"><div class="sl">ยังไม่ส่ง</div><div class="sv" style="color:${hw.total-hw.done>0?'var(--red)':'var(--green)'}">${hw.total-hw.done}</div></div>
       <div class="sc"><div class="sl">แลกแล้ว</div><div class="sv" style="color:var(--blue)">${rl.length}</div></div>
     </div>
-    <div class="tabs">${TABS.map(tb=>`<button class="tab ${S.tab===tb.k?'on':''}" onclick="setTab('${tb.k}')"><i class="ti ${tb.i}"></i> ${tb.l}${tb.dot?'<span class=\"ndot\"></span>':''}</button>`).join('')}</div>
+    <div class="tabs">${TABS.map(tb=>`<button class="tab ${S.tab===tb.k?'on':''}" onclick="setTab('${tb.k}')"><i class="ti ${tb.i}"></i> ${tb.l}${tb.dot?'<span class="ndot"></span>':''}</button>`).join('')}</div>
     ${content}`;}
 
 function go(v){
