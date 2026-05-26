@@ -169,6 +169,13 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px;font-wei
 
 
 
+
+/* Lightbox */
+#lightbox{display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.92);align-items:center;justify-content:center;flex-direction:column}
+#lightbox.show{display:flex}
+#lightbox-img{max-width:100%;max-height:90vh;object-fit:contain;border-radius:8px;touch-action:pinch-zoom;cursor:zoom-in;transition:transform .2s}
+#lightbox-close{position:fixed;top:16px;right:16px;background:rgba(255,255,255,.15);border:none;border-radius:50%;width:40px;height:40px;color:white;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10000}
+#lightbox-hint{color:rgba(255,255,255,.5);font-size:12px;margin-top:10px}
 </style>
 </head>
 <body>
@@ -825,7 +832,7 @@ function vTStudent(){
     const exPhoto=DB.exampleHwPhoto||null;
     const exPhotoHtml=exPhoto?`<div style="margin-bottom:1rem;border-radius:var(--rs);overflow:hidden;border:2px solid var(--green-bd);position:relative">
       <div style="background:var(--green-bg);padding:6px 10px;font-size:12px;color:var(--green);font-weight:600"><i class="ti ti-photo-check"></i> ตัวอย่างงานครบ (แสดงให้ผู้ปกครองทุกคนเห็น)</div>
-      <img src="${exPhoto}" style="width:100%;max-height:200px;object-fit:cover;display:block">
+      <img src="${exPhoto}" style="width:100%;max-height:200px;object-fit:cover;display:block;cursor:zoom-in" onclick="openLightbox('${exPhoto}')">
       <button onclick="doDeleteExamplePhoto()" style="position:absolute;top:30px;right:6px;background:rgba(0,0,0,.6);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center"><i class="ti ti-x"></i></button>
     </div>`:`<div style="margin-bottom:1rem;background:var(--bg);border:2px dashed var(--border);border-radius:var(--rs);padding:1rem;text-align:center;color:var(--muted);font-size:13px"><i class="ti ti-photo-off" style="font-size:24px;display:block;margin-bottom:.5rem"></i>ยังไม่มีรูปตัวอย่างงานครบ</div>`;
     content=`
@@ -1031,7 +1038,7 @@ function vPView(){
     const exPhotoP=DB.exampleHwPhoto||null;
     const exPhotoHtmlP=exPhotoP?`<div style="margin-bottom:1rem;border-radius:var(--rs);overflow:hidden;border:2px solid var(--green-bd)">
       <div style="background:var(--green-bg);padding:6px 10px;font-size:12px;color:var(--green);font-weight:600"><i class="ti ti-photo-check"></i> ตัวอย่างงานครบทุกวิชา (จากครู)</div>
-      <img src="${exPhotoP}" style="width:100%;max-height:220px;object-fit:cover;display:block">
+      <img src="${exPhotoP}" style="width:100%;max-height:220px;object-fit:cover;display:block;cursor:zoom-in" onclick="openLightbox('${exPhotoP}')">
       <div style="padding:8px 10px;font-size:12px;color:var(--muted);background:var(--bg)">เปรียบเทียบงานของบุตรหลานกับรูปตัวอย่างนี้ได้เลยครับ/ค่ะ</div>
     </div>`:'';
     content=`${exPhotoHtmlP}<div class="hw-grid">${SUBJECTS.map(subj=>{const it=(s.hw||{})[subj]||{done:false,date:today()};return`<div class="hwc ${it.done?'hwd':'hwm'}" style="cursor:default"><div style="display:flex;justify-content:space-between"><div class="hn">${subj}</div><i class="ti ${it.done?'ti-circle-check':'ti-circle-x'}" style="font-size:16px"></i></div><div class="hs">${it.done?'ส่งแล้ว':'ยังไม่ส่ง'}</div><div class="hdate">เช็ค: ${it.date}</div></div>`;}).join('')}</div>`;
@@ -1649,6 +1656,43 @@ function seedAllScores(){
   seedLogs('เด็กหญิงกุลจิรา ระวิวรรณ', [{desc:'ช่วยเหลือครู',score:1,date:'1 พ.ค. 2569'},{desc:'เล่นเกมชนะ',score:1,date:'1 พ.ค. 2569'},{desc:'ตอบคำถามได้',score:1,date:'1 พ.ค. 2569'}]);
 }
 loadDB();
+
+function openLightbox(src){
+  const lb=document.getElementById('lightbox');
+  const img=document.getElementById('lightbox-img');
+  img.src=src;
+  img.style.transform='scale(1)';
+  lb.classList.add('show');
+  document.body.style.overflow='hidden';
+  // Pinch-zoom support
+  let startDist=0,curScale=1;
+  img.addEventListener('touchstart',e=>{
+    if(e.touches.length===2){
+      startDist=Math.hypot(e.touches[1].clientX-e.touches[0].clientX,e.touches[1].clientY-e.touches[0].clientY);
+    }
+  },{passive:true});
+  img.addEventListener('touchmove',e=>{
+    if(e.touches.length===2){
+      e.preventDefault();
+      const dist=Math.hypot(e.touches[1].clientX-e.touches[0].clientX,e.touches[1].clientY-e.touches[0].clientY);
+      curScale=Math.min(Math.max(curScale*(dist/startDist),.5),5);
+      img.style.transform=`scale(${curScale})`;
+      startDist=dist;
+    }
+  },{passive:false});
+  // Double tap to reset
+  let lastTap=0;
+  img.addEventListener('touchend',()=>{
+    const now=Date.now();
+    if(now-lastTap<300){curScale=curScale>1?1:2;img.style.transform=`scale(${curScale})`;}
+    lastTap=now;
+  });
+}
+function closeLightbox(e){
+  if(e&&e.target===document.getElementById('lightbox-img'))return;
+  document.getElementById('lightbox').classList.remove('show');
+  document.body.style.overflow='';
+}
 </script>
 <script>
 if('serviceWorker' in navigator){
