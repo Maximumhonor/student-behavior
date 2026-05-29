@@ -931,7 +931,7 @@ function vTStudent(){
           <div style="font-size:15px;font-weight:700;font-family:'Prompt',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name}</div>
           <span class="id-chip" style="margin-top:3px;display:inline-block"><i class="ti ti-id-badge" style="font-size:11px;vertical-align:-1px"></i> ${fmtId(s.idcard)}</span>
         </div>
-        <div style="flex-shrink:0;cursor:pointer;opacity:.8;align-self:center" onclick="setTab('radar')" title="ดูสเตตัส">${buildRadarSVG(s.radar||{},true)}</div>
+
       </div>
     </div>
     <div class="stats">
@@ -1111,7 +1111,7 @@ function vPView(){
           <div style="font-size:15px;font-weight:700;font-family:'Prompt',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name}</div>
           <span class="id-chip" style="margin-top:3px;display:inline-block"><i class="ti ti-id-badge" style="font-size:11px;vertical-align:-1px"></i> ${fmtId(s.idcard)}</span>
         </div>
-        <div style="flex-shrink:0;cursor:pointer;opacity:.8;align-self:center" onclick="setTab('radar')" title="ดูสเตตัส">${buildRadarSVG(s.radar||{},true)}</div>
+
       </div>
     </div>
     <div class="stats">
@@ -1405,7 +1405,7 @@ function doPLogout(){stopPoll();S.sid=null;S.role=null;S.view='menu';render();}
 
 // ===== Radar Chart =====
 function buildRadarSVG(radar, readonly=false){
-  const size=readonly?80:160; const cx=size/2; const cy=size/2; const maxR=size*0.385; const n=SUBJECTS.length;
+  const size=readonly?80:200; const cx=size/2; const cy=size/2; const maxR=size*0.35; const n=SUBJECTS.length;
   const max=5;
   function pt(i,val){
     const angle=(Math.PI*2/n)*i - Math.PI/2;
@@ -1429,11 +1429,11 @@ function buildRadarSVG(radar, readonly=false){
   const dataPts=vals.map((v,i)=>pt(i,v));
   const dataPath=dataPts.map(p=>p.x+','+p.y).join(' ');
   // Labels
-  let labels=SUBJECTS.map((s,i)=>{
-    const o=ptOuter(i,maxR+10);
-    const anchor=o.x<cx-2?'end':o.x>cx+2?'start':'middle';
-    const shortName=s.replace('ภาษาอังกฤษ','อังกฤษ').replace('เศรษฐศาสตร์การเงิน','เศรษฐศาสตร์').replace('ประวัติศาสตร์','ประวัติ').replace('คอมพิวเตอร์','คอมฯ').replace('วิทยาศาสตร์','วิทย์').replace('สุขศึกษาและพลศึกษา','สุข&พล').replace('นาฏศิลป์','นาฏศิลป์');
-    return`<text x="${o.x}" y="${o.y+3}" text-anchor="${anchor}" font-size="7" fill="#374151" font-family="Sarabun,sans-serif">${shortName}</text>`;
+  let labels=readonly?'':SUBJECTS.map((s,i)=>{
+    const o=ptOuter(i,maxR+20);
+    const anchor=o.x<cx-5?'end':o.x>cx+5?'start':'middle';
+    const shortName=s.replace('ภาษาอังกฤษ','อังกฤษ').replace('เศรษฐศาสตร์การเงิน','เศรษฐศาสตร์').replace('ประวัติศาสตร์','ประวัติ').replace('คอมพิวเตอร์','คอมฯ').replace('วิทยาศาสตร์','วิทย์').replace('สุขศึกษาและพลศึกษา','สุข').replace('นาฏศิลป์','นาฏศิลป์');
+    return`<text x="${o.x}" y="${o.y+4}" text-anchor="${anchor}" font-size="8.5" fill="#374151" font-family="Sarabun,sans-serif">${shortName}</text>`;
   }).join('');
   // Score dots
   let dots=dataPts.map((p,i)=>vals[i]>0?`<circle cx="${p.x}" cy="${p.y}" r="3" fill="#1A6BC4" stroke="white" stroke-width="1"/>`:'').join('');
