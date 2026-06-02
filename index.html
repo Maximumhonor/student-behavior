@@ -115,6 +115,7 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px;font-wei
 .merr{background:var(--red-bg);color:var(--red);border-radius:var(--rs);padding:11px 14px;font-size:14px;margin-bottom:1rem;border:1px solid var(--red-bd)}
 .mok{background:var(--green-bg);color:var(--green);border-radius:var(--rs);padding:11px 14px;font-size:14px;margin-bottom:1rem;border:1px solid var(--green-bd)}
 .ndot{width:8px;height:8px;background:#E24B4A;border-radius:50%;display:inline-block;margin-left:4px;vertical-align:middle;animation:pulse 2s infinite}
+@keyframes starSpin{from{transform:translateX(-50%) rotate(0deg)}to{transform:translateX(-50%) rotate(360deg)}}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.85)}}
 .lwrap{max-width:340px;margin:2rem auto}
 .ltitle{font-size:21px;font-weight:700;text-align:center;margin-bottom:1.5rem;font-family:'Prompt',sans-serif;color:var(--text)}
@@ -413,6 +414,13 @@ function isGirl(name){return name&&name.includes('เด็กหญิง');}
 function shortName(name){return (name||'').replace('เด็กชาย','').replace('เด็กหญิง','').trim();}
 function fmtId(id){if(!id)return'-';const s=String(id);return s.length===13?s.replace(/(\d{1})(\d{4})(\d{5})(\d{2})(\d{1})/,'$1-$2-$3-$4-$5'):s;}
 function hwSum(hw){if(!hw)return{done:0,total:0};const vals=Object.values(hw);return{done:vals.filter(v=>v&&v.done).length,total:vals.length};}
+function taskPct(s){const total=s.taskTotal||0;const done=s.taskDone||0;if(total===0)return 0;return Math.round(done/total*100);}
+function taskColor(s){const p=taskPct(s);if(p===100)return'#2E7D32';if(p>=71)return'#1565C0';if(p>=41)return'#F57F17';if(p>=11)return'#E65100';return'#B71C1C';}
+function taskColorBg(s){const p=taskPct(s);if(p===100)return'#E8F5E9';if(p>=71)return'#E3F2FD';if(p>=41)return'#FFFDE7';if(p>=11)return'#FFF3E0';return'#FFEBEE';}
+function taskEmoji(s){const p=taskPct(s);if(p===100)return'⭐';if(p>=71)return'👍';if(p>=41)return'💪';if(p>=11)return'⚡';return'😬';}
+function hwPct(hw){const s=hwSum(hw);return s.total===0?0:Math.round(s.done/s.total*100);}
+function hwColor(hw){const p=hwPct(hw);if(p===100)return'#2E7D32';if(p>=71)return'#1565C0';if(p>=41)return'#F57F17';if(p>=11)return'#E65100';return'#B71C1C';}
+function hwColorBg(hw){const p=hwPct(hw);if(p===100)return'#E8F5E9';if(p>=71)return'#E3F2FD';if(p>=41)return'#FFFDE7';if(p>=11)return'#FFF3E0';return'#FFEBEE';}
 function pendSid(sid){return Object.values(DB.requests||{}).filter(r=>r.studentId===sid&&r.status==='pending');}
 function accentOf(s){return isGirl(s.name)?'var(--pink)':'var(--blue)';}
 function avHtml(s,size,fontSize){
@@ -715,15 +723,24 @@ function vTList(){
     const shortN=shortName(s.name);
     const firstName=shortN.split(' ')[0];
     const scoreCol=t>0?'var(--green)':t<0?'var(--red)':'var(--muted)';
+    const hc=taskColor(s);const hbg=taskColorBg(s);const hp=taskPct(s);const isComplete=hp===100;
     const avatarContent=s.photo
       ?`<img src="${s.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
       :drawAnimalSVG(animal,g,76);
-    return`<div onclick="selStu('${sid}')" style="display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;padding:1rem .5rem .85rem;border-radius:18px;background:var(--surface);border:1px solid var(--border-soft);box-shadow:var(--shadow-sm);transition:all .2s;position:relative" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 6px 20px rgba(26,107,196,.15)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+    return`<div onclick="selStu('${sid}')" style="display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;padding:1rem .5rem .85rem;border-radius:18px;background:${hbg};border:2px solid ${hc};box-shadow:var(--shadow-sm);transition:all .2s;position:relative" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
       ${pend>0||unread>0?`<div style="position:absolute;top:6px;right:6px;width:10px;height:10px;background:#E24B4A;border-radius:50%;border:2px solid white"></div>`:''}
       <div style="position:absolute;top:6px;left:8px;font-size:10px;font-weight:700;color:var(--muted);line-height:1">${s.no||''}</div>
-      <div style="width:76px;height:76px;border-radius:50%;overflow:hidden;border:3px solid ${g?'#F4BFDA':'#B5D1F5'};box-shadow:0 2px 8px rgba(0,0,0,.1)">${avatarContent}</div>
-      <div style="font-size:12px;font-weight:600;color:var(--text);text-align:center;line-height:1.3;width:100%;padding:0 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${firstName}</div>
+      <div style="width:76px;height:76px;border-radius:50%;overflow:hidden;border:3px solid ${isComplete?'#FFD700':g?'#F4BFDA':'#B5D1F5'};box-shadow:${isComplete?'0 0 12px rgba(255,215,0,.7)':'0 2px 8px rgba(0,0,0,.1)'}">
+        ${isComplete?`<div style="position:absolute;top:-2px;left:50%;transform:translateX(-50%);font-size:13px;animation:starSpin 1.5s linear infinite">⭐</div>`:''}
+        ${avatarContent}
+      </div>
+      <div style="font-size:12px;font-weight:700;color:${hc};text-align:center;line-height:1.3;width:100%;padding:0 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+        ${isComplete?'🏆 ':taskEmoji(s)+' '}${firstName}
+      </div>
       <div style="font-size:20px;font-weight:900;color:${scoreCol};text-shadow:0 1px 4px rgba(0,0,0,.15);letter-spacing:.5px">${t>=0?'+':''}${t}</div>
+      <div style="font-size:10px;font-weight:700;color:${isComplete?'#2E7D32':hc};background:${hbg};border:1px solid ${hc};border-radius:999px;padding:2px 8px">
+        ${isComplete?'งานครบ ✓':`ส่ง ${s.taskDone||0}/${s.taskTotal||0}`}
+      </div>
     </div>`;
   }).join('');
 
@@ -935,9 +952,10 @@ function vTStudent(){
       </div>
     </div>
     <div class="stats">
-      <div class="sc"><div class="sl">คะแนนรวม</div><div class="sv" style="color:${t>=0?'var(--green)':'var(--red)'}">${t>=0?'+':''}${t}</div></div>
-      <div class="sc" style="cursor:pointer" onclick="doEditHwCount('done')"><div class="sl">ส่งงาน</div><div class="sv" style="color:var(--green)">${hw.done}</div></div>
-      <div class="sc" style="cursor:pointer" onclick="doEditHwCount('notdone')"><div class="sl">ยังไม่ส่ง</div><div class="sv" style="color:${hw.total-hw.done>0?'var(--red)':'var(--green)'}">${hw.total-hw.done}</div></div>
+      <div class="sc"><div class="sl">คะแนนพฤติกรรม</div><div class="sv" style="color:${t>=0?'var(--green)':'var(--red)'}">${t>=0?'+':''}${t}</div></div>
+      <div class="sc" style="cursor:pointer" onclick="doEditTaskTotal()"><div class="sl">งานทั้งหมด 📝</div><div class="sv" style="color:var(--muted)">${s.taskTotal||0}</div></div>
+      <div class="sc" style="cursor:pointer" onclick="doEditTaskDone()"><div class="sl">ส่งแล้ว ✅</div><div class="sv" style="color:${taskColor(s)}">${s.taskDone||0}</div></div>
+      <div class="sc"><div class="sl">ยังไม่ส่ง ❌</div><div class="sv" style="color:${(s.taskTotal||0)-(s.taskDone||0)>0?'var(--red)':'var(--green)'}">${(s.taskTotal||0)-(s.taskDone||0)}</div></div>
       <div class="sc"><div class="sl">แลกแล้ว</div><div class="sv" style="color:var(--blue)">${rl.length}</div></div>
     </div>
     <div class="tabs">${TABS.map(tb=>`<button class="tab ${S.tab===tb.k?'on':''}" onclick="setTab('${tb.k}')"><i class="ti ${tb.i}"></i> ${tb.l}${tb.dot?'<span class="ndot"></span>':''}</button>`).join('')}</div>
@@ -1115,9 +1133,10 @@ function vPView(){
       </div>
     </div>
     <div class="stats">
-      <div class="sc"><div class="sl">คะแนนรวม</div><div class="sv" style="color:${t>=0?'var(--green)':'var(--red)'}">${t>=0?'+':''}${t}</div></div>
-      <div class="sc" style="cursor:pointer" onclick="doEditHwCount('done')"><div class="sl">ส่งงาน</div><div class="sv" style="color:var(--green)">${hw.done}</div></div>
-      <div class="sc" style="cursor:pointer" onclick="doEditHwCount('notdone')"><div class="sl">ยังไม่ส่ง</div><div class="sv" style="color:${hw.total-hw.done>0?'var(--red)':'var(--green)'}">${hw.total-hw.done}</div></div>
+      <div class="sc"><div class="sl">คะแนนพฤติกรรม</div><div class="sv" style="color:${t>=0?'var(--green)':'var(--red)'}">${t>=0?'+':''}${t}</div></div>
+      <div class="sc"><div class="sl">งานทั้งหมด</div><div class="sv" style="color:var(--muted)">${s.taskTotal||0}</div></div>
+      <div class="sc"><div class="sl">ส่งแล้ว</div><div class="sv" style="color:${taskColor(s)}">${s.taskDone||0}</div></div>
+      <div class="sc"><div class="sl">ยังไม่ส่ง</div><div class="sv" style="color:${(s.taskTotal||0)-(s.taskDone||0)>0?'var(--red)':'var(--green)'}">${(s.taskTotal||0)-(s.taskDone||0)}</div></div>
       <div class="sc"><div class="sl">แลกแล้ว</div><div class="sv" style="color:var(--blue)">${rl.length}</div></div>
     </div>
     <div class="tabs">${TABS.map(tb=>`<button class="tab ${S.tab===tb.k?'on':''}" onclick="setTab('${tb.k}')"><i class="ti ${tb.i}"></i> ${tb.l}${tb.dot?'<span class="ndot"></span>':''}</button>`).join('')}</div>
@@ -1249,12 +1268,12 @@ function vMStudent(){
   return`
     <button class="btn-back" onclick="S.view='mlist';render()"><i class="ti ti-arrow-left"></i> กลับ</button>
     <div style="display:flex;align-items:center;gap:.75rem;padding:.75rem 0 1rem">
-      <div style="width:56px;height:56px;border-radius:50%;overflow:hidden;border:2px solid ${g?'#F4BFDA':'#B5D1F5'};flex-shrink:0">
+      <div style="width:56px;height:56px;border-radius:50%;overflow:hidden;border:2px solid ${taskPct(s)===100?'#FFD700':g?'#F4BFDA':'#B5D1F5'};flex-shrink:0;box-shadow:${taskPct(s)===100?'0 0 10px rgba(255,215,0,.6)':'none'}">
         ${s.photo?`<img src="${s.photo}" style="width:100%;height:100%;object-fit:cover">`:drawAnimalSVG(getStudentAnimal(s),g,56)}
       </div>
       <div>
         <div style="font-size:18px;font-weight:700">${s.name}</div>
-        <div style="font-size:13px;color:var(--muted)">เลขที่ ${s.no||'-'} · ส่งงานแล้ว <span onclick="doEditHwCount('done')" style="cursor:pointer;text-decoration:underline dotted">${doneCount}</span>/${SUBJECTS.length} วิชา</div>
+        <div style="font-size:13px;color:var(--muted)">เลขที่ ${s.no||'-'} · ส่งงานแล้ว ${doneCount}/${SUBJECTS.length} วิชา | งาน: <span onclick="doMEditTaskDone()" style="cursor:pointer;text-decoration:underline dotted;color:${taskColor(s)}">${s.taskDone||0}</span>/${s.taskTotal||0}</div>
       </div>
     </div>
     <button class="btn btn-pk" style="width:100%;justify-content:center;margin-bottom:1rem" onclick="doMMarkAllDone()">
@@ -1280,6 +1299,44 @@ async function doMMarkAllDone(){
   render();}
 
 
+async function doEditTaskTotal(){
+  const s=DB.students[S.sid];if(!s)return;
+  const cur=s.taskTotal||0;
+  const val=prompt('ตั้งจำนวนงานทั้งหมด (ครูเท่านั้น)',cur);
+  if(val===null)return;
+  const n=parseInt(val);
+  if(isNaN(n)||n<0){alert('กรอกตัวเลขที่ถูกต้อง');return;}
+  s.taskTotal=n;
+  if((s.taskDone||0)>n)s.taskDone=n;
+  await api('PATCH',`/students/${S.sid}`,{taskTotal:s.taskTotal,taskDone:s.taskDone||0});
+  render();
+}
+async function doEditTaskDone(){
+  const s=DB.students[S.sid];if(!s)return;
+  const total=s.taskTotal||0;
+  const cur=s.taskDone||0;
+  if(total===0){alert('กรุณาตั้งจำนวนงานทั้งหมดก่อน');return;}
+  const val=prompt(`แก้ไขจำนวนส่งแล้ว (0-${total})`,cur);
+  if(val===null)return;
+  const n=parseInt(val);
+  if(isNaN(n)||n<0||n>total){alert(`กรอกตัวเลข 0-${total}`);return;}
+  s.taskDone=n;
+  await api('PATCH',`/students/${S.sid}`,{taskDone:n});
+  render();
+}
+async function doMEditTaskDone(){
+  const s=DB.students[S.sid];if(!s)return;
+  const total=s.taskTotal||0;
+  const cur=s.taskDone||0;
+  if(total===0){alert('ครูยังไม่ได้ตั้งจำนวนงานทั้งหมด');return;}
+  const val=prompt(`แก้ไขจำนวนส่งแล้ว (0-${total})`,cur);
+  if(val===null)return;
+  const n=parseInt(val);
+  if(isNaN(n)||n<0||n>total){alert(`กรอกตัวเลข 0-${total}`);return;}
+  s.taskDone=n;
+  await api('PATCH',`/students/${S.sid}`,{taskDone:n});
+  render();
+}
 async function doEditHwCount(type){
   const s=DB.students[S.sid];if(!s)return;
   s.hw=s.hw||{};
