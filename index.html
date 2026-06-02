@@ -1082,12 +1082,24 @@ function vPView(){
     content=`<div class="card">${lh}</div>`;
   }else if(S.tab==='hw'){
     const exPhotoP=DB.exampleHwPhoto||null;
-    const exPhotoHtmlP=exPhotoP?`<div style="margin-bottom:1rem;border-radius:var(--rs);overflow:hidden;border:2px solid var(--green-bd)">
-      <div style="background:var(--green-bg);padding:6px 10px;font-size:12px;color:var(--green);font-weight:600"><i class="ti ti-photo-check"></i> ตัวอย่างงานครบทุกวิชา (จากครู)</div>
-      <img src="${exPhotoP}" style="width:100%;height:auto;object-fit:contain;display:block;cursor:pointer;border-radius:4px" onclick="openLightbox('${exPhotoP}')">
-      <div style="padding:8px 10px;font-size:12px;color:var(--muted);background:var(--bg)">เปรียบเทียบงานของบุตรหลานกับรูปตัวอย่างนี้ได้เลยครับ/ค่ะ</div>
-    </div>`:'';
-    content=`${exPhotoHtmlP}<div class="hw-grid">${SUBJECTS.map(subj=>{const it=(s.hw||{})[subj]||{done:false,date:today()};return`<div class="hwc ${it.done?'hwd':'hwm'}" style="cursor:default"><div style="display:flex;justify-content:space-between"><div class="hn">${subj}</div><i class="ti ${it.done?'ti-circle-check':'ti-circle-x'}" style="font-size:16px"></i></div><div class="hs">${it.done?'ส่งแล้ว':'ยังไม่ส่ง'}</div><div class="hdate">เช็ค: ${it.date}</div></div>`;}).join('')}</div>`;
+    const hwPhotoP=s.hwPhoto||null;
+    let photoSection='';
+    if(exPhotoP||hwPhotoP){
+      photoSection=`<div style="margin-bottom:1rem">
+        <div style="display:grid;grid-template-columns:${exPhotoP&&hwPhotoP?'1fr 1fr':'1fr'};gap:10px">
+          ${exPhotoP?`<div style="border-radius:14px;overflow:hidden;border:2px solid var(--green-bd)">
+            <div style="font-size:11px;font-weight:700;color:var(--green);padding:6px 10px;background:var(--green-bg);display:flex;align-items:center;gap:4px"><i class="ti ti-star"></i> ตัวอย่างงานครบ (ครู)</div>
+            <img src="${exPhotoP}" style="width:100%;height:auto;object-fit:contain;display:block;cursor:pointer" onclick="openLightbox('${exPhotoP}')">
+          </div>`:''}
+          ${hwPhotoP?`<div style="border-radius:14px;overflow:hidden;border:2px solid var(--blue-bd)">
+            <div style="font-size:11px;font-weight:700;color:var(--blue);padding:6px 10px;background:var(--blue-bg);display:flex;align-items:center;gap:4px"><i class="ti ti-notebook"></i> ใบงานของ${s.name.replace('เด็กชาย','').replace('เด็กหญิง','').trim()}</div>
+            <img src="${hwPhotoP}" style="width:100%;height:auto;object-fit:contain;display:block;cursor:pointer" onclick="openLightbox('${hwPhotoP}')">
+          </div>`:''}
+        </div>
+        ${exPhotoP&&hwPhotoP?`<div style="text-align:center;font-size:12px;color:var(--muted);margin-top:6px">กดรูปเพื่อดูขยาย • เปรียบเทียบใบงานได้เลยครับ/ค่ะ</div>`:''}
+      </div>`;
+    }
+    content=`${photoSection}<div class="hw-grid">${SUBJECTS.map(subj=>{const it=(s.hw||{})[subj]||{done:false,date:today()};return`<div class="hwc ${it.done?'hwd':'hwm'}" style="cursor:default"><div style="display:flex;justify-content:space-between"><div class="hn">${subj}</div><i class="ti ${it.done?'ti-circle-check':'ti-circle-x'}" style="font-size:16px"></i></div><div class="hs">${it.done?'ส่งแล้ว':'ยังไม่ส่ง'}</div><div class="hdate">เช็ค: ${it.date}</div></div>`;}).join('')}</div>`;
   }else if(S.tab==='redeem'){
     const REWARDS=getRewards();
     const rh=REWARDS.map(r=>{const can=t>=r.cost;return`<div class="ritem"><div><div style="font-size:14px;font-weight:500">${r.name}</div><div style="font-size:12px;color:var(--muted);margin-top:2px"><i class="ti ti-star"></i> ${r.cost} คะแนน</div></div><button class="btn btn-b" style="font-size:13px;padding:7px 14px" onclick="doRedeemP('${r.name}',${r.cost})" ${!can?'disabled':''}>แลก</button></div>`;}).join('');
@@ -1325,20 +1337,44 @@ function vMStudent(){
 
   const doneCount=SUBJECTS.filter(subj=>hw[subj]?.done).length;
 
+  const hwPhotoHtml=s.hwPhoto?`
+    <div style="margin-bottom:1rem;border-radius:14px;overflow:hidden;border:2px solid var(--blue-bd);position:relative">
+      <div style="font-size:12px;font-weight:600;color:var(--blue);padding:6px 10px;background:var(--blue-bg);display:flex;justify-content:space-between;align-items:center">
+        <span><i class="ti ti-photo"></i> ใบจดงานของนักเรียน</span>
+        <button onclick="doMRemoveHwPhoto()" style="background:none;border:none;color:var(--red);font-size:12px;cursor:pointer;font-family:Sarabun,sans-serif">ลบรูป</button>
+      </div>
+      <img src="${s.hwPhoto}" style="width:100%;height:auto;object-fit:contain;display:block;cursor:pointer" onclick="openLightbox('${s.hwPhoto}')">
+    </div>`:'';
+
+  const mTaskPct=taskPct(s);
+  const mColor=taskColor(s);
   return`
     <button class="btn-back" onclick="S.view='mlist';render()"><i class="ti ti-arrow-left"></i> กลับ</button>
-    <div style="display:flex;align-items:center;gap:.75rem;padding:.75rem 0 1rem">
-      <div style="width:56px;height:56px;border-radius:50%;overflow:hidden;border:2px solid ${taskPct(s)===100?'#FFD700':g?'#F4BFDA':'#B5D1F5'};flex-shrink:0;box-shadow:${taskPct(s)===100?'0 0 10px rgba(255,215,0,.6)':'none'}">
+    <div style="display:flex;align-items:center;gap:.75rem;padding:.75rem 0 .75rem">
+      <div style="width:56px;height:56px;border-radius:50%;overflow:hidden;border:2px solid ${mTaskPct===100?'#FFD700':g?'#F4BFDA':'#B5D1F5'};flex-shrink:0;box-shadow:${mTaskPct===100?'0 0 10px rgba(255,215,0,.6)':'none'}">
         ${s.photo?`<img src="${s.photo}" style="width:100%;height:100%;object-fit:cover">`:drawAnimalSVG(getStudentAnimal(s),g,56)}
       </div>
-      <div>
-        <div style="font-size:18px;font-weight:700">${s.name}</div>
-        <div style="font-size:13px;color:var(--muted)">เลขที่ ${s.no||'-'} · ส่งงานแล้ว ${doneCount}/${SUBJECTS.length} วิชา | งาน: <span onclick="doMEditTaskDone()" style="cursor:pointer;text-decoration:underline dotted;color:${taskColor(s)}">${s.taskDone||0}</span>/${s.taskTotal||0}</div>
+      <div style="flex:1">
+        <div style="font-size:17px;font-weight:700">${s.name}</div>
+        <div style="font-size:12px;color:var(--muted)">เลขที่ ${s.no||'-'} · ส่งวิชาแล้ว ${doneCount}/${SUBJECTS.length} วิชา</div>
       </div>
     </div>
-    <button class="btn btn-pk" style="width:100%;justify-content:center;margin-bottom:1rem" onclick="doMMarkAllDone()">
-      <i class="ti ti-checks"></i> ส่งงานครบทุกวิชา
-    </button>
+    <div class="stats" style="grid-template-columns:repeat(4,1fr);margin-bottom:1rem">
+      <div class="sc"><div class="sl">คะแนน</div><div class="sv" style="color:${tot(s)>=0?'var(--green)':'var(--red)'}">${tot(s)>=0?'+':''}${tot(s)}</div></div>
+      <div class="sc"><div class="sl">งานทั้งหมด</div><div class="sv" style="color:var(--muted)">${s.taskTotal||0}</div></div>
+      <div class="sc" style="cursor:pointer" onclick="doMEditTaskDone()"><div class="sl">ส่งแล้ว ✅</div><div class="sv" style="color:${mColor}">${s.taskDone||0}</div></div>
+      <div class="sc"><div class="sl">ยังไม่ส่ง ❌</div><div class="sv" style="color:${(s.taskTotal||0)-(s.taskDone||0)>0?'var(--red)':'var(--green)'}">${(s.taskTotal||0)-(s.taskDone||0)}</div></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
+      <button class="btn btn-pk" style="flex:1;justify-content:center" onclick="doMMarkAllDone()">
+        <i class="ti ti-checks"></i> ส่งครบทุกวิชา
+      </button>
+      <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:12px;background:var(--blue-bg);border:1.5px solid var(--blue-bd);color:var(--blue);font-size:14px;font-weight:600;cursor:pointer;font-family:Sarabun,sans-serif">
+        <i class="ti ti-camera-upload"></i> ${s.hwPhoto?'เปลี่ยนรูปใบงาน':'อัพโหลดใบงาน'}
+        <input type="file" accept="image/*" style="display:none" onchange="doMUploadHwPhoto(this)">
+      </label>
+    </div>
+    ${hwPhotoHtml}
     <div style="font-size:13px;color:var(--muted);margin-bottom:.75rem">แตะที่วิชาเพื่อสลับสถานะ</div>
     <div class="hw-grid">${hwCards}</div>`;}
 
@@ -1358,6 +1394,37 @@ async function doMMarkAllDone(){
   await api('PATCH',`/students/${S.sid}`,{hw:s.hw});
   render();}
 
+function doMUploadHwPhoto(input){
+  const file=input.files[0];if(!file)return;
+  // Compress image before saving
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=new Image();
+    img.onload=async()=>{
+      const canvas=document.createElement('canvas');
+      const maxW=800;
+      const scale=Math.min(1,maxW/img.width);
+      canvas.width=img.width*scale;
+      canvas.height=img.height*scale;
+      canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+      const compressed=canvas.toDataURL('image/jpeg',0.7);
+      const s=DB.students[S.sid];if(!s)return;
+      s.hwPhoto=compressed;
+      await api('PATCH',`/students/${S.sid}`,{hwPhoto:compressed});
+      render();
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function doMRemoveHwPhoto(){
+  if(!confirm('ลบรูปใบจดงานนี้?'))return;
+  const s=DB.students[S.sid];if(!s)return;
+  s.hwPhoto=null;
+  await api('PATCH',`/students/${S.sid}`,{hwPhoto:null});
+  render();}
+
 
 async function doEditTaskTotal(){
   const s=DB.students[S.sid];if(!s)return;
@@ -1369,14 +1436,14 @@ async function doEditTaskTotal(){
   // ถามว่าจะใช้กับทุกคนไหม
   const applyAll=confirm(`ตั้งงานทั้งหมด ${n} ชิ้น\nต้องการใช้กับนักเรียนทุกคนเลยไหม?`);
   if(applyAll){
-    // อัปเดตทุกคน
-    const updates=Object.keys(DB.students).map(sid=>{
+    // อัปเดตทุกคนทีละคน (ป้องกัน server รับไม่ทัน)
+    const sids=Object.keys(DB.students);
+    for(const sid of sids){
       const st=DB.students[sid];
       st.taskTotal=n;
       if((st.taskDone||0)>n)st.taskDone=n;
-      return api('PATCH',`/students/${sid}`,{taskTotal:n,taskDone:st.taskDone||0});
-    });
-    await Promise.all(updates);
+      await api('PATCH',`/students/${sid}`,{taskTotal:n,taskDone:st.taskDone||0});
+    }
     alert(`ตั้งงานทั้งหมด ${n} ชิ้นให้นักเรียนทุกคนแล้ว ✅`);
   } else {
     s.taskTotal=n;
