@@ -504,50 +504,49 @@ function vLeaderboard(){
   const entries=Object.entries(DB.students);
   if(entries.length===0)return'';
 
-  const medals=['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟'];
+  const medals=['🥇','🥈','🥉','4','5','6','7','8','9','10'];
   const colors=['#FFD700','#C0C0C0','#CD7F32','#6B7280','#6B7280','#6B7280','#6B7280','#6B7280','#6B7280','#6B7280'];
   const bgColors=['#FFFDE7','#F5F5F5','#FBE9E7','#F9FAFB','#F9FAFB','#F9FAFB','#F9FAFB','#F9FAFB','#F9FAFB','#F9FAFB'];
 
-  function makeRow(r,i,valHtml){
+  function makeCard(r,i,valHtml){
     const g=isGirl(r.s.name);
-    const shortN=r.s.name.replace('เด็กชาย','ด.ช.').replace('เด็กหญิง','ด.ญ.');
+    const firstName=r.s.name.replace('เด็กชาย','').replace('เด็กหญิง','').trim().split(' ')[0];
     const av=r.s.photo
       ?`<img src="${r.s.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
-      :drawAnimalSVG(getStudentAnimal(r.s),g,32);
-    return`<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:12px;background:${bgColors[i]};border:1.5px solid ${i<3?colors[i]:'var(--border-soft)'};margin-bottom:6px;${i===0?'box-shadow:0 3px 12px rgba(255,215,0,.3)':''}">
-      <div style="font-size:${i===0?'22px':'16px'};width:26px;text-align:center;flex-shrink:0">${medals[i]}</div>
-      <div style="width:32px;height:32px;border-radius:50%;overflow:hidden;border:2px solid ${i<3?colors[i]:g?'#F4BFDA':'#B5D1F5'};flex-shrink:0">${av}</div>
-      <div style="flex:1;min-width:0;font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${shortN}</div>
-      <div style="font-size:15px;font-weight:900;flex-shrink:0">${valHtml}</div>
+      :drawAnimalSVG(getStudentAnimal(r.s),g,44);
+    const isTop3=i<3;
+    return`<div style="flex-shrink:0;width:80px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px 8px;border-radius:14px;background:${bgColors[i]};border:1.5px solid ${isTop3?colors[i]:'var(--border-soft)'};${i===0?'box-shadow:0 4px 12px rgba(255,215,0,.35)':''}">
+      <div style="font-size:${isTop3?'16px':'12px'};font-weight:700;color:${isTop3?colors[i]:'var(--muted)'}">${isTop3?medals[i]:'#'+medals[i]}</div>
+      <div style="width:44px;height:44px;border-radius:50%;overflow:hidden;border:2px solid ${isTop3?colors[i]:g?'#F4BFDA':'#B5D1F5'}">${av}</div>
+      <div style="font-size:10px;font-weight:700;text-align:center;line-height:1.2;color:var(--text);overflow:hidden;width:100%;text-overflow:ellipsis;white-space:nowrap;padding:0 2px">${firstName}</div>
+      <div style="font-size:13px;font-weight:900">${valHtml}</div>
     </div>`;
   }
 
-  // อันดับคะแนนพฤติกรรม
   const byScore=entries.map(([sid,s])=>({sid,s,score:tot(s)}))
     .sort((a,b)=>b.score-a.score).slice(0,10);
-  const scoreRows=byScore.map((r,i)=>makeRow(r,i,
+  const scoreCards=byScore.map((r,i)=>makeCard(r,i,
     `<span style="color:${r.score>=0?'var(--green)':'var(--red)'}">${r.score>=0?'+':''}${r.score}</span>`
   )).join('');
 
-  // อันดับส่งงาน
-  const byTask=entries.map(([sid,s])=>({sid,s,pct:taskPct(s),done:s.taskDone||0,total:s.taskTotal||0}))
+  const byTask=entries.map(([sid,s])=>({sid,s,pct:taskPct(s),done:s.taskDone||0}))
     .sort((a,b)=>b.pct-a.pct||b.done-a.done).slice(0,10);
-  const taskRows=byTask.map((r,i)=>makeRow(r,i,
-    `<span style="color:${r.pct===100?'var(--green)':r.pct>0?'var(--blue)':'var(--red)'}">${r.pct===100?'✓ครบ':r.pct+'%'}</span>`
+  const taskCards=byTask.map((r,i)=>makeCard(r,i,
+    `<span style="color:${r.pct===100?'var(--green)':r.pct>0?'var(--blue)':'var(--red)'}">${r.pct===100?'✓':''}${r.pct}%</span>`
   )).join('');
 
-  // Tab state
   const tab=S._lbTab||'score';
-  return`<div class="card" style="margin-bottom:1.25rem;padding:1rem">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:.75rem">
-      <span style="font-size:20px">🏆</span>
-      <div style="font-size:15px;font-weight:800;font-family:Prompt,sans-serif">Top 10</div>
+  return`<div class="card" style="padding:.875rem">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:.6rem">
+      <span style="font-size:18px">🏆</span>
+      <span style="font-size:14px;font-weight:800;font-family:Prompt,sans-serif">Top 10</span>
+      <div style="flex:1"></div>
+      <button onclick="S._lbTab='score';render()" style="padding:4px 10px;border-radius:8px;border:1.5px solid ${tab==='score'?'var(--blue)':'var(--border-soft)'};background:${tab==='score'?'var(--blue-bg)':'transparent'};color:${tab==='score'?'var(--blue)':'var(--muted)'};font-size:11px;font-weight:700;cursor:pointer;font-family:Sarabun,sans-serif">⭐ คะแนน</button>
+      <button onclick="S._lbTab='task';render()" style="padding:4px 10px;border-radius:8px;border:1.5px solid ${tab==='task'?'var(--green)':'var(--border-soft)'};background:${tab==='task'?'var(--green-bg)':'transparent'};color:${tab==='task'?'var(--green)':'var(--muted)'};font-size:11px;font-weight:700;cursor:pointer;font-family:Sarabun,sans-serif">📋 งาน</button>
     </div>
-    <div style="display:flex;gap:6px;margin-bottom:.75rem">
-      <button onclick="S._lbTab='score';render()" style="flex:1;padding:7px;border-radius:10px;border:1.5px solid ${tab==='score'?'var(--blue)':'var(--border-soft)'};background:${tab==='score'?'var(--blue-bg)':'var(--surface)'};color:${tab==='score'?'var(--blue)':'var(--muted)'};font-weight:700;font-size:12px;cursor:pointer;font-family:Sarabun,sans-serif">⭐ คะแนนพฤติกรรม</button>
-      <button onclick="S._lbTab='task';render()" style="flex:1;padding:7px;border-radius:10px;border:1.5px solid ${tab==='task'?'var(--green)':'var(--border-soft)'};background:${tab==='task'?'var(--green-bg)':'var(--surface)'};color:${tab==='task'?'var(--green)':'var(--muted)'};font-weight:700;font-size:12px;cursor:pointer;font-family:Sarabun,sans-serif">📋 ส่งงาน</button>
+    <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none">
+      ${tab==='score'?scoreCards:taskCards}
     </div>
-    ${tab==='score'?scoreRows:taskRows}
   </div>`;}
 function hwSum(hw){if(!hw)return{done:0,total:0};const vals=Object.values(hw);return{done:vals.filter(v=>v&&v.done).length,total:vals.length};}
 function taskPct(s){const total=s.taskTotal||0;const done=s.taskDone||0;if(total===0)return 0;return Math.round(done/total*100);}
