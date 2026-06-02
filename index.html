@@ -505,8 +505,8 @@ function vLeaderboard(){
   if(entries.length===0)return'';
 
   const medals=['🥇','🥈','🥉','4','5','6','7','8','9','10'];
-  const colors=['#FFD700','#C0C0C0','#CD7F32','#6B7280','#6B7280','#6B7280','#6B7280','#6B7280','#6B7280','#6B7280'];
-  const bgColors=['#FFFDE7','#F5F5F5','#FBE9E7','#F9FAFB','#F9FAFB','#F9FAFB','#F9FAFB','#F9FAFB','#F9FAFB','#F9FAFB'];
+  const colors=['#FFD700','#C0C0C0','#CD7F32','#E91E8C','#1A6BC4','#2E7D32','#7B1FA2','#E65100','#00838F','#5D4037'];
+  const bgColors=['#FFFDE7','#F5F5F5','#FBE9E7','#FCE4EC','#EBF3FF','#E8F5E9','#F3E5F5','#FFF3E0','#E0F7FA','#EFEBE9'];
 
   function makeCard(r,i,valHtml){
     const g=isGirl(r.s.name);
@@ -544,7 +544,7 @@ function vLeaderboard(){
       <button onclick="S._lbTab='score';render()" style="padding:4px 10px;border-radius:8px;border:1.5px solid ${tab==='score'?'var(--blue)':'var(--border-soft)'};background:${tab==='score'?'var(--blue-bg)':'transparent'};color:${tab==='score'?'var(--blue)':'var(--muted)'};font-size:11px;font-weight:700;cursor:pointer;font-family:Sarabun,sans-serif">⭐ คะแนน</button>
       <button onclick="S._lbTab='task';render()" style="padding:4px 10px;border-radius:8px;border:1.5px solid ${tab==='task'?'var(--green)':'var(--border-soft)'};background:${tab==='task'?'var(--green-bg)':'transparent'};color:${tab==='task'?'var(--green)':'var(--muted)'};font-size:11px;font-weight:700;cursor:pointer;font-family:Sarabun,sans-serif">📋 งาน</button>
     </div>
-    <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none">
+    <div class="lb-scroll" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;-webkit-overflow-scrolling:touch">
       ${tab==='score'?scoreCards:taskCards}
     </div>
   </div>`;}
@@ -693,6 +693,9 @@ function render(){
     // Restore tabs scroll position
     const tabs=document.querySelector('.tabs');
     if(tabs && window._tabsScrollLeft) tabs.scrollLeft=window._tabsScrollLeft;
+    // Restore leaderboard scroll position
+    const lb=document.querySelector('.lb-scroll');
+    if(lb && window._lbScrollLeft) lb.scrollLeft=window._lbScrollLeft;
   });
   // Restore focus to any input/textarea that was active before render
   if(prevId && (prevTag==='INPUT'||prevTag==='TEXTAREA')){
@@ -940,27 +943,23 @@ function vTList(){
         <button class="btn" style="font-size:13px" onclick="doTLogout()"><i class="ti ti-logout"></i> ออก</button>
       </div>
     </div>
-    <div style="display:flex;gap:1rem;align-items:flex-start;margin-bottom:1rem;flex-wrap:wrap">
-      <div style="flex:1;min-width:200px">
-        ${(()=>{
-          const ti=DB.taskInfo||{};
-          const label=ti.label||'';
-          const total=ti.total||0;
-          const date=ti.date||'';
-          return`<div onclick="doSetTaskInfo()" style="cursor:pointer;background:linear-gradient(135deg,#1A6BC4,#4DA0F0);border-radius:16px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 4px 16px rgba(26,107,196,.3);height:100%">
-            <div>
-              <div style="color:rgba(255,255,255,.75);font-size:12px;font-weight:600;margin-bottom:3px"><i class="ti ti-clipboard-list"></i> งานประจำสัปดาห์</div>
-              <div style="color:white;font-size:18px;font-weight:800;font-family:Prompt,sans-serif">${label||'ยังไม่ได้ตั้งชื่อรอบ'} ${total?`· ${total} งาน`:''}</div>
-              ${date?`<div style="color:rgba(255,255,255,.7);font-size:12px;margin-top:2px">📅 ${date}</div>`:''}
-            </div>
-            <div style="background:rgba(255,255,255,.2);border-radius:12px;padding:8px 14px;color:white;font-size:13px;font-weight:700;white-space:nowrap;flex-shrink:0">
-              <i class="ti ti-settings"></i> ตั้งค่า
-            </div>
-          </div>`;
-        })()}
-      </div>
-      <div style="flex:1;min-width:200px">${vLeaderboard()}</div>
-    </div>
+    ${(()=>{
+      const ti=DB.taskInfo||{};
+      const label=ti.label||'';
+      const total=ti.total||0;
+      const date=ti.date||'';
+      return`<div onclick="doSetTaskInfo()" style="cursor:pointer;background:linear-gradient(135deg,#1A6BC4,#4DA0F0);border-radius:16px;padding:14px 18px;margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 4px 16px rgba(26,107,196,.3)">
+        <div>
+          <div style="color:rgba(255,255,255,.75);font-size:12px;font-weight:600;margin-bottom:3px"><i class="ti ti-clipboard-list"></i> งานประจำสัปดาห์</div>
+          <div style="color:white;font-size:18px;font-weight:800;font-family:Prompt,sans-serif">${label||'ยังไม่ได้ตั้งชื่อรอบ'} ${total?`· ${total} งาน`:''}</div>
+          ${date?`<div style="color:rgba(255,255,255,.7);font-size:12px;margin-top:2px">📅 ${date}</div>`:''}
+        </div>
+        <div style="background:rgba(255,255,255,.2);border-radius:12px;padding:8px 14px;color:white;font-size:13px;font-weight:700;white-space:nowrap;flex-shrink:0">
+          <i class="ti ti-settings"></i> ตั้งค่า
+        </div>
+      </div>`;
+    })()}
+    ${vLeaderboard()}
     <div class="sw" style="position:sticky;top:56px;z-index:99;background:var(--bg);padding-bottom:.5rem"><i class="ti ti-search"></i>
       <input type="text" placeholder="ค้นหาชื่อหรือเลขประจำตัว" oninput="S.search=this.value;render()" value="${S.search||''}">
     </div>
@@ -2046,6 +2045,14 @@ function closeLightbox(e){
 document.addEventListener('scroll', ()=>{
   const tabs=document.querySelector('.tabs');
   if(tabs) window._tabsScrollLeft=tabs.scrollLeft;
+  const lb=document.querySelector('.lb-scroll');
+  if(lb) window._lbScrollLeft=lb.scrollLeft;
+}, true);
+// Also listen to scroll on lb-scroll element itself
+document.addEventListener('scroll', e=>{
+  if(e.target && e.target.classList && e.target.classList.contains('lb-scroll')){
+    window._lbScrollLeft=e.target.scrollLeft;
+  }
 }, true);
 </script>
 <script>
