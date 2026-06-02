@@ -614,7 +614,8 @@ function startPoll(){if(pollTimer)clearInterval(pollTimer);pollTimer=setInterval
 function stopPoll(){if(pollTimer){clearInterval(pollTimer);pollTimer=null;}}
 
 function render(){
-  // Save all active input state before re-render
+  // Save scroll position and active input before re-render
+  const scrollY = window.scrollY || window.pageYOffset || 0;
   const active = document.activeElement;
   const prevId = active?.id||'';
   const prevVal = active?.value||'';
@@ -638,6 +639,8 @@ function render(){
   else if(S.view==='plogin')el.innerHTML=vPLogin();
   else if(S.view==='pview')el.innerHTML=vPView();
   root.appendChild(el);
+  // Restore scroll position
+  requestAnimationFrame(()=>window.scrollTo(0, scrollY));
   // Restore focus to any input/textarea that was active before render
   if(prevId && (prevTag==='INPUT'||prevTag==='TEXTAREA')){
     const inp = document.getElementById(prevId);
@@ -1644,7 +1647,7 @@ async function doMarkAllDone(sid){
   SUBJECTS.forEach(subj=>{s.hw[subj]={done:true,date:today()};});
   await api('PATCH',`/students/${sid}`,{hw:s.hw});render();
 }
-async async function doUploadExamplePhoto(input){
+async function doUploadExamplePhoto(input){
   const file=input.files[0];if(!file)return;
   S.msg='กำลังอัพโหลดรูปตัวอย่าง...';render();
   try{
