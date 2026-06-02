@@ -504,9 +504,9 @@ function vLeaderboard(){
   const entries=Object.entries(DB.students);
   if(entries.length===0)return'';
 
-  const medals=['🥇','🥈','🥉','4','5','6','7','8','9','10'];
-  const colors=['#FFD700','#C0C0C0','#CD7F32','#E91E8C','#1A6BC4','#2E7D32','#7B1FA2','#E65100','#00838F','#5D4037'];
-  const bgColors=['#FFFDE7','#F5F5F5','#FBE9E7','#FCE4EC','#EBF3FF','#E8F5E9','#F3E5F5','#FFF3E0','#E0F7FA','#EFEBE9'];
+  const medals=['🥇','🥈','🥉','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20'];
+  const colors=['#FFD700','#C0C0C0','#CD7F32','#E91E8C','#1A6BC4','#2E7D32','#7B1FA2','#E65100','#00838F','#5D4037','#C2185B','#1565C0','#558B2F','#6A1B9A','#BF360C','#006064','#4E342E','#37474F','#880E4F','#1A237E'];
+  const bgColors=['#FFFDE7','#F5F5F5','#FBE9E7','#FCE4EC','#EBF3FF','#E8F5E9','#F3E5F5','#FFF3E0','#E0F7FA','#EFEBE9','#FCE4EC','#E3F2FD','#F1F8E9','#EDE7F6','#FBE9E7','#E0F7FA','#EFEBE9','#ECEFF1','#FCE4EC','#E8EAF6'];
 
   function makeCard(r,i,valHtml){
     const g=isGirl(r.s.name);
@@ -524,13 +524,13 @@ function vLeaderboard(){
   }
 
   const byScore=entries.map(([sid,s])=>({sid,s,score:tot(s)}))
-    .sort((a,b)=>b.score-a.score).slice(0,10);
+    .sort((a,b)=>b.score-a.score).slice(0,20);
   const scoreCards=byScore.map((r,i)=>makeCard(r,i,
     `<span style="color:${r.score>=0?'var(--green)':'var(--red)'}">${r.score>=0?'+':''}${r.score}</span>`
   )).join('');
 
   const byTask=entries.map(([sid,s])=>({sid,s,pct:taskPct(s),done:s.taskDone||0}))
-    .sort((a,b)=>b.pct-a.pct||b.done-a.done).slice(0,10);
+    .sort((a,b)=>b.pct-a.pct||b.done-a.done).slice(0,20);
   const taskCards=byTask.map((r,i)=>makeCard(r,i,
     `<span style="color:${r.pct===100?'var(--green)':r.pct>0?'var(--blue)':'var(--red)'}">${r.pct===100?'✓':''}${r.pct}%</span>`
   )).join('');
@@ -926,7 +926,7 @@ function vTList(){
     ${editModal}${rewardModal}
     <div>
     <div class="hrow hrow-sticky">
-      <div class="ptitle">ป.6/1 <span style="font-size:14px;font-weight:400;color:var(--muted)">(${Object.keys(DB.students).length} คน)</span></div>
+      <div style="font-size:clamp(14px,2.5vw,20px);font-weight:800;font-family:Prompt,sans-serif;line-height:1.3">ระบบคะแนนพฤติกรรมและการส่งงานของนักเรียน ป.6/1 <span style="font-size:13px;font-weight:400;color:var(--muted)">(${Object.keys(DB.students).length} คน)</span></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         ${pc>0?`<button class="btn btn-a" style="font-size:13px" onclick="go('tpending')"><i class="ti ti-bell"></i> คำขอ (${pc})</button>`:''}
         <button class="btn" style="font-size:13px" onclick="go('taddstudent')"><i class="ti ti-plus"></i> เพิ่ม</button>
@@ -939,10 +939,10 @@ function vTList(){
       const total=ti.total||0;
       const date=ti.date||'';
       return`<div onclick="doSetTaskInfo()" style="cursor:pointer;background:linear-gradient(135deg,#1A6BC4,#4DA0F0);border-radius:16px;padding:14px 18px;margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 4px 16px rgba(26,107,196,.3)">
-        <div>
-          <div style="color:rgba(255,255,255,.75);font-size:12px;font-weight:600;margin-bottom:3px"><i class="ti ti-clipboard-list"></i> งานประจำสัปดาห์</div>
-          <div style="color:white;font-size:18px;font-weight:800;font-family:Prompt,sans-serif">${label||'ยังไม่ได้ตั้งชื่อรอบ'} ${total?`· ${total} งาน`:''}</div>
-          ${date?`<div style="color:rgba(255,255,255,.7);font-size:12px;margin-top:2px">📅 ${date}</div>`:''}
+        <div style="flex:1;text-align:center">
+          <div style="color:rgba(255,255,255,.8);font-size:13px;font-weight:600;margin-bottom:4px"><i class="ti ti-clipboard-list"></i> งานประจำสัปดาห์</div>
+          <div style="color:white;font-size:clamp(20px,3vw,28px);font-weight:800;font-family:Prompt,sans-serif">${label||'ยังไม่ได้ตั้งชื่อรอบ'} ${total?`· ${total} งาน`:''}</div>
+          ${date?`<div style="color:rgba(255,255,255,.75);font-size:13px;margin-top:4px">📅 ${date}</div>`:''}
         </div>
         <div style="background:rgba(255,255,255,.2);border-radius:12px;padding:8px 14px;color:white;font-size:13px;font-weight:700;white-space:nowrap;flex-shrink:0">
           <i class="ti ti-settings"></i> ตั้งค่า
