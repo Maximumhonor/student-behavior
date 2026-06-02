@@ -1357,23 +1357,27 @@ function vMList(){
 
   const cards=entries.map(([sid,s])=>{
     const hw=s.hw||{};
-    const total=SUBJECTS.length;
-    const done=SUBJECTS.filter(subj=>hw[subj]?.done).length;
-    const all=done===total;
+    const hwDone=SUBJECTS.filter(subj=>hw[subj]?.done).length;
+    const hwAll=hwDone===SUBJECTS.length;
+    const tPct=taskPct(s);
+    const tColor=taskColor(s);
+    const tBg=taskColorBg(s);
+    const taskComplete=tPct===100;
     const g=isGirl(s.name);
     const animal=getStudentAnimal(s);
     const avatarContent=s.photo
       ?`<img src="${s.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
       :drawAnimalSVG(animal,g,60);
     const shortN=s.name.replace('เด็กชาย','ด.ช.').replace('เด็กหญิง','ด.ญ.');
-    return`<div onclick="S.sid='${sid}';S.view='mstudent';render()" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;padding:1rem .5rem .85rem;border-radius:16px;background:var(--surface);border:2px solid ${all?'var(--green-bd)':'var(--border-soft)'};box-shadow:var(--shadow-sm);transition:all .2s;position:relative"
+    return`<div onclick="S.sid='${sid}';S.view='mstudent';render()" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;padding:1rem .5rem .85rem;border-radius:18px;background:${tBg};border:2px solid ${tColor};box-shadow:var(--shadow-sm);transition:all .2s;position:relative"
       onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
       <div style="position:absolute;top:5px;left:7px;font-size:10px;font-weight:700;color:var(--muted)">${s.no||''}</div>
-      <div style="width:60px;height:60px;border-radius:50%;overflow:hidden;border:2px solid ${g?'#F4BFDA':'#B5D1F5'}">${avatarContent}</div>
-      <div style="font-size:11px;font-weight:600;color:var(--text);text-align:center;width:100%;padding:0 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${shortN}</div>
-      <div style="font-size:13px;font-weight:700;color:${all?'var(--green)':done>0?'var(--amber)':'var(--red)'}">
-        ${all?'✓ ครบ':`${done}/${total}`}
+      <div style="width:60px;height:60px;border-radius:50%;overflow:hidden;border:3px solid ${taskComplete?'#FFD700':g?'#F4BFDA':'#B5D1F5'};box-shadow:${taskComplete?'0 0 8px rgba(255,215,0,.6)':'none'}">${avatarContent}</div>
+      <div style="font-size:11px;font-weight:700;color:${tColor};text-align:center;width:100%;padding:0 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${taskEmoji(s)} ${shortN}</div>
+      <div style="font-size:11px;font-weight:700;color:${tColor};background:white;border:1px solid ${tColor};border-radius:999px;padding:2px 8px">
+        ${taskComplete?'งานครบ ✓':`ส่ง ${s.taskDone||0}/${s.taskTotal||0}`}
       </div>
+      <div style="font-size:10px;color:var(--muted)">${hwAll?'✓ วิชาครบ':`วิชา ${hwDone}/${SUBJECTS.length}`}</div>
     </div>`;
   }).join('');
 
@@ -1505,8 +1509,9 @@ async function doSetTaskInfo(){
     st.taskTotal=n;
     if((st.taskDone||0)>n)st.taskDone=n;
     await api('PATCH',`/students/${sid}`,{taskTotal:n,taskDone:st.taskDone||0});
-    // delay 200ms ทุก 5 คน ป้องกัน rate limit
-    if((i+1)%5===0) await new Promise(r=>setTimeout(r,200));
+    // delay ทุกคน 150ms + พัก 500ms ทุก 5 คน ป้องกัน rate limit
+    await new Promise(r=>setTimeout(r,150));
+    if((i+1)%5===0) await new Promise(r=>setTimeout(r,500));
   }
   alert(`ตั้งค่าเรียบร้อย ✅\n${label} · ${n} งาน\n${date}`);
   render();
