@@ -843,6 +843,22 @@ function vTList(){
         <button class="btn" style="font-size:13px" onclick="doTLogout()"><i class="ti ti-logout"></i> ออก</button>
       </div>
     </div>
+    ${(()=>{
+      const ti=DB.taskInfo||{};
+      const label=ti.label||'';
+      const total=ti.total||0;
+      const date=ti.date||'';
+      return`<div onclick="doSetTaskInfo()" style="cursor:pointer;background:linear-gradient(135deg,#1A6BC4,#4DA0F0);border-radius:16px;padding:14px 18px;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 4px 16px rgba(26,107,196,.3)">
+        <div>
+          <div style="color:rgba(255,255,255,.75);font-size:12px;font-weight:600;margin-bottom:3px"><i class="ti ti-clipboard-list"></i> งานประจำสัปดาห์</div>
+          <div style="color:white;font-size:18px;font-weight:800;font-family:Prompt,sans-serif">${label||'ยังไม่ได้ตั้งชื่อรอบ'} ${total?`· ${total} งาน`:''}</div>
+          ${date?`<div style="color:rgba(255,255,255,.7);font-size:12px;margin-top:2px">📅 ${date}</div>`:''}
+        </div>
+        <div style="background:rgba(255,255,255,.2);border-radius:12px;padding:8px 14px;color:white;font-size:13px;font-weight:700;white-space:nowrap;flex-shrink:0">
+          <i class="ti ti-settings"></i> ตั้งค่า
+        </div>
+      </div>`;
+    })()}
     <div class="sw" style="position:sticky;top:56px;z-index:99;background:var(--bg);padding-bottom:.5rem"><i class="ti ti-search"></i>
       <input type="text" placeholder="ค้นหาชื่อหรือเลขประจำตัว" oninput="S.search=this.value;render()" value="${S.search||''}">
     </div>
@@ -1171,8 +1187,15 @@ function vPView(){
     </div>`;
     setTimeout(()=>{const cb=document.getElementById('chatboxP');if(cb)cb.scrollTop=cb.scrollHeight;doMarkRead('${S.sid}','teacher');},80);
   }
+  const taskInfoP=DB.taskInfo||{};
+  const taskBannerP=taskInfoP.label||taskInfoP.total?`<div style="background:linear-gradient(135deg,#1A6BC4,#4DA0F0);border-radius:14px;padding:12px 16px;margin-bottom:1rem;color:white;box-shadow:0 4px 12px rgba(26,107,196,.25)">
+    <div style="font-size:11px;opacity:.8;margin-bottom:2px"><i class="ti ti-clipboard-list"></i> งานประจำสัปดาห์</div>
+    <div style="font-size:16px;font-weight:800;font-family:Prompt,sans-serif">${taskInfoP.label||''} ${taskInfoP.total?`· ${taskInfoP.total} งาน`:''}</div>
+    ${taskInfoP.date?`<div style="font-size:12px;opacity:.75;margin-top:2px">📅 ${taskInfoP.date}</div>`:''}
+  </div>`:'';
   return`
     <button class="btn-back" onclick="doPLogout()"><i class="ti ti-logout"></i> ออกจากระบบ</button>
+    ${taskBannerP}
     <div class="student-header" style="position:relative;padding:1rem;border-radius:var(--r);${(()=>{const ph=profileCardHeader(s);return ph.borderStyle;})()} ">
       ${(()=>{const ph=profileCardHeader(s);return ph.stars;})()}
       <div style="display:flex;align-items:center;gap:12px">
@@ -1426,6 +1449,30 @@ async function doMRemoveHwPhoto(){
   render();}
 
 
+async function doSetTaskInfo(){
+  const ti=DB.taskInfo||{};
+  const label=prompt('ชื่อรอบ (เช่น อาทิตย์ที่ 5)',ti.label||'');
+  if(label===null)return;
+  const totalVal=prompt('จำนวนงานทั้งหมด',ti.total||0);
+  if(totalVal===null)return;
+  const n=parseInt(totalVal);
+  if(isNaN(n)||n<0){alert('กรอกตัวเลขให้ถูกต้อง');return;}
+  const date=prompt('วันที่กำหนด (เช่น 2 มิ.ย. - 6 มิ.ย. 2569)',ti.date||'');
+  if(date===null)return;
+  // บันทึก taskInfo
+  DB.taskInfo={label,total:n,date};
+  // อัปเดตทุกคนทีละคน
+  const sids=Object.keys(DB.students);
+  for(const sid of sids){
+    const st=DB.students[sid];
+    st.taskTotal=n;
+    if((st.taskDone||0)>n)st.taskDone=n;
+    await api('PATCH',`/students/${sid}`,{taskTotal:n,taskDone:st.taskDone||0});
+  }
+  await api('POST','/data',DB);
+  alert(`ตั้งค่าเรียบร้อย ✅\n${label} · ${n} งาน\n${date}`);
+  render();
+}
 async function doEditTaskTotal(){
   const s=DB.students[S.sid];if(!s)return;
   const cur=s.taskTotal||0;
