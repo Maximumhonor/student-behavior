@@ -316,9 +316,9 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px;font-wei
   <rect x="172" y="50" width="80" height="6" fill="#1565C0"/>
   <!-- SCHOOL sign -->
   <rect x="178" y="56" width="68" height="18" fill="#1565C0" rx="1"/>
-  <!-- โลโก้โรงเรียนใน loading screen -->
-  <clipPath id="logoClip"><circle cx="212" cy="55" r="20"/></clipPath>
-  <image href="https://res.cloudinary.com/dfakqt3uy/image/upload/v1780401487/429683527_1117672266236453_8873892130585825162_n_keojez.jpg" x="192" y="35" width="40" height="40" clip-path="url(#logoClip)" preserveAspectRatio="xMidYMid slice"/>
+  <!-- ขอบดำ (stroke) ใหญ่ขึ้น -->
+  <text x="212" y="63" text-anchor="middle" font-size="7.5" fill="white" font-family="'Prompt','Sarabun',sans-serif" font-weight="bold" stroke="black" stroke-width="0.7" paint-order="stroke">โรงเรียน</text>
+  <text x="212" y="72" text-anchor="middle" font-size="7.5" fill="white" font-family="'Prompt','Sarabun',sans-serif" font-weight="bold" stroke="black" stroke-width="0.7" paint-order="stroke">รัตนโกสินทร์ ๙</text>
   <!-- Right wing windows -->
   <rect x="178" y="78" width="20" height="12" fill="#B3E5FC" stroke="#999" stroke-width="0.8" rx="0.5"/>
   <rect x="204" y="78" width="20" height="12" fill="#B3E5FC" stroke="#999" stroke-width="0.8" rx="0.5"/>
@@ -709,7 +709,7 @@ function vMenu(){
   <div style="min-height:100vh;background:url('${BG_SRC}') center 75%/cover no-repeat;display:flex;flex-direction:column;align-items:center;padding:2.5rem 1rem 2rem">
     <div style="position:fixed;inset:0;background:linear-gradient(to bottom,rgba(0,0,30,.3),rgba(0,0,30,.55));z-index:0;pointer-events:none"></div>
     <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;width:100%">
-      <div style="width:110px;height:110px;border-radius:50%;overflow:hidden;margin-bottom:.5rem;box-shadow:0 4px 20px rgba(0,0,0,.4)"><img src="https://res.cloudinary.com/dfakqt3uy/image/upload/v1780401487/429683527_1117672266236453_8873892130585825162_n_keojez.jpg" style="width:140%;height:140%;object-fit:cover;margin-left:-20%;margin-top:-15%"></div>
+      <div style="width:110px;height:110px;border-radius:50%;overflow:hidden;margin-bottom:.5rem;box-shadow:0 4px 20px rgba(0,0,0,.4)"><img src="https://res.cloudinary.com/dfakqt3uy/image/upload/v1780401487/429683527_1117672266236453_8873892130585825162_n_keojez.jpg" style="width:115%;height:115%;object-fit:cover;margin-left:-7%;margin-top:-7%"></div>
       <div style="background:rgba(0,0,0,.4);backdrop-filter:blur(6px);border-radius:24px;padding:5px 18px 7px;margin-bottom:.75rem">
         <div style="font-size:clamp(16px,5vw,22px);color:#fff;font-weight:700;font-family:'Prompt',sans-serif;white-space:nowrap">โรงเรียนรัตนโกสินทร์ ๙</div>
       </div>
@@ -922,11 +922,9 @@ function vTList(){
     </div>`;
   })():'';
 
-  const isDesktop = window.innerWidth >= 768;
   return`
     ${editModal}${rewardModal}
-    <div class="${isDesktop?'app-desktop':''}">
-    ${isDesktop?'<div class="app-sidebar">':''}
+    <div>
     <div class="hrow hrow-sticky">
       <div class="ptitle">ป.6/1 <span style="font-size:14px;font-weight:400;color:var(--muted)">(${Object.keys(DB.students).length} คน)</span></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -956,11 +954,8 @@ function vTList(){
       <input type="text" placeholder="ค้นหาชื่อหรือเลขประจำตัว" oninput="S.search=this.value;render()" value="${S.search||''}">
     </div>
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;width:100%" class="av-grid">${cards}</div>
-    ${isDesktop?'</div></div>':''}`;
-}
-
-
-function vTStudent(){
+      </div>`;
+}unction vTStudent(){
   const s=DB.students[S.sid];if(!s)return'';
   const t=tot(s);const hw=hwSum(s.hw);const g=isGirl(s.name);
   const logs=s.logs||[];const rl=s.redeemLogs||[];const pend=pendSid(S.sid);
