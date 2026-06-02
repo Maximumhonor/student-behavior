@@ -52,7 +52,7 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;background-image:radial-gradient(circle at 15% 15%,rgba(214,79,138,.08) 0%,transparent 45%),radial-gradient(circle at 85% 85%,rgba(26,107,196,.09) 0%,transparent 45%),radial-gradient(circle at 85% 15%,rgba(100,180,255,.06) 0%,transparent 40%)}
-.app{max-width:100%;margin:0 auto;padding:1.25rem}@media(min-width:768px){.app{max-width:100%;padding:1.25rem 2rem}.app-desktop{display:flex;gap:1.5rem;align-items:flex-start}.app-sidebar{width:340px;flex-shrink:0;position:sticky;top:1rem}.app-main{flex:1;min-width:0;max-width:640px;margin:0 auto}}
+.app{max-width:100%;margin:0 auto;padding:1.25rem}@media(min-width:768px){.app{max-width:100%;padding:1.25rem 2rem}.app-desktop{display:flex;gap:1.5rem;align-items:flex-start}.app-sidebar{width:340px;flex-shrink:0;position:sticky;top:1rem}.app-main{flex:1;min-width:0;max-width:100%;margin:0 auto}}
 .card{background:var(--surface);border:1px solid var(--border-soft);border-radius:var(--r);padding:1.375rem;box-shadow:0 2px 12px rgba(26,107,196,.08),0 1px 3px rgba(0,0,0,.04)}
 .btn{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:12px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-family:'Sarabun',sans-serif;font-size:14px;cursor:pointer;transition:all .2s;font-weight:600;letter-spacing:.01em}
 .btn:hover{transform:translateY(-1px);box-shadow:var(--shadow-sm);opacity:.9}
@@ -544,7 +544,7 @@ function vLeaderboard(){
       <button onclick="S._lbTab='score';render()" style="padding:4px 10px;border-radius:8px;border:1.5px solid ${tab==='score'?'var(--blue)':'var(--border-soft)'};background:${tab==='score'?'var(--blue-bg)':'transparent'};color:${tab==='score'?'var(--blue)':'var(--muted)'};font-size:11px;font-weight:700;cursor:pointer;font-family:Sarabun,sans-serif">⭐ คะแนน</button>
       <button onclick="S._lbTab='task';render()" style="padding:4px 10px;border-radius:8px;border:1.5px solid ${tab==='task'?'var(--green)':'var(--border-soft)'};background:${tab==='task'?'var(--green-bg)':'transparent'};color:${tab==='task'?'var(--green)':'var(--muted)'};font-size:11px;font-weight:700;cursor:pointer;font-family:Sarabun,sans-serif">📋 งาน</button>
     </div>
-    <div class="lb-scroll" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;-webkit-overflow-scrolling:touch">
+    <div class="lb-scroll" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none;-webkit-overflow-scrolling:touch;width:100%">
       ${tab==='score'?scoreCards:taskCards}
     </div>
   </div>`;}
@@ -662,7 +662,6 @@ function startPoll(){if(pollTimer)clearInterval(pollTimer);pollTimer=setInterval
 function stopPoll(){if(pollTimer){clearInterval(pollTimer);pollTimer=null;}}
 
 function render(){
-
   const active = document.activeElement;
   const prevId = active?.id||'';
   const prevVal = active?.value||'';
@@ -670,8 +669,7 @@ function render(){
   const prevEnd = active?.selectionEnd;
   const prevTag = active?.tagName||'';
 
-  const root=document.getElementById('app');root.innerHTML='';
-  document.getElementById('loading-screen')?.remove();
+  // สร้าง HTML ใหม่
   const el=document.createElement('div');
   if(S.view==='menu')el.innerHTML=vMenu();
   else if(S.view==='tlogin')el.innerHTML=vTLogin();
@@ -685,9 +683,13 @@ function render(){
   else if(S.view==='mstudent')el.innerHTML=vMStudent();
   else if(S.view==='plogin')el.innerHTML=vPLogin();
   else if(S.view==='pview')el.innerHTML=vPView();
-  root.appendChild(el);
 
-  // Restore focus to any input/textarea that was active before render
+  // ใช้ replaceChildren แทน innerHTML='' เพื่อไม่ reset scroll
+  const root=document.getElementById('app');
+  document.getElementById('loading-screen')?.remove();
+  root.replaceChildren(el);
+
+  // Restore focus
   if(prevId && (prevTag==='INPUT'||prevTag==='TEXTAREA')){
     const inp = document.getElementById(prevId);
     if(inp){
@@ -1545,24 +1547,16 @@ async function doSetTaskInfo(){
   if(date===null)return;
   // บันทึก taskInfo ใน DB
   DB.taskInfo={label,total:n,date};
-  // บันทึกลง server 2 ครั้งเพื่อให้แน่ใจ
-  await api('POST','/data',DB);
-  await new Promise(r=>setTimeout(r,800));
-  await api('POST','/data',DB);
-  // รอให้ server บันทึกเสร็จ
-  await new Promise(r=>setTimeout(r,500));
-  // อัปเดตนักเรียนทีละคน พร้อม delay ป้องกัน rate limit
-  const sids=Object.keys(DB.students);
-  for(let i=0;i<sids.length;i++){
-    const sid=sids[i];
-    const st=DB.students[sid];
+  // อัปเดตทุกคนใน DB object พร้อมกัน
+  Object.values(DB.students).forEach(st=>{
     st.taskTotal=n;
     if((st.taskDone||0)>n)st.taskDone=n;
-    await api('PATCH',`/students/${sid}`,{taskTotal:n,taskDone:st.taskDone||0});
-    // delay ทุกคน 150ms + พัก 500ms ทุก 5 คน ป้องกัน rate limit
-    await new Promise(r=>setTimeout(r,150));
-    if((i+1)%5===0) await new Promise(r=>setTimeout(r,500));
-  }
+  });
+  // บันทึก DB ทั้งก้อนครั้งเดียว (ไม่ต้อง loop 39 ครั้ง)
+  await api('POST','/data',DB);
+  await new Promise(r=>setTimeout(r,1000));
+  // บันทึกซ้ำอีกครั้งให้แน่ใจ
+  await api('POST','/data',DB);
   alert(`ตั้งค่าเรียบร้อย ✅\n${label} · ${n} งาน\n${date}`);
   render();
 }
