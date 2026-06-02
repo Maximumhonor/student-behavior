@@ -662,8 +662,7 @@ function startPoll(){if(pollTimer)clearInterval(pollTimer);pollTimer=setInterval
 function stopPoll(){if(pollTimer){clearInterval(pollTimer);pollTimer=null;}}
 
 function render(){
-  // Save scroll position and active input before re-render
-  const scrollY = window.scrollY || window.pageYOffset || 0;
+
   const active = document.activeElement;
   const prevId = active?.id||'';
   const prevVal = active?.value||'';
@@ -687,16 +686,7 @@ function render(){
   else if(S.view==='plogin')el.innerHTML=vPLogin();
   else if(S.view==='pview')el.innerHTML=vPView();
   root.appendChild(el);
-  // Restore scroll position
-  requestAnimationFrame(()=>{
-    window.scrollTo(0, scrollY);
-    // Restore tabs scroll position
-    const tabs=document.querySelector('.tabs');
-    if(tabs && window._tabsScrollLeft) tabs.scrollLeft=window._tabsScrollLeft;
-    // Restore leaderboard scroll position
-    const lb=document.querySelector('.lb-scroll');
-    if(lb && window._lbScrollLeft) lb.scrollLeft=window._lbScrollLeft;
-  });
+
   // Restore focus to any input/textarea that was active before render
   if(prevId && (prevTag==='INPUT'||prevTag==='TEXTAREA')){
     const inp = document.getElementById(prevId);
@@ -2042,18 +2032,7 @@ function closeLightbox(e){
   document.body.style.overflow='';
 }
 // Save tabs scroll position on scroll
-document.addEventListener('scroll', ()=>{
-  const tabs=document.querySelector('.tabs');
-  if(tabs) window._tabsScrollLeft=tabs.scrollLeft;
-  const lb=document.querySelector('.lb-scroll');
-  if(lb) window._lbScrollLeft=lb.scrollLeft;
-}, true);
-// Also listen to scroll on lb-scroll element itself
-document.addEventListener('scroll', e=>{
-  if(e.target && e.target.classList && e.target.classList.contains('lb-scroll')){
-    window._lbScrollLeft=e.target.scrollLeft;
-  }
-}, true);
+
 </script>
 <script>
 if('serviceWorker' in navigator){
