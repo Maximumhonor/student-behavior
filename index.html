@@ -405,7 +405,7 @@ const MONITOR_GROUPS=[
   {pin:'62438',noFrom:31,noTo:35},
   {pin:'17896',noFrom:36,noTo:39},
 ];
-const SUBJECTS=['วิทยาศาสตร์','เศรษฐศาสตร์การเงิน','ภาษาอังกฤษ','สุขศึกษาและพลศึกษา','ดนตรี','ศิลปะ','นาฏศิลป์','ภาษาไทย','คอมพิวเตอร์','ประวัติศาสตร์','เกมเมอร์','จิตอาสา'];
+const SUBJECTS=['วิทยาศาสตร์','เศรษฐศาสตร์การเงิน','ภาษาอังกฤษพื้นฐาน','ภาษาอังกฤษเพิ่มเติม','สุขศึกษาและพลศึกษา','ดนตรี','ศิลปะ','นาฏศิลป์','ภาษาไทย','คอมพิวเตอร์','ประวัติศาสตร์','สังคม'];
 let S={view:'loading',role:null,sid:null,tab:'score',msg:'',search:'',newName:'',newId:'',monitorGroup:null};
 let pollTimer=null;
 
@@ -936,8 +936,8 @@ function vTStudent(){
     </div>
     <div class="stats">
       <div class="sc"><div class="sl">คะแนนรวม</div><div class="sv" style="color:${t>=0?'var(--green)':'var(--red)'}">${t>=0?'+':''}${t}</div></div>
-      <div class="sc"><div class="sl">ส่งงาน</div><div class="sv" style="color:var(--green)">${hw.done}</div></div>
-      <div class="sc"><div class="sl">ยังไม่ส่ง</div><div class="sv" style="color:${hw.total-hw.done>0?'var(--red)':'var(--green)'}">${hw.total-hw.done}</div></div>
+      <div class="sc" style="cursor:pointer" onclick="doEditHwCount('done')"><div class="sl">ส่งงาน</div><div class="sv" style="color:var(--green)">${hw.done}</div></div>
+      <div class="sc" style="cursor:pointer" onclick="doEditHwCount('notdone')"><div class="sl">ยังไม่ส่ง</div><div class="sv" style="color:${hw.total-hw.done>0?'var(--red)':'var(--green)'}">${hw.total-hw.done}</div></div>
       <div class="sc"><div class="sl">แลกแล้ว</div><div class="sv" style="color:var(--blue)">${rl.length}</div></div>
     </div>
     <div class="tabs">${TABS.map(tb=>`<button class="tab ${S.tab===tb.k?'on':''}" onclick="setTab('${tb.k}')"><i class="ti ${tb.i}"></i> ${tb.l}${tb.dot?'<span class="ndot"></span>':''}</button>`).join('')}</div>
@@ -1116,8 +1116,8 @@ function vPView(){
     </div>
     <div class="stats">
       <div class="sc"><div class="sl">คะแนนรวม</div><div class="sv" style="color:${t>=0?'var(--green)':'var(--red)'}">${t>=0?'+':''}${t}</div></div>
-      <div class="sc"><div class="sl">ส่งงาน</div><div class="sv" style="color:var(--green)">${hw.done}</div></div>
-      <div class="sc"><div class="sl">ยังไม่ส่ง</div><div class="sv" style="color:${hw.total-hw.done>0?'var(--red)':'var(--green)'}">${hw.total-hw.done}</div></div>
+      <div class="sc" style="cursor:pointer" onclick="doEditHwCount('done')"><div class="sl">ส่งงาน</div><div class="sv" style="color:var(--green)">${hw.done}</div></div>
+      <div class="sc" style="cursor:pointer" onclick="doEditHwCount('notdone')"><div class="sl">ยังไม่ส่ง</div><div class="sv" style="color:${hw.total-hw.done>0?'var(--red)':'var(--green)'}">${hw.total-hw.done}</div></div>
       <div class="sc"><div class="sl">แลกแล้ว</div><div class="sv" style="color:var(--blue)">${rl.length}</div></div>
     </div>
     <div class="tabs">${TABS.map(tb=>`<button class="tab ${S.tab===tb.k?'on':''}" onclick="setTab('${tb.k}')"><i class="ti ${tb.i}"></i> ${tb.l}${tb.dot?'<span class="ndot"></span>':''}</button>`).join('')}</div>
@@ -1254,7 +1254,7 @@ function vMStudent(){
       </div>
       <div>
         <div style="font-size:18px;font-weight:700">${s.name}</div>
-        <div style="font-size:13px;color:var(--muted)">เลขที่ ${s.no||'-'} · ส่งงานแล้ว ${doneCount}/${SUBJECTS.length} วิชา</div>
+        <div style="font-size:13px;color:var(--muted)">เลขที่ ${s.no||'-'} · ส่งงานแล้ว <span onclick="doEditHwCount('done')" style="cursor:pointer;text-decoration:underline dotted">${doneCount}</span>/${SUBJECTS.length} วิชา</div>
       </div>
     </div>
     <button class="btn btn-pk" style="width:100%;justify-content:center;margin-bottom:1rem" onclick="doMMarkAllDone()">
@@ -1280,6 +1280,30 @@ async function doMMarkAllDone(){
   render();}
 
 
+async function doEditHwCount(type){
+  const s=DB.students[S.sid];if(!s)return;
+  s.hw=s.hw||{};
+  const total=SUBJECTS.length;
+  const curDone=SUBJECTS.filter(subj=>s.hw[subj]?.done).length;
+  if(type==='done'){
+    const val=prompt('แก้ไขจำนวนส่งงาน (0-'+total+')',curDone);
+    if(val===null)return;
+    const n=parseInt(val);
+    if(isNaN(n)||n<0||n>total){alert('กรอกตัวเลข 0-'+total);return;}
+    // reset แล้ว mark n วิชาแรกเป็น done
+    SUBJECTS.forEach((subj,i)=>{s.hw[subj]=s.hw[subj]||{done:false,date:today()};s.hw[subj].done=i<n;if(i<n)s.hw[subj].date=today();});
+  } else {
+    const notDone=total-curDone;
+    const val=prompt('แก้ไขจำนวนยังไม่ส่ง (0-'+total+')',notDone);
+    if(val===null)return;
+    const n=parseInt(val);
+    if(isNaN(n)||n<0||n>total){alert('กรอกตัวเลข 0-'+total);return;}
+    const newDone=total-n;
+    SUBJECTS.forEach((subj,i)=>{s.hw[subj]=s.hw[subj]||{done:false,date:today()};s.hw[subj].done=i<newDone;if(i<newDone)s.hw[subj].date=today();});
+  }
+  await api('PATCH',`/students/${S.sid}`,{hw:s.hw});
+  render();
+}
 function selStu(sid){S.sid=sid;S.tab='score';S.view='tstudent';render();}
 function openEdit(sid){S.editSid=sid;render();}
 async function doSaveEdit(sid){
