@@ -116,6 +116,7 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px;font-wei
 .mok{background:var(--green-bg);color:var(--green);border-radius:var(--rs);padding:11px 14px;font-size:14px;margin-bottom:1rem;border:1px solid var(--green-bd)}
 .ndot{width:8px;height:8px;background:#E24B4A;border-radius:50%;display:inline-block;margin-left:4px;vertical-align:middle;animation:pulse 2s infinite}
 @keyframes starSpin{from{transform:translateX(-50%) rotate(0deg)}to{transform:translateX(-50%) rotate(360deg)}}
+@keyframes sparkle{0%,100%{opacity:1;transform:scale(1) rotate(0deg)}25%{opacity:.7;transform:scale(1.3) rotate(15deg)}50%{opacity:1;transform:scale(.9) rotate(-10deg)}75%{opacity:.8;transform:scale(1.2) rotate(5deg)}}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.85)}}
 .lwrap{max-width:340px;margin:2rem auto}
 .ltitle{font-size:21px;font-weight:700;text-align:center;margin-bottom:1.5rem;font-family:'Prompt',sans-serif;color:var(--text)}
@@ -180,6 +181,11 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px;font-wei
 </style>
 </head>
 <body>
+<div id="lightbox" onclick="closeLightbox(event)" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.93);align-items:flex-start;justify-content:center;overflow-y:auto;-webkit-overflow-scrolling:touch">
+  <button id="lightbox-close" onclick="closeLightbox()" style="position:fixed;top:12px;right:12px;background:rgba(255,255,255,.2);border:none;border-radius:50%;width:44px;height:44px;color:white;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10000">✕</button>
+  <img id="lightbox-img" src="" alt="" style="width:100%;max-width:100vw;height:auto;object-fit:contain;display:block;margin:0 auto;touch-action:manipulation">
+  <div id="lightbox-hint" style="position:fixed;bottom:16px;left:0;right:0;text-align:center;color:rgba(255,255,255,.5);font-size:12px">แตะนอกรูปเพื่อปิด</div>
+</div>
 <div class="app" id="app" style="transition:max-width .3s">
   <div id="loading-screen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:2rem;background:linear-gradient(160deg,#EBF3FF 0%,#FDF0F7 100%)">
         <style>
@@ -413,6 +419,25 @@ let pollTimer=null;
 function isGirl(name){return name&&name.includes('เด็กหญิง');}
 function shortName(name){return (name||'').replace('เด็กชาย','').replace('เด็กหญิง','').trim();}
 function fmtId(id){if(!id)return'-';const s=String(id);return s.length===13?s.replace(/(\d{1})(\d{4})(\d{5})(\d{2})(\d{1})/,'$1-$2-$3-$4-$5'):s;}
+function profileCardHeader(s){
+  const p=taskPct(s);
+  const isComplete=p===100;
+  const tc=isComplete?'#B8860B':taskColor(s);
+  const tbg=isComplete?'#FFFDE7':taskColorBg(s);
+  const borderStyle=isComplete
+    ?'border:3px solid #FFD700;border-top:5px solid #FFD700;background:linear-gradient(135deg,#FFFDE7,#FFF9C4);box-shadow:0 0 20px rgba(255,215,0,.5)'
+    :`border:3px solid ${taskColor(s)};border-top:5px solid ${taskColor(s)};background:${taskColorBg(s)}`;
+  const stars=isComplete?`
+    <div style="position:absolute;top:-10px;left:0;right:0;display:flex;justify-content:space-around;pointer-events:none">
+      <span style="font-size:14px;animation:sparkle 1.2s infinite">⭐</span>
+      <span style="font-size:18px;animation:sparkle 1s infinite .2s">✨</span>
+      <span style="font-size:14px;animation:sparkle 1.3s infinite .4s">⭐</span>
+      <span style="font-size:18px;animation:sparkle 1.1s infinite .1s">✨</span>
+      <span style="font-size:14px;animation:sparkle 1.2s infinite .3s">⭐</span>
+    </div>`:'';
+  const emoji=isComplete?'🏆':taskEmoji(s);
+  return {borderStyle,stars,emoji,tc,isComplete};
+}
 function hwSum(hw){if(!hw)return{done:0,total:0};const vals=Object.values(hw);return{done:vals.filter(v=>v&&v.done).length,total:vals.length};}
 function taskPct(s){const total=s.taskTotal||0;const done=s.taskDone||0;if(total===0)return 0;return Math.round(done/total*100);}
 function taskColor(s){const p=taskPct(s);if(p===100)return'#2E7D32';if(p>=71)return'#1565C0';if(p>=41)return'#F57F17';if(p>=11)return'#E65100';return'#B71C1C';}
@@ -830,7 +855,7 @@ function vTStudent(){
     const exPhoto=DB.exampleHwPhoto||null;
     const exPhotoHtml=exPhoto?`<div style="margin-bottom:1rem;border-radius:var(--rs);overflow:hidden;border:2px solid var(--green-bd);position:relative">
       <div style="background:var(--green-bg);padding:6px 10px;font-size:12px;color:var(--green);font-weight:600"><i class="ti ti-photo-check"></i> ตัวอย่างงานครบ (แสดงให้ผู้ปกครองทุกคนเห็น)</div>
-      <img src="${exPhoto}" style="width:100%;max-height:200px;object-fit:cover;display:block;cursor:zoom-in" onclick="openLightbox('${exPhoto}')">
+      <img src="${exPhoto}" style="width:100%;height:auto;object-fit:contain;display:block;cursor:pointer;border-radius:4px" onclick="openLightbox('${exPhoto}')">
       <button onclick="doDeleteExamplePhoto()" style="position:absolute;top:30px;right:6px;background:rgba(0,0,0,.6);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center"><i class="ti ti-x"></i></button>
     </div>`:`<div style="margin-bottom:1rem;background:var(--bg);border:2px dashed var(--border);border-radius:var(--rs);padding:1rem;text-align:center;color:var(--muted);font-size:13px"><i class="ti ti-photo-off" style="font-size:24px;display:block;margin-bottom:.5rem"></i>ยังไม่มีรูปตัวอย่างงานครบ</div>`;
     content=`
@@ -933,7 +958,8 @@ function vTStudent(){
   return`
     ${isDeskS?'<div style="max-width:680px;margin:0 auto">':''}
     <button class="btn-back" onclick="go('tlist')"><i class="ti ti-arrow-left"></i> กลับ</button>
-    <div class="student-header" style="border-top:4px solid ${accentOf(s)};padding:1rem">
+    <div class="student-header" style="position:relative;padding:1rem;border-radius:var(--r);${(()=>{const ph=profileCardHeader(s);return ph.borderStyle;})()} ">
+      ${(()=>{const ph=profileCardHeader(s);return ph.stars;})()}
       <div style="display:flex;align-items:center;gap:12px">
         <label style="cursor:pointer;position:relative;flex-shrink:0" title="คลิกเพื่อเปลี่ยนรูปโปรไฟล์">
           ${avHtml(s,52,18)}
@@ -945,7 +971,7 @@ function vTStudent(){
         <div style="flex:1;min-width:0">
           ${s.photo?`<button onclick="doRemovePhoto()" style="background:none;border:none;font-size:11px;color:var(--red);cursor:pointer;padding:0;margin-bottom:2px">ลบรูป</button>`:''}
           <div style="font-size:12px;color:var(--muted);margin-bottom:1px">เลขที่ ${s.no||'-'}${s.sid?' · '+s.sid:''}</div>
-          <div style="font-size:15px;font-weight:700;font-family:'Prompt',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name}</div>
+          <div style="font-size:15px;font-weight:700;font-family:'Prompt',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${(()=>{const ph=profileCardHeader(s);return ph.emoji+' ';})()}${s.name}</div>
           <span class="id-chip" style="margin-top:3px;display:inline-block"><i class="ti ti-id-badge" style="font-size:11px;vertical-align:-1px"></i> ${fmtId(s.idcard)}</span>
         </div>
 
@@ -1037,7 +1063,7 @@ function vPView(){
     const exPhotoP=DB.exampleHwPhoto||null;
     const exPhotoHtmlP=exPhotoP?`<div style="margin-bottom:1rem;border-radius:var(--rs);overflow:hidden;border:2px solid var(--green-bd)">
       <div style="background:var(--green-bg);padding:6px 10px;font-size:12px;color:var(--green);font-weight:600"><i class="ti ti-photo-check"></i> ตัวอย่างงานครบทุกวิชา (จากครู)</div>
-      <img src="${exPhotoP}" style="width:100%;max-height:220px;object-fit:cover;display:block;cursor:zoom-in" onclick="openLightbox('${exPhotoP}')">
+      <img src="${exPhotoP}" style="width:100%;height:auto;object-fit:contain;display:block;cursor:pointer;border-radius:4px" onclick="openLightbox('${exPhotoP}')">
       <div style="padding:8px 10px;font-size:12px;color:var(--muted);background:var(--bg)">เปรียบเทียบงานของบุตรหลานกับรูปตัวอย่างนี้ได้เลยครับ/ค่ะ</div>
     </div>`:'';
     content=`${exPhotoHtmlP}<div class="hw-grid">${SUBJECTS.map(subj=>{const it=(s.hw||{})[subj]||{done:false,date:today()};return`<div class="hwc ${it.done?'hwd':'hwm'}" style="cursor:default"><div style="display:flex;justify-content:space-between"><div class="hn">${subj}</div><i class="ti ${it.done?'ti-circle-check':'ti-circle-x'}" style="font-size:16px"></i></div><div class="hs">${it.done?'ส่งแล้ว':'ยังไม่ส่ง'}</div><div class="hdate">เช็ค: ${it.date}</div></div>`;}).join('')}</div>`;
@@ -1114,7 +1140,8 @@ function vPView(){
   }
   return`
     <button class="btn-back" onclick="doPLogout()"><i class="ti ti-logout"></i> ออกจากระบบ</button>
-    <div class="student-header" style="border-top:4px solid ${accentOf(s)};padding:1rem">
+    <div class="student-header" style="position:relative;padding:1rem;border-radius:var(--r);${(()=>{const ph=profileCardHeader(s);return ph.borderStyle;})()} ">
+      ${(()=>{const ph=profileCardHeader(s);return ph.stars;})()}
       <div style="display:flex;align-items:center;gap:12px">
         <label style="cursor:pointer;position:relative;flex-shrink:0" title="คลิกเพื่อเปลี่ยนรูปโปรไฟล์">
           ${avHtml(s,52,18)}
@@ -1126,7 +1153,7 @@ function vPView(){
         <div style="flex:1;min-width:0">
           ${s.photo?`<button onclick="doRemovePhoto()" style="background:none;border:none;font-size:11px;color:var(--red);cursor:pointer;padding:0;margin-bottom:2px">ลบรูป</button>`:''}
           <div style="font-size:12px;color:var(--muted);margin-bottom:1px">เลขที่ ${s.no||'-'}${s.sid?' · '+s.sid:''}</div>
-          <div style="font-size:15px;font-weight:700;font-family:'Prompt',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name}</div>
+          <div style="font-size:15px;font-weight:700;font-family:'Prompt',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${(()=>{const ph=profileCardHeader(s);return ph.emoji+' ';})()}${s.name}</div>
           <span class="id-chip" style="margin-top:3px;display:inline-block"><i class="ti ti-id-badge" style="font-size:11px;vertical-align:-1px"></i> ${fmtId(s.idcard)}</span>
         </div>
 
@@ -1730,36 +1757,14 @@ function openLightbox(src){
   const lb=document.getElementById('lightbox');
   const img=document.getElementById('lightbox-img');
   img.src=src;
-  img.style.transform='scale(1)';
-  lb.classList.add('show');
+  lb.style.display='flex';
+  lb.scrollTop=0;
   document.body.style.overflow='hidden';
-  // Pinch-zoom support
-  let startDist=0,curScale=1;
-  img.addEventListener('touchstart',e=>{
-    if(e.touches.length===2){
-      startDist=Math.hypot(e.touches[1].clientX-e.touches[0].clientX,e.touches[1].clientY-e.touches[0].clientY);
-    }
-  },{passive:true});
-  img.addEventListener('touchmove',e=>{
-    if(e.touches.length===2){
-      e.preventDefault();
-      const dist=Math.hypot(e.touches[1].clientX-e.touches[0].clientX,e.touches[1].clientY-e.touches[0].clientY);
-      curScale=Math.min(Math.max(curScale*(dist/startDist),.5),5);
-      img.style.transform=`scale(${curScale})`;
-      startDist=dist;
-    }
-  },{passive:false});
-  // Double tap to reset
-  let lastTap=0;
-  img.addEventListener('touchend',()=>{
-    const now=Date.now();
-    if(now-lastTap<300){curScale=curScale>1?1:2;img.style.transform=`scale(${curScale})`;}
-    lastTap=now;
-  });
 }
 function closeLightbox(e){
   if(e&&e.target===document.getElementById('lightbox-img'))return;
-  document.getElementById('lightbox').classList.remove('show');
+  const lb=document.getElementById('lightbox');
+  lb.style.display='none';
   document.body.style.overflow='';
 }
 </script>
