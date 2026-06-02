@@ -955,7 +955,7 @@ function vTList(){
     </div>
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;width:100%" class="av-grid">${cards}</div>
       </div>`;
-}unction vTStudent(){
+}function vTStudent(){
   const s=DB.students[S.sid];if(!s)return'';
   const t=tot(s);const hw=hwSum(s.hw);const g=isGirl(s.name);
   const logs=s.logs||[];const rl=s.redeemLogs||[];const pend=pendSid(S.sid);
