@@ -503,46 +503,51 @@ function profileCardHeader(s){
 function vLeaderboard(){
   const entries=Object.entries(DB.students);
   if(entries.length===0)return'';
-  // คะแนนรวม = คะแนนพฤติกรรม*2 + % ส่งงาน
-  const ranked=entries.map(([sid,s])=>{
-    const score=tot(s);
-    const pct=taskPct(s);
-    const combined=score*2+pct;
-    return{sid,s,score,pct,combined};
-  }).sort((a,b)=>b.combined-a.combined).slice(0,5);
 
-  const medals=['🥇','🥈','🥉','4️⃣','5️⃣'];
-  const colors=['#FFD700','#C0C0C0','#CD7F32','#6B7280','#6B7280'];
-  const bgColors=['#FFFDE7','#F5F5F5','#FBE9E7','#F9FAFB','#F9FAFB'];
+  const medals=['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟'];
+  const colors=['#FFD700','#C0C0C0','#CD7F32','#6B7280','#6B7280','#6B7280','#6B7280','#6B7280','#6B7280','#6B7280'];
+  const bgColors=['#FFFDE7','#F5F5F5','#FBE9E7','#F9FAFB','#F9FAFB','#F9FAFB','#F9FAFB','#F9FAFB','#F9FAFB','#F9FAFB'];
 
-  const rows=ranked.map((r,i)=>{
+  function makeRow(r,i,valHtml){
     const g=isGirl(r.s.name);
     const shortN=r.s.name.replace('เด็กชาย','ด.ช.').replace('เด็กหญิง','ด.ญ.');
     const av=r.s.photo
       ?`<img src="${r.s.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
-      :drawAnimalSVG(getStudentAnimal(r.s),g,36);
-    return`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:14px;background:${bgColors[i]};border:1.5px solid ${i<3?colors[i]:'var(--border-soft)'};margin-bottom:8px;${i===0?'box-shadow:0 4px 16px rgba(255,215,0,.3)':''}">
-      <div style="font-size:${i===0?'26px':'20px'};width:32px;text-align:center;flex-shrink:0">${medals[i]}</div>
-      <div style="width:36px;height:36px;border-radius:50%;overflow:hidden;border:2px solid ${i<3?colors[i]:g?'#F4BFDA':'#B5D1F5'};flex-shrink:0">${av}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${shortN}</div>
-        <div style="font-size:11px;color:var(--muted)">ส่งงาน ${r.pct}%</div>
-      </div>
-      <div style="text-align:right;flex-shrink:0">
-        <div style="font-size:18px;font-weight:900;color:${r.score>=0?'var(--green)':'var(--red)'}">${r.score>=0?'+':''}${r.score}</div>
-        <div style="font-size:10px;color:var(--muted)">คะแนน</div>
-      </div>
+      :drawAnimalSVG(getStudentAnimal(r.s),g,32);
+    return`<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:12px;background:${bgColors[i]};border:1.5px solid ${i<3?colors[i]:'var(--border-soft)'};margin-bottom:6px;${i===0?'box-shadow:0 3px 12px rgba(255,215,0,.3)':''}">
+      <div style="font-size:${i===0?'22px':'16px'};width:26px;text-align:center;flex-shrink:0">${medals[i]}</div>
+      <div style="width:32px;height:32px;border-radius:50%;overflow:hidden;border:2px solid ${i<3?colors[i]:g?'#F4BFDA':'#B5D1F5'};flex-shrink:0">${av}</div>
+      <div style="flex:1;min-width:0;font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${shortN}</div>
+      <div style="font-size:15px;font-weight:900;flex-shrink:0">${valHtml}</div>
     </div>`;
-  }).join('');
+  }
 
-  return`<div class="card" style="margin-bottom:1.25rem">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem">
-      <span style="font-size:22px">🏆</span>
-      <div style="font-size:16px;font-weight:800;font-family:Prompt,sans-serif">Top 5 ดาวเด่น</div>
-      <div style="flex:1"></div>
-      <div style="font-size:11px;color:var(--muted)">คะแนน + ส่งงาน</div>
+  // อันดับคะแนนพฤติกรรม
+  const byScore=entries.map(([sid,s])=>({sid,s,score:tot(s)}))
+    .sort((a,b)=>b.score-a.score).slice(0,10);
+  const scoreRows=byScore.map((r,i)=>makeRow(r,i,
+    `<span style="color:${r.score>=0?'var(--green)':'var(--red)'}">${r.score>=0?'+':''}${r.score}</span>`
+  )).join('');
+
+  // อันดับส่งงาน
+  const byTask=entries.map(([sid,s])=>({sid,s,pct:taskPct(s),done:s.taskDone||0,total:s.taskTotal||0}))
+    .sort((a,b)=>b.pct-a.pct||b.done-a.done).slice(0,10);
+  const taskRows=byTask.map((r,i)=>makeRow(r,i,
+    `<span style="color:${r.pct===100?'var(--green)':r.pct>0?'var(--blue)':'var(--red)'}">${r.pct===100?'✓ครบ':r.pct+'%'}</span>`
+  )).join('');
+
+  // Tab state
+  const tab=S._lbTab||'score';
+  return`<div class="card" style="margin-bottom:1.25rem;padding:1rem">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:.75rem">
+      <span style="font-size:20px">🏆</span>
+      <div style="font-size:15px;font-weight:800;font-family:Prompt,sans-serif">Top 10</div>
     </div>
-    ${rows}
+    <div style="display:flex;gap:6px;margin-bottom:.75rem">
+      <button onclick="S._lbTab='score';render()" style="flex:1;padding:7px;border-radius:10px;border:1.5px solid ${tab==='score'?'var(--blue)':'var(--border-soft)'};background:${tab==='score'?'var(--blue-bg)':'var(--surface)'};color:${tab==='score'?'var(--blue)':'var(--muted)'};font-weight:700;font-size:12px;cursor:pointer;font-family:Sarabun,sans-serif">⭐ คะแนนพฤติกรรม</button>
+      <button onclick="S._lbTab='task';render()" style="flex:1;padding:7px;border-radius:10px;border:1.5px solid ${tab==='task'?'var(--green)':'var(--border-soft)'};background:${tab==='task'?'var(--green-bg)':'var(--surface)'};color:${tab==='task'?'var(--green)':'var(--muted)'};font-weight:700;font-size:12px;cursor:pointer;font-family:Sarabun,sans-serif">📋 ส่งงาน</button>
+    </div>
+    ${tab==='score'?scoreRows:taskRows}
   </div>`;}
 function hwSum(hw){if(!hw)return{done:0,total:0};const vals=Object.values(hw);return{done:vals.filter(v=>v&&v.done).length,total:vals.length};}
 function taskPct(s){const total=s.taskTotal||0;const done=s.taskDone||0;if(total===0)return 0;return Math.round(done/total*100);}
@@ -684,7 +689,12 @@ function render(){
   else if(S.view==='pview')el.innerHTML=vPView();
   root.appendChild(el);
   // Restore scroll position
-  requestAnimationFrame(()=>window.scrollTo(0, scrollY));
+  requestAnimationFrame(()=>{
+    window.scrollTo(0, scrollY);
+    // Restore tabs scroll position
+    const tabs=document.querySelector('.tabs');
+    if(tabs && window._tabsScrollLeft) tabs.scrollLeft=window._tabsScrollLeft;
+  });
   // Restore focus to any input/textarea that was active before render
   if(prevId && (prevTag==='INPUT'||prevTag==='TEXTAREA')){
     const inp = document.getElementById(prevId);
@@ -931,26 +941,30 @@ function vTList(){
         <button class="btn" style="font-size:13px" onclick="doTLogout()"><i class="ti ti-logout"></i> ออก</button>
       </div>
     </div>
-    ${(()=>{
-      const ti=DB.taskInfo||{};
-      const label=ti.label||'';
-      const total=ti.total||0;
-      const date=ti.date||'';
-      return`<div onclick="doSetTaskInfo()" style="cursor:pointer;background:linear-gradient(135deg,#1A6BC4,#4DA0F0);border-radius:16px;padding:14px 18px;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 4px 16px rgba(26,107,196,.3)">
-        <div>
-          <div style="color:rgba(255,255,255,.75);font-size:12px;font-weight:600;margin-bottom:3px"><i class="ti ti-clipboard-list"></i> งานประจำสัปดาห์</div>
-          <div style="color:white;font-size:18px;font-weight:800;font-family:Prompt,sans-serif">${label||'ยังไม่ได้ตั้งชื่อรอบ'} ${total?`· ${total} งาน`:''}</div>
-          ${date?`<div style="color:rgba(255,255,255,.7);font-size:12px;margin-top:2px">📅 ${date}</div>`:''}
-        </div>
-        <div style="background:rgba(255,255,255,.2);border-radius:12px;padding:8px 14px;color:white;font-size:13px;font-weight:700;white-space:nowrap;flex-shrink:0">
-          <i class="ti ti-settings"></i> ตั้งค่า
-        </div>
-      </div>`;
-    })()}
+    <div style="display:flex;gap:1rem;align-items:flex-start;margin-bottom:1rem;flex-wrap:wrap">
+      <div style="flex:1;min-width:200px">
+        ${(()=>{
+          const ti=DB.taskInfo||{};
+          const label=ti.label||'';
+          const total=ti.total||0;
+          const date=ti.date||'';
+          return`<div onclick="doSetTaskInfo()" style="cursor:pointer;background:linear-gradient(135deg,#1A6BC4,#4DA0F0);border-radius:16px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 4px 16px rgba(26,107,196,.3);height:100%">
+            <div>
+              <div style="color:rgba(255,255,255,.75);font-size:12px;font-weight:600;margin-bottom:3px"><i class="ti ti-clipboard-list"></i> งานประจำสัปดาห์</div>
+              <div style="color:white;font-size:18px;font-weight:800;font-family:Prompt,sans-serif">${label||'ยังไม่ได้ตั้งชื่อรอบ'} ${total?`· ${total} งาน`:''}</div>
+              ${date?`<div style="color:rgba(255,255,255,.7);font-size:12px;margin-top:2px">📅 ${date}</div>`:''}
+            </div>
+            <div style="background:rgba(255,255,255,.2);border-radius:12px;padding:8px 14px;color:white;font-size:13px;font-weight:700;white-space:nowrap;flex-shrink:0">
+              <i class="ti ti-settings"></i> ตั้งค่า
+            </div>
+          </div>`;
+        })()}
+      </div>
+      <div style="flex:1;min-width:200px">${vLeaderboard()}</div>
+    </div>
     <div class="sw" style="position:sticky;top:56px;z-index:99;background:var(--bg);padding-bottom:.5rem"><i class="ti ti-search"></i>
       <input type="text" placeholder="ค้นหาชื่อหรือเลขประจำตัว" oninput="S.search=this.value;render()" value="${S.search||''}">
     </div>
-    ${vLeaderboard()}
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;width:100%" class="av-grid">${cards}</div>
     ${isDesktop?'</div></div>':''}`;
 }
@@ -2029,6 +2043,11 @@ function closeLightbox(e){
   lb.style.display='none';
   document.body.style.overflow='';
 }
+// Save tabs scroll position on scroll
+document.addEventListener('scroll', ()=>{
+  const tabs=document.querySelector('.tabs');
+  if(tabs) window._tabsScrollLeft=tabs.scrollLeft;
+}, true);
 </script>
 <script>
 if('serviceWorker' in navigator){
