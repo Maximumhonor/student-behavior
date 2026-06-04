@@ -544,7 +544,7 @@ function vLeaderboard(){
       <button onclick="S._lbTab='score';render()" style="padding:4px 10px;border-radius:8px;border:1.5px solid ${tab==='score'?'var(--blue)':'var(--border-soft)'};background:${tab==='score'?'var(--blue-bg)':'transparent'};color:${tab==='score'?'var(--blue)':'var(--muted)'};font-size:11px;font-weight:700;cursor:pointer;font-family:Sarabun,sans-serif">⭐ คะแนน</button>
       <button onclick="S._lbTab='task';render()" style="padding:4px 10px;border-radius:8px;border:1.5px solid ${tab==='task'?'var(--green)':'var(--border-soft)'};background:${tab==='task'?'var(--green-bg)':'transparent'};color:${tab==='task'?'var(--green)':'var(--muted)'};font-size:11px;font-weight:700;cursor:pointer;font-family:Sarabun,sans-serif">📋 งาน</button>
     </div>
-    <div class="lb-scroll" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none;-webkit-overflow-scrolling:touch;width:100%">
+    <div id="lb-scroll" class="lb-scroll" style="display:flex;gap:8px;overflow-x:scroll;padding-bottom:8px;-webkit-overflow-scrolling:touch;width:100%;cursor:grab;user-select:none" onscroll="S._lbScroll=this.scrollLeft">
       ${tab==='score'?scoreCards:taskCards}
     </div>
   </div>`;}
@@ -689,6 +689,9 @@ function render(){
   document.getElementById('loading-screen')?.remove();
   root.replaceChildren(el);
 
+  // Restore lb-scroll position
+  const lbEl=document.getElementById('lb-scroll');
+  if(lbEl && S._lbScroll) lbEl.scrollLeft=S._lbScroll;
   // Restore focus
   if(prevId && (prevTag==='INPUT'||prevTag==='TEXTAREA')){
     const inp = document.getElementById(prevId);
@@ -1724,12 +1727,24 @@ async function doSubmitDeed(){
 }
 async function doApprove(rid){
   const req=(DB.requests||{})[rid];if(!req)return;
-  await api('PATCH',`/requests/${rid}`,{status:'approved'});
+  req.status='approved';
   const s=DB.students[req.studentId];
-  if(s){s.logs=[{desc:`ความดี: ${req.desc}`,score:req.score,date:today()},...(s.logs||[])];await api('PATCH',`/students/${req.studentId}`,{logs:s.logs});}
+  if(s){
+    s.logs=s.logs||[];
+    s.logs.unshift({desc:`ความดี: ${req.desc}`,score:req.score,date:today(),id:Date.now().toString()});
+    await api('PATCH',`/students/${req.studentId}`,{logs:s.logs});
+  }
+  await api('POST','/data',DB);
   await loadDB();
+  render();
 }
-async function doReject(rid){await api('PATCH',`/requests/${rid}`,{status:'rejected'});await loadDB();}
+async function doReject(rid){
+  const req=(DB.requests||{})[rid];if(!req)return;
+  req.status='rejected';
+  await api('POST','/data',DB);
+  await loadDB();
+  render();
+}
 async function doUploadPhoto(input){
   const file=input.files[0];if(!file)return;
   S.msg='กำลังอัพโหลด...';render();
@@ -2020,6 +2035,27 @@ function closeLightbox(e){
   lb.style.display='none';
   document.body.style.overflow='';
 }
+// Mouse drag scroll for leaderboard on desktop
+document.addEventListener('mousedown', e=>{
+  const el=e.target.closest('.lb-scroll');
+  if(!el)return;
+  el.dataset.dragging='1';
+  el.dataset.startX=e.pageX-el.offsetLeft;
+  el.dataset.scrollLeft=el.scrollLeft;
+  el.style.cursor='grabbing';
+});
+document.addEventListener('mousemove', e=>{
+  const el=document.querySelector('.lb-scroll[data-dragging="1"]');
+  if(!el)return;
+  e.preventDefault();
+  const x=e.pageX-el.offsetLeft;
+  const walk=(x-el.dataset.startX)*1.5;
+  el.scrollLeft=el.dataset.scrollLeft-walk;
+});
+document.addEventListener('mouseup', ()=>{
+  const el=document.querySelector('.lb-scroll[data-dragging="1"]');
+  if(el){el.dataset.dragging='0';el.style.cursor='grab';}
+});
 // Save tabs scroll position on scroll
 
 </script>
