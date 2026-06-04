@@ -124,21 +124,25 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px;font-wei
 @keyframes legendaryFloat{0%,100%{transform:translateY(0) rotate(-2deg);filter:brightness(1.2)}50%{transform:translateY(-8px) rotate(2deg);filter:brightness(1.5)}}
 @keyframes legendaryGlow{0%,100%{box-shadow:0 0 15px rgba(255,215,0,.8),0 0 30px rgba(255,100,0,.5)}50%{box-shadow:0 0 25px rgba(255,215,0,1),0 0 50px rgba(255,100,0,.8),0 0 70px rgba(255,0,255,.4)}}
 @keyframes legendaryRing{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes legendaryRing2{from{transform:rotate(360deg)}to{transform:rotate(0deg)}}
+@keyframes uncommonFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 @keyframes rareFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
 @keyframes rareGlow{0%,100%{box-shadow:0 0 10px rgba(100,200,255,.6),0 0 20px rgba(100,200,255,.3)}50%{box-shadow:0 0 20px rgba(100,200,255,1),0 0 40px rgba(100,200,255,.6)}}
 @keyframes rarePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
 @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 @keyframes particleFly{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0}}
 .av-legendary{animation:legendaryFloat 2s ease-in-out infinite,legendaryGlow 1.5s ease-in-out infinite;border-radius:50%;position:relative;}
-.av-legendary::before{content:'';position:absolute;inset:-4px;border-radius:50%;background:conic-gradient(from 0deg,#FFD700,#FF6600,#FF00FF,#00FFFF,#FFD700);animation:legendaryRing 2s linear infinite;z-index:-1;}
-.av-rare{animation:rareFloat 2.5s ease-in-out infinite,rareGlow 2s ease-in-out infinite;border-radius:50%;}
-.av-uncommon{transition:transform .2s;border-radius:50%;}
-.av-uncommon:hover{transform:scale(1.1);}
+.av-legendary::before{content:'';position:absolute;inset:-5px;border-radius:50%;background:conic-gradient(from 0deg,#FFD700,#FF4500,#FF00CC,#00FFFF,#FFD700);animation:legendaryRing 1.8s linear infinite;z-index:-1;filter:blur(1px)}
+.av-legendary::after{content:'';position:absolute;inset:-9px;border-radius:50%;background:conic-gradient(from 180deg,#FFD700,#9000FF,#FF4500,#00FFFF,#FFD700);animation:legendaryRing2 3s linear infinite;z-index:-2;opacity:.4;filter:blur(2px)}
+.av-rare{animation:rareFloat 2.5s ease-in-out infinite,rareGlow 2s ease-in-out infinite;border-radius:50%;position:relative;}
+.av-rare::before{content:'';position:absolute;inset:-4px;border-radius:50%;background:conic-gradient(from 0deg,#00C8FF,#7B2FBE,#FF00AA,#00C8FF);animation:legendaryRing 2.5s linear infinite;z-index:-1;filter:blur(1px);opacity:.85}
+.av-uncommon{animation:uncommonFloat 3s ease-in-out infinite;transition:transform .2s;border-radius:50%;position:relative;}
+.av-uncommon::before{content:'';position:absolute;inset:-3px;border-radius:50%;background:conic-gradient(from 0deg,#2ECC40,#00FF88,#00C8FF,#2ECC40);animation:legendaryRing 3.5s linear infinite;z-index:-1;filter:blur(1px);opacity:.6}
 .av-common{border-radius:50%;}
 .av-locked{filter:grayscale(1) brightness(0.5);cursor:not-allowed!important;}
-.av-badge-legendary{background:linear-gradient(135deg,#FFD700,#FF6600);color:white;font-size:9px;font-weight:800;padding:2px 6px;border-radius:999px;display:inline-block;margin-top:2px;}
-.av-badge-rare{background:linear-gradient(135deg,#00BFFF,#7B2FBE);color:white;font-size:9px;font-weight:800;padding:2px 6px;border-radius:999px;display:inline-block;margin-top:2px;}
-.av-badge-uncommon{background:linear-gradient(135deg,#43A047,#1B5E20);color:white;font-size:9px;font-weight:800;padding:2px 6px;border-radius:999px;display:inline-block;margin-top:2px;}
+.av-badge-legendary{background:linear-gradient(135deg,#FFD700,#FF4500);color:white;font-size:9px;font-weight:900;padding:2px 7px;border-radius:999px;display:inline-block;margin-top:2px;box-shadow:0 2px 6px rgba(255,100,0,.5)}
+.av-badge-rare{background:linear-gradient(135deg,#00C8FF,#7B2FBE);color:white;font-size:9px;font-weight:900;padding:2px 7px;border-radius:999px;display:inline-block;margin-top:2px;box-shadow:0 2px 6px rgba(0,200,255,.4)}
+.av-badge-uncommon{background:linear-gradient(135deg,#2ECC40,#00855A);color:white;font-size:9px;font-weight:900;padding:2px 7px;border-radius:999px;display:inline-block;margin-top:2px;box-shadow:0 2px 6px rgba(46,204,64,.4)}
 .task-modal{display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.5);align-items:center;justify-content:center}
 .task-modal.show{display:flex}
 .task-modal-box{background:white;border-radius:20px;padding:1.5rem;width:90%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
@@ -1378,10 +1382,10 @@ function vPView(){
         </div>`;
       }).join('');
       return`<div style="margin-bottom:1.25rem">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:.5rem;padding:6px 12px;border-radius:10px;background:${!unlocked?'#f5f5f5':td.tier==='legendary'?'linear-gradient(135deg,#FFD700,#FF6600)':td.tier==='rare'?'linear-gradient(135deg,#00BFFF,#7B2FBE)':td.tier==='uncommon'?'linear-gradient(135deg,#43A047,#1B5E20)':'var(--border-soft)'}">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:.5rem;padding:6px 12px;border-radius:10px;background:${!unlocked?'#EEEEEE':td.tier==='legendary'?'linear-gradient(135deg,#3D1A00,#7A3600)':td.tier==='rare'?'linear-gradient(135deg,#080030,#160060)':td.tier==='uncommon'?'linear-gradient(135deg,#012810,#024820)':'linear-gradient(135deg,#1C1C2E,#2A2A40)'};border:1.5px solid ${!unlocked?'#CCC':td.tier==='legendary'?'#FFD700':td.tier==='rare'?'#00C8FF':td.tier==='uncommon'?'#2ECC40':'#555'}">
           <span style="font-size:16px">${unlocked?'':'🔒 '}</span>
-          <span style="font-size:13px;font-weight:800;color:${unlocked&&tierKey!=='common'?'white':'var(--text)'}">${td.label}</span>
-          <span style="font-size:11px;color:${unlocked&&tierKey!=='common'?'rgba(255,255,255,.8)':'var(--muted)'}">· ${unlocked?'ปลดล็อคแล้ว':tierKey==='legendary'?'อันดับ 1-5':tierKey==='rare'?'อันดับ 1-10':'อันดับ 1-20'}</span>
+          <span style="font-size:13px;font-weight:800;color:${!unlocked?'var(--text)':tierKey==='legendary'?'#FFD700':tierKey==='rare'?'#00C8FF':tierKey==='uncommon'?'#2ECC40':'#C0C0C0'}">${td.label}</span>
+          <span style="font-size:11px;color:${!unlocked?'var(--muted)':tierKey==='legendary'?'rgba(255,215,0,.7)':tierKey==='rare'?'rgba(0,200,255,.7)':tierKey==='uncommon'?'rgba(46,204,64,.7)':'#888'}">· ${unlocked?'ปลดล็อคแล้ว':tierKey==='legendary'?'อันดับ 1-5':tierKey==='rare'?'อันดับ 1-10':'อันดับ 1-20'}</span>
         </div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">${cards}</div>
       </div>`;
@@ -1426,21 +1430,17 @@ function vPView(){
     <div class="student-header" style="position:relative;padding:1rem;border-radius:var(--r);${(()=>{const ph=profileCardHeader(s);return ph.borderStyle;})()} ">
       ${(()=>{const ph=profileCardHeader(s);return ph.stars;})()}
       <div style="display:flex;align-items:center;gap:12px">
-        <!-- รูปโปรไฟล์ซ้าย -->
-        <label style="cursor:pointer;position:relative;flex-shrink:0" title="คลิกเพื่อเปลี่ยนรูปโปรไฟล์">
-          <div style="width:60px;height:60px;border-radius:50%;overflow:hidden;border:3px solid ${g?'#F4BFDA':'#B5D1F5'};background:var(--bg)">
+        <!-- รูปโปรไฟล์ซ้าย (ผู้ปกครองดูอย่างเดียว ครูใส่รูปให้) -->
+        <div style="position:relative;flex-shrink:0">
+          <div style="width:64px;height:64px;border-radius:50%;overflow:hidden;border:3px solid ${g?'#F4BFDA':'#B5D1F5'};background:var(--bg)">
             ${s.photo
               ?`<img src="${s.photo}" style="width:100%;height:100%;object-fit:cover">`
-              :`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:24px;background:${g?'var(--pink-bg)':'var(--blue-bg)'}">${ini(s.name)}</div>`}
+              :`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:28px;background:${g?'var(--pink-bg)':'var(--blue-bg)'}">${ini(s.name)}</div>`}
           </div>
-          <div style="position:absolute;bottom:0;right:0;width:18px;height:18px;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white">
-            <i class="ti ti-camera" style="font-size:10px;color:#fff"></i>
-          </div>
-          <input type="file" accept="image/*" style="display:none" onchange="doUploadPhoto(this)">
-        </label>
+        </div>
         <!-- ชื่อกลาง -->
         <div style="flex:1;min-width:0">
-          ${s.photo?`<button onclick="doRemovePhoto()" style="background:none;border:none;font-size:11px;color:var(--red);cursor:pointer;padding:0;margin-bottom:2px">ลบรูป</button>`:''}
+          <div style="height:0"></div>
           <div style="font-size:12px;color:var(--muted);margin-bottom:1px">เลขที่ ${s.no||'-'}${s.sid?' · '+s.sid:''}</div>
           <div style="font-size:15px;font-weight:700;font-family:'Prompt',sans-serif;display:flex;align-items:center;gap:6px">
             <span>${(()=>{const ph=profileCardHeader(s);return ph.emoji;})()}</span>
