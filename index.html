@@ -120,6 +120,25 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px;font-wei
 .pcard{background:linear-gradient(135deg,var(--amber-bg),#FEF9E7);border:1px solid var(--amber-bd);border-radius:var(--rs);padding:13px;margin-bottom:8px;box-shadow:var(--shadow-sm)}
 .merr{background:var(--red-bg);color:var(--red);border-radius:var(--rs);padding:11px 14px;font-size:14px;margin-bottom:1rem;border:1px solid var(--red-bd)}
 .mok{background:var(--green-bg);color:var(--green);border-radius:var(--rs);padding:11px 14px;font-size:14px;margin-bottom:1rem;border:1px solid var(--green-bd)}
+/* ===== AVATAR EFFECTS ===== */
+@keyframes legendaryFloat{0%,100%{transform:translateY(0) rotate(-2deg);filter:brightness(1.2)}50%{transform:translateY(-8px) rotate(2deg);filter:brightness(1.5)}}
+@keyframes legendaryGlow{0%,100%{box-shadow:0 0 15px rgba(255,215,0,.8),0 0 30px rgba(255,100,0,.5)}50%{box-shadow:0 0 25px rgba(255,215,0,1),0 0 50px rgba(255,100,0,.8),0 0 70px rgba(255,0,255,.4)}}
+@keyframes legendaryRing{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes rareFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes rareGlow{0%,100%{box-shadow:0 0 10px rgba(100,200,255,.6),0 0 20px rgba(100,200,255,.3)}50%{box-shadow:0 0 20px rgba(100,200,255,1),0 0 40px rgba(100,200,255,.6)}}
+@keyframes rarePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes particleFly{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0}}
+.av-legendary{animation:legendaryFloat 2s ease-in-out infinite,legendaryGlow 1.5s ease-in-out infinite;border-radius:50%;position:relative;}
+.av-legendary::before{content:'';position:absolute;inset:-4px;border-radius:50%;background:conic-gradient(from 0deg,#FFD700,#FF6600,#FF00FF,#00FFFF,#FFD700);animation:legendaryRing 2s linear infinite;z-index:-1;}
+.av-rare{animation:rareFloat 2.5s ease-in-out infinite,rareGlow 2s ease-in-out infinite;border-radius:50%;}
+.av-uncommon{transition:transform .2s;border-radius:50%;}
+.av-uncommon:hover{transform:scale(1.1);}
+.av-common{border-radius:50%;}
+.av-locked{filter:grayscale(1) brightness(0.5);cursor:not-allowed!important;}
+.av-badge-legendary{background:linear-gradient(135deg,#FFD700,#FF6600);color:white;font-size:9px;font-weight:800;padding:2px 6px;border-radius:999px;display:inline-block;margin-top:2px;}
+.av-badge-rare{background:linear-gradient(135deg,#00BFFF,#7B2FBE);color:white;font-size:9px;font-weight:800;padding:2px 6px;border-radius:999px;display:inline-block;margin-top:2px;}
+.av-badge-uncommon{background:linear-gradient(135deg,#43A047,#1B5E20);color:white;font-size:9px;font-weight:800;padding:2px 6px;border-radius:999px;display:inline-block;margin-top:2px;}
 .ndot{width:8px;height:8px;background:#E24B4A;border-radius:50%;display:inline-block;margin-left:4px;vertical-align:middle;animation:pulse 2s infinite}
 .icon-badge{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
 .icon-badge-blue{background:linear-gradient(135deg,#EBF3FF,#D6E8FF);color:var(--blue)}
@@ -523,6 +542,13 @@ function vLeaderboard(){
     </div>`;
   }
 
+  // อันดับรวม (พฤติกรรม + งาน)
+  const byCombined=entries.map(([sid,s])=>({sid,s,combined:tot(s)+(s.taskDone||0),score:tot(s),task:s.taskDone||0}))
+    .sort((a,b)=>b.combined-a.combined).slice(0,20);
+  const combinedCards=byCombined.map((r,i)=>makeCard(r,i,
+    `<span style="color:${r.combined>0?'#9C27B0':'var(--muted)'};font-size:11px;line-height:1.4">⭐${r.score>=0?'+':''}${r.score} 📋${r.task}</span>`
+  )).join('');
+
   const byScore=entries.map(([sid,s])=>({sid,s,score:tot(s)}))
     .sort((a,b)=>b.score-a.score).slice(0,20);
   const scoreCards=byScore.map((r,i)=>makeCard(r,i,
@@ -541,11 +567,12 @@ function vLeaderboard(){
       <span style="font-size:18px">🏆</span>
       <span style="font-size:14px;font-weight:800;font-family:Prompt,sans-serif">Top 10</span>
       <div style="flex:1"></div>
+      <button onclick="S._lbTab='combined';render()" style="padding:4px 10px;border-radius:8px;border:1.5px solid ${tab==='combined'?'#9C27B0':'var(--border-soft)'};background:${tab==='combined'?'#F3E5F5':'transparent'};color:${tab==='combined'?'#9C27B0':'var(--muted)'};font-size:11px;font-weight:700;cursor:pointer;font-family:Sarabun,sans-serif">🏅 รวม</button>
       <button onclick="S._lbTab='score';render()" style="padding:4px 10px;border-radius:8px;border:1.5px solid ${tab==='score'?'var(--blue)':'var(--border-soft)'};background:${tab==='score'?'var(--blue-bg)':'transparent'};color:${tab==='score'?'var(--blue)':'var(--muted)'};font-size:11px;font-weight:700;cursor:pointer;font-family:Sarabun,sans-serif">⭐ คะแนน</button>
       <button onclick="S._lbTab='task';render()" style="padding:4px 10px;border-radius:8px;border:1.5px solid ${tab==='task'?'var(--green)':'var(--border-soft)'};background:${tab==='task'?'var(--green-bg)':'transparent'};color:${tab==='task'?'var(--green)':'var(--muted)'};font-size:11px;font-weight:700;cursor:pointer;font-family:Sarabun,sans-serif">📋 งาน</button>
     </div>
     <div id="lb-scroll" class="lb-scroll" style="display:flex;gap:8px;overflow-x:scroll;padding-bottom:8px;-webkit-overflow-scrolling:touch;width:100%;cursor:grab;user-select:none" onscroll="S._lbScroll=this.scrollLeft">
-      ${tab==='score'?scoreCards:taskCards}
+      ${tab==='combined'?combinedCards:tab==='score'?scoreCards:taskCards}
     </div>
   </div>`;}
 function hwSum(hw){if(!hw)return{done:0,total:0};const vals=Object.values(hw);return{done:vals.filter(v=>v&&v.done).length,total:vals.length};}
@@ -845,6 +872,65 @@ function drawAnimalSVG(animal,g,size=56){
 
 const ALL_ANIMALS=['cat','rabbit','bear','panda','fox','koala','frog','owl','lion','tiger','elephant','duck','penguin','chick','dog','hamster','deer','unicorn','sheep','pig','blob','cyclops','ghost','slime','dragon','witch','vampire','zombie','goblin','yeti','alien','astronaut','robot','ufo','planet','star','comet','rocket','cyborg','meteor','ninja','wizard','knight','pirate','chef','cactus','rainbow','cloud','sun','icecream'];
 const ANIMAL_NAMES={'cat':'แมว','rabbit':'กระต่าย','bear':'หมี','panda':'แพนด้า','fox':'จิ้งจอก','koala':'โคอาล่า','frog':'กบ','owl':'นกฮูก','lion':'สิงโต','tiger':'เสือ','elephant':'ช้าง','duck':'เป็ด','penguin':'เพนกวิน','chick':'ลูกไก่','dog':'หมา','hamster':'แฮมสเตอร์','deer':'กวาง','unicorn':'ยูนิคอร์น','sheep':'แกะ','pig':'หมู','blob':'บลอบ','cyclops':'ไซคลอปส์','ghost':'ผี','slime':'สไลม์','dragon':'มังกร','witch':'แม่มด','vampire':'แวมไพร์','zombie':'ซอมบี้','goblin':'ก็อบลิน','yeti':'เยติ','alien':'เอเลียน','astronaut':'นักบินอวกาศ','robot':'หุ่นยนต์','ufo':'จาน UFO','planet':'ดาวเคราะห์','star':'ดาว','comet':'ดาวหาง','rocket':'จรวด','cyborg':'ไซบอร์ก','meteor':'อุกกาบาต','ninja':'นินจา','wizard':'พ่อมด','knight':'อัศวิน','pirate':'โจรสลัด','chef':'เชฟ','cactus':'กระบองเพชร','rainbow':'รุ้ง','cloud':'เมฆ','sun':'ดวงอาทิตย์','icecream':'ไอศกรีม'};
+
+// ===== AVATAR TIER SYSTEM =====
+const AVATAR_TIERS = {
+  legendary: {
+    label:'✨ Legendary', color:'#FFD700', bg:'linear-gradient(135deg,#2D1B00,#4A2800)',
+    animals:['dragon','unicorn','alien','comet','cyborg','meteor','wizard','knight'],
+    unlock: s => getPlayerRank(s) <= 5,
+    effect:'av-legendary', badge:'av-badge-legendary', badgeText:'LEGENDARY'
+  },
+  rare: {
+    label:'💎 Rare', color:'#00BFFF', bg:'linear-gradient(135deg,#001433,#001A4D)',
+    animals:['astronaut','robot','ufo','planet','star','rocket','vampire','yeti','goblin','ninja'],
+    unlock: s => getPlayerRank(s) <= 10,
+    effect:'av-rare', badge:'av-badge-rare', badgeText:'RARE'
+  },
+  uncommon: {
+    label:'🌟 Uncommon', color:'#43A047', bg:'linear-gradient(135deg,#001A00,#002600)',
+    animals:['witch','zombie','cyclops','ghost','slime','blob','pirate','chef','rainbow','icecream'],
+    unlock: s => getPlayerRank(s) <= 20,
+    effect:'av-uncommon', badge:'av-badge-uncommon', badgeText:'UNCOMMON'
+  },
+  common: {
+    label:'⭐ Common', color:'#6B7280', bg:'var(--surface)',
+    animals:['cat','rabbit','bear','panda','fox','koala','frog','owl','lion','tiger','elephant','duck','penguin','chick','dog','hamster','deer','unicorn','sheep','pig','cactus','cloud','sun','chick'],
+    unlock: s => true,
+    effect:'av-common', badge:'', badgeText:'COMMON'
+  }
+};
+
+function getPlayerRank(s){
+  const entries=Object.entries(DB.students||{});
+  const myScore=tot(s)+(s.taskDone||0);
+  const ranked=entries.map(([,st])=>tot(st)+(st.taskDone||0)).sort((a,b)=>b-a);
+  const rank=ranked.indexOf(myScore)+1;
+  return rank||999;
+}
+
+function getAvatarTier(animal){
+  for(const [tier,data] of Object.entries(AVATAR_TIERS)){
+    if(data.animals.includes(animal)) return {tier,...data};
+  }
+  return {tier:'common',...AVATAR_TIERS.common};
+}
+
+function drawAvatarWithEffect(animal,g,size,showEffect=true){
+  const tierData=getAvatarTier(animal);
+  const svgContent=drawAnimalSVG(animal,g,size);
+  if(!showEffect||tierData.tier==='common') return svgContent;
+  if(tierData.tier==='legendary'){
+    return`<div class="av-legendary" style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center">${svgContent}</div>`;
+  }
+  if(tierData.tier==='rare'){
+    return`<div class="av-rare" style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center">${svgContent}</div>`;
+  }
+  if(tierData.tier==='uncommon'){
+    return`<div class="av-uncommon" style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center">${svgContent}</div>`;
+  }
+  return svgContent;
+}
 
 
 
@@ -1239,25 +1325,49 @@ function vPView(){
       <button class="btn btn-b btn-full" onclick="doSubmitDeed()"><i class="ti ti-send"></i> ส่งให้ครูอนุมัติ</button>
     </div>${myReqs.length>0?`<div class="sec">ประวัติคำขอ</div><div class="card">${rh}</div>`:''}`;
   } else if(S.tab==='avatar'){
-    const ANIMALS=ALL_ANIMALS;
-    const ANIMAL_NAMES_LOCAL=ANIMAL_NAMES;
     const g=isGirl(s.name);
     const currentAnimal=s.chosenAnimal||getAnimal(s.name,g);
-    const grid=ANIMALS.map(a=>{
-      const chosen=currentAnimal===a;
-      return`<div onclick="doChooseAnimal('${S.sid}','${a}')" style="cursor:pointer;border-radius:16px;padding:8px;border:2.5px solid ${chosen?'#1A6BC4':'transparent'};background:${chosen?'#EBF3FF':'var(--bg)'};transition:all .2s;text-align:center" onmouseover="this.style.background='#EBF3FF'" onmouseout="this.style.background='${chosen?'#EBF3FF':'var(--bg)'}'">
-        ${drawAnimalSVG(a,g,52)}
-        <div style="font-size:11px;margin-top:4px;color:${chosen?'#1A6BC4':'var(--muted)'};font-weight:${chosen?'600':'400'}">${ANIMAL_NAMES_LOCAL[a]}</div>
-        ${chosen?'<div style="font-size:10px;color:#1A6BC4">✓ เลือกอยู่</div>':''}
+    const rank=getPlayerRank(s);
+    const tierData=getAvatarTier(currentAnimal);
+
+    // แสดง avatar ปัจจุบันพร้อม effect
+    const currentDisplay=`<div style="position:relative;width:100px;height:100px;margin:0 auto 8px">
+      ${tierData.tier==='legendary'?`<div style="position:absolute;inset:-8px;border-radius:50%;background:conic-gradient(from 0deg,#FFD700,#FF6600,#FF00FF,#00FFFF,#FFD700);animation:legendaryRing 2s linear infinite;z-index:0"></div>`:''}
+      <div style="position:relative;z-index:1;width:100px;height:100px;border-radius:50%;overflow:hidden;border:3px solid ${tierData.tier==='legendary'?'#FFD700':tierData.tier==='rare'?'#00BFFF':g?'#F4BFDA':'#B5D1F5'};${tierData.tier==='legendary'?'animation:legendaryFloat 2s ease-in-out infinite,legendaryGlow 1.5s ease-in-out infinite;':tierData.tier==='rare'?'animation:rareFloat 2.5s ease-in-out infinite,rareGlow 2s ease-in-out infinite;':''}box-shadow:0 4px 16px rgba(0,0,0,.2)">${drawAnimalSVG(currentAnimal,g,100)}</div>
+    </div>`;
+
+    // สร้าง grid แต่ละ tier
+    const tierSections=Object.entries(AVATAR_TIERS).map(([tierKey,td])=>{
+      const unlocked=td.unlock(s);
+      const cards=td.animals.map(a=>{
+        const chosen=currentAnimal===a;
+        const isLocked=!unlocked;
+        return`<div onclick="${isLocked?'':`doChooseAnimal('${S.sid}','${a}')`}" style="cursor:${isLocked?'not-allowed':'pointer'};border-radius:14px;padding:8px 4px;border:2.5px solid ${chosen?'#1A6BC4':isLocked?'#E0E0E0':'transparent'};background:${chosen?'#EBF3FF':'var(--bg)'};transition:all .2s;text-align:center;position:relative">
+          ${isLocked?'<div style="position:absolute;top:4px;right:4px;font-size:14px">🔒</div>':''}
+          <div style="${tierKey==='legendary'?'animation:legendaryFloat 2s ease-in-out infinite':tierKey==='rare'?'animation:rareFloat 2.5s ease-in-out infinite':''}">${drawAnimalSVG(a,g,48)}</div>
+          <div style="font-size:10px;margin-top:3px;color:${chosen?'#1A6BC4':'var(--text)'};font-weight:${chosen?'700':'500'}">${ANIMAL_NAMES[a]||a}</div>
+          <div style="font-size:9px;margin-top:2px;padding:1px 5px;border-radius:999px;display:inline-block;background:${tierKey==='legendary'?'linear-gradient(135deg,#FFD700,#FF6600)':tierKey==='rare'?'linear-gradient(135deg,#00BFFF,#7B2FBE)':tierKey==='uncommon'?'linear-gradient(135deg,#43A047,#1B5E20)':'#E0E0E0'};color:${tierKey==='common'?'#555':'white'};font-weight:700">${tierKey==='legendary'?'✨ Legendary':tierKey==='rare'?'💎 Rare':tierKey==='uncommon'?'🌟 Uncommon':'⭐ Common'}</div>
+          ${isLocked?`<div style="font-size:9px;color:#E65100;margin-top:2px;font-weight:600">🔒 ต้องอันดับ ${tierKey==='legendary'?'1-5':tierKey==='rare'?'1-10':'1-20'}</div>`:''}
+          ${chosen?'<div style="font-size:9px;color:#1A6BC4;font-weight:700;margin-top:1px">✓ เลือกอยู่</div>':''}
+        </div>`;
+      }).join('');
+      return`<div style="margin-bottom:1.25rem">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:.5rem;padding:6px 12px;border-radius:10px;background:${isLocked?'#f5f5f5':td.tier==='legendary'?'linear-gradient(135deg,#FFD700,#FF6600)':td.tier==='rare'?'linear-gradient(135deg,#00BFFF,#7B2FBE)':td.tier==='uncommon'?'linear-gradient(135deg,#43A047,#1B5E20)':'var(--border-soft)'}">
+          <span style="font-size:16px">${unlocked?'':'🔒 '}</span>
+          <span style="font-size:13px;font-weight:800;color:${unlocked&&tierKey!=='common'?'white':'var(--text)'}">${td.label}</span>
+          <span style="font-size:11px;color:${unlocked&&tierKey!=='common'?'rgba(255,255,255,.8)':'var(--muted)'}">· ${unlocked?'ปลดล็อคแล้ว':tierKey==='legendary'?'อันดับ 1-5':tierKey==='rare'?'อันดับ 1-10':'อันดับ 1-20'}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">${cards}</div>
       </div>`;
     }).join('');
+
     content=`
       <div style="text-align:center;margin-bottom:1rem">
-        <div style="width:80px;height:80px;border-radius:50%;overflow:hidden;border:3px solid ${g?'#F4BFDA':'#B5D1F5'};margin:0 auto 8px;box-shadow:0 2px 12px rgba(0,0,0,.12)">${drawAnimalSVG(currentAnimal,g,80)}</div>
-        <div style="font-size:13px;color:var(--muted)">Avatar ปัจจุบัน: <strong style="color:var(--text)">${ANIMAL_NAMES_LOCAL[currentAnimal]||currentAnimal}</strong></div>
+        ${currentDisplay}
+        <div style="font-size:13px;color:var(--muted)">Avatar ปัจจุบัน: <strong style="color:var(--text)">${ANIMAL_NAMES[currentAnimal]||currentAnimal}</strong></div>
+        <div style="font-size:12px;margin-top:4px;color:var(--muted)">อันดับของคุณ: <strong style="color:${rank<=5?'#FFD700':rank<=10?'#00BFFF':rank<=20?'#43A047':'var(--muted)'}">#${rank}</strong></div>
       </div>
-      <div class="sec">เลือก Avatar ที่ชอบ</div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">${grid}</div>`;
+      ${tierSections}`;
   } else if(S.tab==='chat'){
     const pMsgs=Object.values(DB.messages||{}).filter(m=>m.studentId===S.sid).sort((a,b)=>(a.ts||0)-(b.ts||0));
     const pBubbles=pMsgs.length>0?pMsgs.map((m,mi)=>`
