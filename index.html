@@ -1200,20 +1200,38 @@ function vTList(){
     <div class="student-header" style="position:relative;padding:1rem;border-radius:var(--r);${(()=>{const ph=profileCardHeader(s);return ph.borderStyle;})()} ">
       ${(()=>{const ph=profileCardHeader(s);return ph.stars;})()}
       <div style="display:flex;align-items:center;gap:12px">
+        <!-- รูปโปรไฟล์ซ้าย (ครูอัปโหลด + crop ได้) -->
         <label style="cursor:pointer;position:relative;flex-shrink:0" title="คลิกเพื่อเปลี่ยนรูปโปรไฟล์">
-          ${avHtml(s,52,18)}
-          <div style="position:absolute;bottom:0;right:0;width:18px;height:18px;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white">
-            <i class="ti ti-camera" style="font-size:10px;color:#fff"></i>
+          <div style="width:64px;height:64px;border-radius:50%;overflow:hidden;border:3px solid ${g?'#F4BFDA':'#B5D1F5'};background:var(--bg)">
+            ${s.photo
+              ?`<img src="${s.photo}" style="width:100%;height:100%;object-fit:cover">`
+              :`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:28px;background:${g?'var(--pink-bg)':'var(--blue-bg)'}">${ini(s.name)}</div>`}
           </div>
-          <input type="file" accept="image/*" style="display:none" onchange="doUploadPhoto(this)">
+          <div style="position:absolute;bottom:0;right:0;width:20px;height:20px;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white">
+            <i class="ti ti-camera" style="font-size:11px;color:#fff"></i>
+          </div>
+          <input type="file" accept="image/*" style="display:none" onchange="openCropModal(this,'${S.sid}')">
         </label>
+        <!-- ชื่อกลาง -->
         <div style="flex:1;min-width:0">
           ${s.photo?`<button onclick="doRemovePhoto()" style="background:none;border:none;font-size:11px;color:var(--red);cursor:pointer;padding:0;margin-bottom:2px">ลบรูป</button>`:''}
           <div style="font-size:12px;color:var(--muted);margin-bottom:1px">เลขที่ ${s.no||'-'}${s.sid?' · '+s.sid:''}</div>
           <div style="font-size:15px;font-weight:700;font-family:'Prompt',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${(()=>{const ph=profileCardHeader(s);return ph.emoji+' ';})()}${s.name}</div>
           <span class="id-chip" style="margin-top:3px;display:inline-block"><i class="ti ti-id-badge" style="font-size:11px;vertical-align:-1px"></i> ${fmtId(s.idcard)}</span>
         </div>
-
+        <!-- avatar ขวาสุด (tier effect) -->
+        ${(()=>{
+          const _an=getStudentAnimal(s);
+          const _td=getAvatarTier(_an);
+          const _ring=_td.tier==='legendary'?'conic-gradient(from 0deg,#FFD700,#FF4500,#FF00CC,#00FFFF,#FFD700)':_td.tier==='rare'?'conic-gradient(from 0deg,#00C8FF,#7B2FBE,#FF00AA,#00C8FF)':_td.tier==='uncommon'?'conic-gradient(from 0deg,#2ECC40,#00FF88,#00C8FF,#2ECC40)':null;
+          const _border=_td.tier==='legendary'?'#FFD700':_td.tier==='rare'?'#00C8FF':_td.tier==='uncommon'?'#2ECC40':g?'#F4BFDA':'#B5D1F5';
+          const _anim=_td.tier==='legendary'?'legendaryFloat 2s ease-in-out infinite,legendaryGlow 1.5s ease-in-out infinite':_td.tier==='rare'?'rareFloat 2.5s ease-in-out infinite,rareGlow 2s ease-in-out infinite':'none';
+          return`<div style="flex-shrink:0;position:relative;width:56px;height:56px;display:flex;align-items:center;justify-content:center">
+            ${_ring?`<div style="position:absolute;inset:-4px;border-radius:50%;background:${_ring};animation:legendaryRing 2s linear infinite;z-index:0;filter:blur(1px)"></div>`:''}
+            <div style="position:relative;z-index:1;width:52px;height:52px;border-radius:50%;overflow:hidden;border:2.5px solid ${_border};animation:${_anim};box-shadow:${_td.tier!=='common'?'0 0 10px '+_border+'99':'none'}">
+              ${drawAnimalSVG(_an,g,52)}</div>
+          </div>`;
+        })()}
       </div>
     </div>
     <div class="stats">
@@ -1377,10 +1395,10 @@ function vPView(){
         </div>`;
       }).join('');
       return`<div style="margin-bottom:1.25rem">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:.5rem;padding:6px 12px;border-radius:10px;background:${!unlocked?'#EEEEEE':td.tier==='legendary'?'linear-gradient(135deg,#3D1A00,#7A3600)':td.tier==='rare'?'linear-gradient(135deg,#080030,#160060)':td.tier==='uncommon'?'linear-gradient(135deg,#012810,#024820)':'linear-gradient(135deg,#1C1C2E,#2A2A40)'};border:1.5px solid ${!unlocked?'#CCC':td.tier==='legendary'?'#FFD700':td.tier==='rare'?'#00C8FF':td.tier==='uncommon'?'#2ECC40':'#555'}">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:.5rem;padding:6px 12px;border-radius:10px;background:${!unlocked?'#f5f5f5':td.tier==='legendary'?'linear-gradient(135deg,#FFD700,#FF6600)':td.tier==='rare'?'linear-gradient(135deg,#00BFFF,#7B2FBE)':td.tier==='uncommon'?'linear-gradient(135deg,#43A047,#1B5E20)':'var(--border-soft)'}">
           <span style="font-size:16px">${unlocked?'':'🔒 '}</span>
-          <span style="font-size:13px;font-weight:800;color:${!unlocked?'var(--text)':tierKey==='legendary'?'#FFD700':tierKey==='rare'?'#00C8FF':tierKey==='uncommon'?'#2ECC40':'#C0C0C0'}">${td.label}</span>
-          <span style="font-size:11px;color:${!unlocked?'var(--muted)':tierKey==='legendary'?'rgba(255,215,0,.7)':tierKey==='rare'?'rgba(0,200,255,.7)':tierKey==='uncommon'?'rgba(46,204,64,.7)':'#888'}">· ${unlocked?'ปลดล็อคแล้ว':tierKey==='legendary'?'อันดับ 1-5':tierKey==='rare'?'อันดับ 1-10':'อันดับ 1-20'}</span>
+          <span style="font-size:13px;font-weight:800;color:${unlocked&&tierKey!=='common'?'white':'var(--text)'}">${td.label}</span>
+          <span style="font-size:11px;color:${unlocked&&tierKey!=='common'?'rgba(255,255,255,.8)':'var(--muted)'}">· ${unlocked?'ปลดล็อคแล้ว':tierKey==='legendary'?'อันดับ 1-5':tierKey==='rare'?'อันดับ 1-10':'อันดับ 1-20'}</span>
         </div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">${cards}</div>
       </div>`;
@@ -1425,21 +1443,17 @@ function vPView(){
     <div class="student-header" style="position:relative;padding:1rem;border-radius:var(--r);${(()=>{const ph=profileCardHeader(s);return ph.borderStyle;})()} ">
       ${(()=>{const ph=profileCardHeader(s);return ph.stars;})()}
       <div style="display:flex;align-items:center;gap:12px">
-        <!-- รูปโปรไฟล์ซ้าย -->
-        <label style="cursor:pointer;position:relative;flex-shrink:0" title="คลิกเพื่อเปลี่ยนรูปโปรไฟล์">
-          <div style="width:60px;height:60px;border-radius:50%;overflow:hidden;border:3px solid ${g?'#F4BFDA':'#B5D1F5'};background:var(--bg)">
+        <!-- รูปโปรไฟล์ซ้าย (ผู้ปกครองดูอย่างเดียว ครูเป็นคนใส่) -->
+        <div style="position:relative;flex-shrink:0">
+          <div style="width:64px;height:64px;border-radius:50%;overflow:hidden;border:3px solid ${g?'#F4BFDA':'#B5D1F5'};background:var(--bg)">
             ${s.photo
               ?`<img src="${s.photo}" style="width:100%;height:100%;object-fit:cover">`
-              :`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:24px;background:${g?'var(--pink-bg)':'var(--blue-bg)'}">${ini(s.name)}</div>`}
+              :`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:28px;background:${g?'var(--pink-bg)':'var(--blue-bg)'}">${ini(s.name)}</div>`}
           </div>
-          <div style="position:absolute;bottom:0;right:0;width:18px;height:18px;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white">
-            <i class="ti ti-camera" style="font-size:10px;color:#fff"></i>
-          </div>
-          <input type="file" accept="image/*" style="display:none" onchange="doUploadPhoto(this)">
-        </label>
+        </div>
         <!-- ชื่อกลาง -->
         <div style="flex:1;min-width:0">
-          ${s.photo?`<button onclick="doRemovePhoto()" style="background:none;border:none;font-size:11px;color:var(--red);cursor:pointer;padding:0;margin-bottom:2px">ลบรูป</button>`:''}
+          <div style="height:0"></div>
           <div style="font-size:12px;color:var(--muted);margin-bottom:1px">เลขที่ ${s.no||'-'}${s.sid?' · '+s.sid:''}</div>
           <div style="font-size:15px;font-weight:700;font-family:'Prompt',sans-serif;display:flex;align-items:center;gap:6px">
             <span>${(()=>{const ph=profileCardHeader(s);return ph.emoji;})()}</span>
@@ -1448,19 +1462,9 @@ function vPView(){
           <span class="id-chip" style="margin-top:3px;display:inline-block"><i class="ti ti-id-badge" style="font-size:11px;vertical-align:-1px"></i> ${fmtId(s.idcard)}</span>
         </div>
         <!-- avatar ขวาสุด -->
-        ${(()=>{
-          const _an=getStudentAnimal(s);
-          const _td=getAvatarTier(_an);
-          const _ring=_td.tier==='legendary'?'conic-gradient(from 0deg,#FFD700,#FF4500,#FF00CC,#00FFFF,#FFD700)':_td.tier==='rare'?'conic-gradient(from 0deg,#00C8FF,#7B2FBE,#FF00AA,#00C8FF)':_td.tier==='uncommon'?'conic-gradient(from 0deg,#2ECC40,#00FF88,#00C8FF,#2ECC40)':null;
-          const _border=_td.tier==='legendary'?'#FFD700':_td.tier==='rare'?'#00C8FF':_td.tier==='uncommon'?'#2ECC40':g?'#F4BFDA':'#B5D1F5';
-          const _anim=_td.tier==='legendary'?'legendaryFloat 2s ease-in-out infinite,legendaryGlow 1.5s ease-in-out infinite':_td.tier==='rare'?'rareFloat 2.5s ease-in-out infinite,rareGlow 2s ease-in-out infinite':_td.tier==='uncommon'?'uncommonFloat 3s ease-in-out infinite':'none';
-          return`<div style="flex-shrink:0;position:relative;width:56px;height:56px;display:flex;align-items:center;justify-content:center">
-            ${_ring?`<div style="position:absolute;inset:-4px;border-radius:50%;background:${_ring};animation:legendaryRing 2s linear infinite;z-index:0;filter:blur(1px)"></div>`:''}
-            <div style="position:relative;z-index:1;width:52px;height:52px;border-radius:50%;overflow:hidden;border:2.5px solid ${_border};animation:${_anim};box-shadow:${_td.tier!=='common'?'0 0 10px '+_border+'99':'none'}">
-              ${drawAnimalSVG(_an,g,52)}
-            </div>
-          </div>`;
-        })()}
+        <div style="flex-shrink:0;width:52px;height:52px;border-radius:50%;overflow:hidden;border:2px solid ${g?'#F4BFDA':'#B5D1F5'};opacity:.85">
+          ${drawAnimalSVG(getStudentAnimal(s),g,52)}
+        </div>
       </div>
     </div>
     <div class="stats">
@@ -2227,6 +2231,141 @@ if('serviceWorker' in navigator){
       .then(r=>console.log('SW registered'))
       .catch(e=>console.log('SW error',e));
   });
+}
+</script>
+
+<!-- ===== CROP MODAL ===== -->
+<div id="cropModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;flex-direction:column;padding:1rem">
+  <div style="background:#1a1a2e;border-radius:20px;padding:1.5rem;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.5)">
+    <div style="font-size:16px;font-weight:700;color:white;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center">
+      <span>✂️ ปรับรูปให้ได้มุมที่ต้องการ</span>
+      <button onclick="closeCropModal()" style="background:rgba(255,255,255,.15);border:none;border-radius:50%;width:32px;height:32px;color:white;cursor:pointer;font-size:16px">✕</button>
+    </div>
+    <div style="position:relative;width:100%;padding-bottom:100%;background:#111;border-radius:14px;overflow:hidden;margin-bottom:1rem;touch-action:none">
+      <canvas id="cropCanvas" style="position:absolute;inset:0;width:100%;height:100%;cursor:move"></canvas>
+      <!-- วงกลม crop guide -->
+      <div style="position:absolute;inset:0;pointer-events:none">
+        <svg width="100%" height="100%" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <mask id="cropMask">
+              <rect width="300" height="300" fill="white"/>
+              <circle cx="150" cy="150" r="130" fill="black"/>
+            </mask>
+          </defs>
+          <rect width="300" height="300" fill="rgba(0,0,0,.55)" mask="url(#cropMask)"/>
+          <circle cx="150" cy="150" r="130" fill="none" stroke="white" stroke-width="2.5" stroke-dasharray="8 4"/>
+        </svg>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem">
+      <span style="font-size:12px;color:#aaa;white-space:nowrap">ซูม</span>
+      <input type="range" id="cropZoom" min="0.5" max="3" step="0.01" value="1" style="flex:1;accent-color:#1A6BC4" oninput="drawCrop()">
+    </div>
+    <div style="font-size:12px;color:#888;text-align:center;margin-bottom:1rem">ลาก / ซูมเพื่อจัดมุมรูป</div>
+    <div style="display:flex;gap:8px">
+      <button onclick="closeCropModal()" style="flex:1;padding:12px;border-radius:12px;border:1.5px solid #444;background:transparent;color:#aaa;font-family:Sarabun,sans-serif;font-size:14px;cursor:pointer">ยกเลิก</button>
+      <button onclick="confirmCrop()" style="flex:2;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,#1A6BC4,#4DA0F0);color:white;font-family:Sarabun,sans-serif;font-size:14px;font-weight:700;cursor:pointer">✓ ใช้รูปนี้</button>
+    </div>
+  </div>
+</div>
+<script>
+// ===== CROP SYSTEM =====
+let _cropImg=null,_cropX=0,_cropY=0,_cropScale=1,_cropSid=null;
+let _cropDrag=false,_cropLastX=0,_cropLastY=0;
+
+function openCropModal(input, sid){
+  const file=input.files[0]; if(!file) return;
+  _cropSid=sid;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{
+      _cropImg=img;
+      // ตั้งค่าเริ่มต้น: cover วงกลม
+      const minD=Math.min(img.width,img.height);
+      _cropScale=300/minD;
+      _cropX=(300-img.width*_cropScale)/2;
+      _cropY=(300-img.height*_cropScale)/2;
+      document.getElementById('cropZoom').value=1;
+      document.getElementById('cropModal').style.display='flex';
+      requestAnimationFrame(drawCrop);
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+  input.value=''; // reset input
+}
+
+function drawCrop(){
+  const canvas=document.getElementById('cropCanvas');
+  const zoom=parseFloat(document.getElementById('cropZoom').value);
+  const rect=canvas.parentElement.getBoundingClientRect();
+  const sz=rect.width||300;
+  canvas.width=sz; canvas.height=sz;
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,sz,sz);
+  if(!_cropImg) return;
+  const s=(_cropScale*zoom)*(sz/300);
+  const x=_cropX*(sz/300);
+  const y=_cropY*(sz/300);
+  ctx.drawImage(_cropImg,x,y,_cropImg.width*s,_cropImg.height*s);
+}
+
+document.getElementById('cropCanvas').addEventListener('mousedown',e=>{
+  _cropDrag=true; _cropLastX=e.clientX; _cropLastY=e.clientY; e.preventDefault();
+});
+document.addEventListener('mousemove',e=>{
+  if(!_cropDrag) return;
+  const sz=document.getElementById('cropCanvas').width||300;
+  _cropX+=(e.clientX-_cropLastX)*(300/sz);
+  _cropY+=(e.clientY-_cropLastY)*(300/sz);
+  _cropLastX=e.clientX; _cropLastY=e.clientY;
+  drawCrop();
+});
+document.addEventListener('mouseup',()=>{_cropDrag=false;});
+
+document.getElementById('cropCanvas').addEventListener('touchstart',e=>{
+  if(e.touches.length===1){_cropDrag=true;_cropLastX=e.touches[0].clientX;_cropLastY=e.touches[0].clientY;}
+  e.preventDefault();},{passive:false});
+document.addEventListener('touchmove',e=>{
+  if(!_cropDrag||e.touches.length!==1) return;
+  const sz=document.getElementById('cropCanvas').width||300;
+  _cropX+=(e.touches[0].clientX-_cropLastX)*(300/sz);
+  _cropY+=(e.touches[0].clientY-_cropLastY)*(300/sz);
+  _cropLastX=e.touches[0].clientX; _cropLastY=e.touches[0].clientY;
+  drawCrop();},{passive:false});
+document.addEventListener('touchend',()=>{_cropDrag=false;});
+
+document.getElementById('cropZoom').addEventListener('input',drawCrop);
+
+function closeCropModal(){
+  document.getElementById('cropModal').style.display='none';
+  _cropImg=null; _cropSid=null;
+}
+
+async function confirmCrop(){
+  if(!_cropImg) return;
+  const out=document.createElement('canvas');
+  out.width=400; out.height=400;
+  const ctx=out.getContext('2d');
+  // วาดวงกลม
+  ctx.beginPath(); ctx.arc(200,200,200,0,Math.PI*2); ctx.clip();
+  const zoom=parseFloat(document.getElementById('cropZoom').value);
+  const s=_cropScale*zoom*(400/300);
+  ctx.drawImage(_cropImg,_cropX*(400/300),_cropY*(400/300),_cropImg.width*s,_cropImg.height*s);
+  // แปลงเป็น blob แล้ว upload
+  out.toBlob(async blob=>{
+    closeCropModal();
+    try{
+      const sid=_cropSid||S.sid;
+      const file=new File([blob],'photo.jpg',{type:'image/jpeg'});
+      const url=await uploadToCloudinary(file);
+      const s2=DB.students[sid]; if(!s2) return;
+      s2.photo=url;
+      await api('PATCH',`/students/${sid}`,{photo:url});
+      render();
+    }catch(e){ alert('อัปโหลดไม่สำเร็จ: '+e.message); }
+  },'image/jpeg',0.88);
 }
 </script>
 </body>
