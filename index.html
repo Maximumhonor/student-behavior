@@ -120,25 +120,42 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px;font-wei
 .pcard{background:linear-gradient(135deg,var(--amber-bg),#FEF9E7);border:1px solid var(--amber-bd);border-radius:var(--rs);padding:13px;margin-bottom:8px;box-shadow:var(--shadow-sm)}
 .merr{background:var(--red-bg);color:var(--red);border-radius:var(--rs);padding:11px 14px;font-size:14px;margin-bottom:1rem;border:1px solid var(--red-bd)}
 .mok{background:var(--green-bg);color:var(--green);border-radius:var(--rs);padding:11px 14px;font-size:14px;margin-bottom:1rem;border:1px solid var(--green-bd)}
-/* ===== AVATAR EFFECTS ===== */
-@keyframes legendaryFloat{0%,100%{transform:translateY(0) rotate(-2deg);filter:brightness(1.2)}50%{transform:translateY(-8px) rotate(2deg);filter:brightness(1.5)}}
-@keyframes legendaryGlow{0%,100%{box-shadow:0 0 15px rgba(255,215,0,.8),0 0 30px rgba(255,100,0,.5)}50%{box-shadow:0 0 25px rgba(255,215,0,1),0 0 50px rgba(255,100,0,.8),0 0 70px rgba(255,0,255,.4)}}
+/* ===== AVATAR EFFECTS (UPGRADED) ===== */
+@keyframes legendaryFloat{0%,100%{transform:translateY(0) rotate(-1.5deg) scale(1);filter:brightness(1.15) drop-shadow(0 0 8px #FFD700)}50%{transform:translateY(-10px) rotate(1.5deg) scale(1.05);filter:brightness(1.4) drop-shadow(0 0 18px #FF6600)}}
+@keyframes legendaryGlow{0%,100%{box-shadow:0 0 20px rgba(255,215,0,.9),0 0 40px rgba(255,100,0,.6),0 0 60px rgba(255,0,200,.3)}50%{box-shadow:0 0 35px rgba(255,215,0,1),0 0 70px rgba(255,100,0,.9),0 0 100px rgba(200,0,255,.5)}}
 @keyframes legendaryRing{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-@keyframes rareFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
-@keyframes rareGlow{0%,100%{box-shadow:0 0 10px rgba(100,200,255,.6),0 0 20px rgba(100,200,255,.3)}50%{box-shadow:0 0 20px rgba(100,200,255,1),0 0 40px rgba(100,200,255,.6)}}
-@keyframes rarePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+@keyframes legendaryRing2{from{transform:rotate(360deg)}to{transform:rotate(0deg)}}
+@keyframes legendaryPulse{0%,100%{opacity:.7;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
+@keyframes rareFloat{0%,100%{transform:translateY(0) scale(1);filter:brightness(1.1) drop-shadow(0 0 6px #00C8FF)}50%{transform:translateY(-7px) scale(1.04);filter:brightness(1.25) drop-shadow(0 0 14px #7B2FBE)}}
+@keyframes rareGlow{0%,100%{box-shadow:0 0 14px rgba(0,200,255,.8),0 0 28px rgba(100,100,255,.4)}50%{box-shadow:0 0 28px rgba(0,200,255,1),0 0 56px rgba(123,47,190,.7),0 0 80px rgba(0,200,255,.3)}}
+@keyframes rareRing{0%,100%{opacity:.6}50%{opacity:1}}
+@keyframes uncommonFloat{0%,100%{transform:translateY(0) rotate(0deg);filter:brightness(1.05) drop-shadow(0 0 4px #2ECC40)}50%{transform:translateY(-5px) rotate(1deg);filter:brightness(1.2) drop-shadow(0 0 10px #00B300)}}
+@keyframes uncommonGlow{0%,100%{box-shadow:0 0 10px rgba(46,204,64,.6),0 0 20px rgba(0,179,0,.3)}50%{box-shadow:0 0 22px rgba(46,204,64,1),0 0 42px rgba(0,230,0,.5)}}
 @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 @keyframes particleFly{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0}}
-.av-legendary{animation:legendaryFloat 2s ease-in-out infinite,legendaryGlow 1.5s ease-in-out infinite;border-radius:50%;position:relative;}
-.av-legendary::before{content:'';position:absolute;inset:-4px;border-radius:50%;background:conic-gradient(from 0deg,#FFD700,#FF6600,#FF00FF,#00FFFF,#FFD700);animation:legendaryRing 2s linear infinite;z-index:-1;}
-.av-rare{animation:rareFloat 2.5s ease-in-out infinite,rareGlow 2s ease-in-out infinite;border-radius:50%;}
-.av-uncommon{transition:transform .2s;border-radius:50%;}
-.av-uncommon:hover{transform:scale(1.1);}
-.av-common{border-radius:50%;}
-.av-locked{filter:grayscale(1) brightness(0.5);cursor:not-allowed!important;}
-.av-badge-legendary{background:linear-gradient(135deg,#FFD700,#FF6600);color:white;font-size:9px;font-weight:800;padding:2px 6px;border-radius:999px;display:inline-block;margin-top:2px;}
-.av-badge-rare{background:linear-gradient(135deg,#00BFFF,#7B2FBE);color:white;font-size:9px;font-weight:800;padding:2px 6px;border-radius:999px;display:inline-block;margin-top:2px;}
-.av-badge-uncommon{background:linear-gradient(135deg,#43A047,#1B5E20);color:white;font-size:9px;font-weight:800;padding:2px 6px;border-radius:999px;display:inline-block;margin-top:2px;}
+@keyframes commonBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+@keyframes chosenPing{0%{transform:scale(1);opacity:.6}70%{transform:scale(1.4);opacity:0}100%{transform:scale(1.4);opacity:0}}
+
+/* Tier wrapper effects */
+.av-legendary{animation:legendaryFloat 2.2s ease-in-out infinite,legendaryGlow 1.8s ease-in-out infinite;border-radius:50%;position:relative;display:inline-block;}
+.av-legendary::before{content:'';position:absolute;inset:-5px;border-radius:50%;background:conic-gradient(from 0deg,#FFD700,#FF4500,#FF00CC,#00FFFF,#FFD700);animation:legendaryRing 1.8s linear infinite;z-index:-1;filter:blur(1px)}
+.av-legendary::after{content:'';position:absolute;inset:-9px;border-radius:50%;background:conic-gradient(from 180deg,#FFD700,#9000FF,#FF4500,#00FFFF,#FFD700);animation:legendaryRing2 3s linear infinite;z-index:-2;opacity:.5;filter:blur(2px)}
+.av-rare{animation:rareFloat 2.5s ease-in-out infinite,rareGlow 2.2s ease-in-out infinite;border-radius:50%;position:relative;display:inline-block;}
+.av-rare::before{content:'';position:absolute;inset:-4px;border-radius:50%;background:conic-gradient(from 0deg,#00C8FF,#7B2FBE,#FF00AA,#00C8FF);animation:legendaryRing 2.5s linear infinite;z-index:-1;filter:blur(1px);opacity:.85}
+.av-uncommon{animation:uncommonFloat 3s ease-in-out infinite,uncommonGlow 2.5s ease-in-out infinite;border-radius:50%;position:relative;display:inline-block;}
+.av-uncommon::before{content:'';position:absolute;inset:-3px;border-radius:50%;background:conic-gradient(from 0deg,#2ECC40,#00FF88,#00C8FF,#2ECC40);animation:legendaryRing 3.5s linear infinite;z-index:-1;filter:blur(1px);opacity:.7}
+.av-common{border-radius:50%;animation:commonBob 3s ease-in-out infinite;}
+.av-locked{filter:grayscale(1) brightness(0.45) contrast(0.8);cursor:not-allowed!important;}
+
+/* Tier badges */
+.av-badge-legendary{background:linear-gradient(135deg,#FFD700,#FF4500);color:white;font-size:9px;font-weight:900;padding:2px 7px;border-radius:999px;display:inline-block;margin-top:2px;letter-spacing:.04em;text-shadow:0 1px 2px rgba(0,0,0,.3);box-shadow:0 2px 6px rgba(255,100,0,.4)}
+.av-badge-rare{background:linear-gradient(135deg,#00C8FF,#7B2FBE);color:white;font-size:9px;font-weight:900;padding:2px 7px;border-radius:999px;display:inline-block;margin-top:2px;letter-spacing:.04em;text-shadow:0 1px 2px rgba(0,0,0,.3);box-shadow:0 2px 6px rgba(0,200,255,.4)}
+.av-badge-uncommon{background:linear-gradient(135deg,#2ECC40,#00855A);color:white;font-size:9px;font-weight:900;padding:2px 7px;border-radius:999px;display:inline-block;margin-top:2px;letter-spacing:.04em;text-shadow:0 1px 2px rgba(0,0,0,.3);box-shadow:0 2px 6px rgba(46,204,64,.4)}
+
+/* Avatar card hover */
+.av-card-item{transition:all .22s cubic-bezier(.34,1.56,.64,1);cursor:pointer}
+.av-card-item:hover{transform:translateY(-4px) scale(1.06)!important}
+.av-card-item:active{transform:scale(.95)!important}
 .task-modal{display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.5);align-items:center;justify-content:center}
 .task-modal.show{display:flex}
 .task-modal-box{background:white;border-radius:20px;padding:1.5rem;width:90%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
@@ -901,25 +918,37 @@ const ANIMAL_NAMES={'cat':'แมว','rabbit':'กระต่าย','bear':'�
 // ===== AVATAR TIER SYSTEM =====
 const AVATAR_TIERS = {
   legendary: {
-    label:'✨ Legendary', color:'#FFD700', bg:'linear-gradient(135deg,#2D1B00,#4A2800)',
+    label:'✨ Legendary', color:'#FFD700',
+    headerBg:'linear-gradient(135deg,#1A0A00,#3D1E00,#7A3A00)',
+    headerBorder:'3px solid #FFD700',
+    gridBg:'linear-gradient(135deg,rgba(255,215,0,.08),rgba(255,100,0,.05))',
     animals:['dragon','unicorn','alien','comet','cyborg','meteor','wizard','knight'],
     unlock: s => getPlayerRank(s) <= 5,
     effect:'av-legendary', badge:'av-badge-legendary', badgeText:'LEGENDARY'
   },
   rare: {
-    label:'💎 Rare', color:'#00BFFF', bg:'linear-gradient(135deg,#001433,#001A4D)',
+    label:'💎 Rare', color:'#00C8FF',
+    headerBg:'linear-gradient(135deg,#050020,#0D0040,#1A0060)',
+    headerBorder:'3px solid #00C8FF',
+    gridBg:'linear-gradient(135deg,rgba(0,200,255,.07),rgba(123,47,190,.05))',
     animals:['astronaut','robot','ufo','planet','star','rocket','vampire','yeti','goblin','ninja'],
     unlock: s => getPlayerRank(s) <= 10,
     effect:'av-rare', badge:'av-badge-rare', badgeText:'RARE'
   },
   uncommon: {
-    label:'🌟 Uncommon', color:'#43A047', bg:'linear-gradient(135deg,#001A00,#002600)',
+    label:'🌿 Uncommon', color:'#2ECC40',
+    headerBg:'linear-gradient(135deg,#001A08,#002E10,#004D1A)',
+    headerBorder:'3px solid #2ECC40',
+    gridBg:'linear-gradient(135deg,rgba(46,204,64,.07),rgba(0,180,80,.04))',
     animals:['witch','zombie','cyclops','ghost','slime','blob','pirate','chef','rainbow','icecream'],
     unlock: s => getPlayerRank(s) <= 20,
     effect:'av-uncommon', badge:'av-badge-uncommon', badgeText:'UNCOMMON'
   },
   common: {
-    label:'⭐ Common', color:'#6B7280', bg:'var(--surface)',
+    label:'⭐ Common', color:'#9CA3AF',
+    headerBg:'linear-gradient(135deg,#1C1C2E,#2D2D44)',
+    headerBorder:'2px solid #4B5563',
+    gridBg:'var(--bg)',
     animals:['cat','rabbit','bear','panda','fox','koala','frog','owl','lion','tiger','elephant','duck','penguin','chick','dog','hamster','deer','unicorn','sheep','pig','cactus','cloud','sun','chick'],
     unlock: s => true,
     effect:'av-common', badge:'', badgeText:'COMMON'
@@ -944,17 +973,17 @@ function getAvatarTier(animal){
 function drawAvatarWithEffect(animal,g,size,showEffect=true){
   const tierData=getAvatarTier(animal);
   const svgContent=drawAnimalSVG(animal,g,size);
-  if(!showEffect||tierData.tier==='common') return svgContent;
+  if(!showEffect) return svgContent;
   if(tierData.tier==='legendary'){
-    return`<div class="av-legendary" style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center">${svgContent}</div>`;
+    return`<div class="av-legendary" style="width:${size}px;height:${size}px;display:inline-flex;align-items:center;justify-content:center">${svgContent}</div>`;
   }
   if(tierData.tier==='rare'){
-    return`<div class="av-rare" style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center">${svgContent}</div>`;
+    return`<div class="av-rare" style="width:${size}px;height:${size}px;display:inline-flex;align-items:center;justify-content:center">${svgContent}</div>`;
   }
   if(tierData.tier==='uncommon'){
-    return`<div class="av-uncommon" style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center">${svgContent}</div>`;
+    return`<div class="av-uncommon" style="width:${size}px;height:${size}px;display:inline-flex;align-items:center;justify-content:center">${svgContent}</div>`;
   }
-  return svgContent;
+  return`<div class="av-common" style="width:${size}px;height:${size}px;display:inline-flex;align-items:center;justify-content:center">${svgContent}</div>`;
 }
 
 
@@ -1073,7 +1102,7 @@ function vTList(){
   const s=DB.students[S.sid];if(!s)return'';
   const t=tot(s);const hw=hwSum(s.hw);const g=isGirl(s.name);
   const logs=s.logs||[];const rl=s.redeemLogs||[];const pend=pendSid(S.sid);
-  const chatMsgs=Object.values(DB.messages||{}).filter(m=>m.studentId===S.sid);const unreadFromParent=chatMsgs.filter(m=>m.from==='parent'&&!m.read).length;const pendRedeemCount=Object.values(DB.redeemRequests||{}).filter(r=>r.studentId===S.sid&&r.status==='pending').length;const TABS=[{k:'score',l:'คะแนน',i:'ti-star',dot:pend.length>0},{k:'hw',l:'ส่งงาน',i:'ti-clipboard-check'},{k:'redeem',l:'แลกคะแนน',i:'ti-gift',dot:pendRedeemCount>0},{k:'radar',l:'สเตตัส',i:'ti-chart-radar'},{k:'chat',l:'ข้อความ',i:'ti-message-2',dot:unreadFromParent>0}];
+  const chatMsgs=Object.values(DB.messages||{}).filter(m=>m.studentId===S.sid);const unreadFromParent=chatMsgs.filter(m=>m.from==='parent'&&!m.read).length;const pendRedeemCount=Object.values(DB.redeemRequests||{}).filter(r=>r.studentId===S.sid&&r.status==='pending').length;const TABS=[{k:'score',l:'คะแนน',i:'ti-star',dot:pend.length>0},{k:'hw',l:'ส่งงาน',i:'ti-clipboard-check'},{k:'redeem',l:'แลกคะแนน',i:'ti-gift',dot:pendRedeemCount>0},{k:'radar',l:'สเตตัส',i:'ti-chart-radar'},{k:'avatar',l:'Avatar',i:'ti-sparkles'},{k:'chat',l:'ข้อความ',i:'ti-message-2',dot:unreadFromParent>0}];
   let content='';
   if(S.tab==='score'){
     const ph=pend.map(req=>`<div class="pcard">
@@ -1192,8 +1221,16 @@ function vTList(){
       </div>
     </div>`;
     setTimeout(()=>{const cb=document.getElementById('chatbox');if(cb)cb.scrollTop=cb.scrollHeight;doMarkRead('${S.sid}','parent');},80);
+  } else if(S.tab==='avatar'){
+    // reuse the same avatar selection logic
+    const rank=getPlayerRank(s);
+    const currentAnimal=s.chosenAnimal||getAnimal(s.name,g);
+    const tierData=getAvatarTier(currentAnimal);
+    const TIER_META2={legendary:{icon:'👑',label:'LEGENDARY',ringGrad:'conic-gradient(from 0deg,#FFD700,#FF4500,#FF00CC,#00FFFF,#FFD700)',ring2Grad:'conic-gradient(from 180deg,#FFD700,#9000FF,#FF4500,#00FFFF,#FFD700)',border:'#FFD700',glow:'0 0 30px rgba(255,215,0,.9),0 0 60px rgba(255,80,0,.5)',badgeBg:'linear-gradient(135deg,#FFD700,#FF4500)',headerBg:'linear-gradient(135deg,#1A0A00,#3D1E00,#7A3A00)',itemBg:'linear-gradient(135deg,rgba(255,215,0,.12),rgba(255,80,0,.07))',itemBorder:'rgba(255,215,0,.35)',chosenBorder:'#FFD700',chosenBg:'rgba(255,215,0,.18)',rankText:'อันดับ 1–5'},rare:{icon:'💎',label:'RARE',ringGrad:'conic-gradient(from 0deg,#00C8FF,#7B2FBE,#FF00AA,#00C8FF)',ring2Grad:'conic-gradient(from 180deg,#7B2FBE,#00C8FF,#FF00AA,#7B2FBE)',border:'#00C8FF',glow:'0 0 22px rgba(0,200,255,.8),0 0 44px rgba(123,47,190,.4)',badgeBg:'linear-gradient(135deg,#00C8FF,#7B2FBE)',headerBg:'linear-gradient(135deg,#050020,#0D0040,#1A0060)',itemBg:'linear-gradient(135deg,rgba(0,200,255,.1),rgba(123,47,190,.06))',itemBorder:'rgba(0,200,255,.3)',chosenBorder:'#00C8FF',chosenBg:'rgba(0,200,255,.15)',rankText:'อันดับ 1–10'},uncommon:{icon:'🌿',label:'UNCOMMON',ringGrad:'conic-gradient(from 0deg,#2ECC40,#00FF88,#00C8FF,#2ECC40)',ring2Grad:'conic-gradient(from 180deg,#00855A,#2ECC40,#00FF88,#00855A)',border:'#2ECC40',glow:'0 0 18px rgba(46,204,64,.7),0 0 36px rgba(0,200,100,.3)',badgeBg:'linear-gradient(135deg,#2ECC40,#00855A)',headerBg:'linear-gradient(135deg,#001A08,#002E10,#004D1A)',itemBg:'linear-gradient(135deg,rgba(46,204,64,.09),rgba(0,180,80,.05))',itemBorder:'rgba(46,204,64,.3)',chosenBorder:'#2ECC40',chosenBg:'rgba(46,204,64,.15)',rankText:'อันดับ 1–20'},common:{icon:'⭐',label:'COMMON',ringGrad:'none',ring2Grad:'none',border:'#9CA3AF',glow:'none',badgeBg:'linear-gradient(135deg,#6B7280,#4B5563)',headerBg:'linear-gradient(135deg,#1C1C2E,#2D2D44)',itemBg:'var(--bg)',itemBorder:'var(--border-soft)',chosenBorder:'var(--blue)',chosenBg:'var(--blue-bg)',rankText:'ทุกคน'}};
+    const tm2=TIER_META2[tierData.tier]||TIER_META2.common;
+    const tierSections2=Object.entries(AVATAR_TIERS).map(([tierKey,td])=>{const unlocked=td.unlock(s);const meta=TIER_META2[tierKey]||TIER_META2.common;const cards=td.animals.map(a=>{const chosen=currentAnimal===a;const isLocked=!unlocked;const tierAnim=tierKey==='legendary'?'animation:legendaryFloat 2.2s ease-in-out infinite':tierKey==='rare'?'animation:rareFloat 2.5s ease-in-out infinite':tierKey==='uncommon'?'animation:uncommonFloat 3s ease-in-out infinite':'animation:commonBob 3s ease-in-out infinite';return`<div class="av-card-item" onclick="${isLocked?'':`doChooseAnimal('${S.sid}','${a}')`}" style="cursor:${isLocked?'not-allowed':'pointer'};border-radius:14px;padding:10px 5px 8px;border:2px solid ${chosen?meta.chosenBorder:isLocked?'#3A3A4A':meta.itemBorder};background:${chosen?meta.chosenBg:isLocked?'rgba(30,30,50,.6)':meta.itemBg};text-align:center;position:relative;${chosen?'box-shadow:0 0 16px '+meta.chosenBorder+'88;':''}"><div style="${isLocked?'filter:grayscale(1) brightness(.5)':''}${tierKey!=='common'?';'+tierAnim:''}">${drawAnimalSVG(a,g,48)}</div><div style="font-size:10px;margin-top:4px;color:${chosen?meta.chosenBorder:isLocked?'#555':'var(--text)'};font-weight:${chosen?'800':'500'}">${ANIMAL_NAMES[a]||a}</div>${chosen?`<div style="font-size:8px;color:${meta.chosenBorder};font-weight:800;margin-top:2px">✓ เลือกอยู่</div>`:''}${isLocked?`<div style="font-size:8px;color:#FF6B35;margin-top:2px;font-weight:700">${meta.rankText}</div>`:''}</div>`;}).join('');return`<div style="margin-bottom:1.5rem"><div style="display:flex;align-items:center;gap:10px;margin-bottom:.625rem;padding:10px 16px;border-radius:14px;background:${meta.headerBg};border:1.5px solid ${tierKey!=='common'?meta.itemBorder:'#3A3A4A'};box-shadow:${tierKey!=='common'?'0 4px 16px rgba(0,0,0,.3)':'none'}"><span style="font-size:20px">${unlocked?meta.icon:'🔒'}</span><div style="flex:1"><div style="font-size:13px;font-weight:900;color:${tierKey!=='common'?meta.border:'#C0C0C0'};letter-spacing:.08em">${meta.label}</div><div style="font-size:10px;color:${tierKey!=='common'?meta.border+'CC':'#6B7280'};margin-top:1px">${unlocked?'ปลดล็อค · '+td.animals.length+' อวตาร์':'🔒 '+meta.rankText}</div></div>${unlocked?`<div style="background:${meta.badgeBg};color:white;font-size:10px;font-weight:800;padding:3px 10px;border-radius:999px;">UNLOCKED</div>`:`<div style="background:rgba(255,100,50,.15);color:#FF6B35;border:1px solid rgba(255,100,50,.3);font-size:10px;font-weight:700;padding:3px 10px;border-radius:999px;">${meta.rankText}</div>`}</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px;padding:10px;border-radius:14px;background:${tierKey!=='common'?'rgba(0,0,0,.25)':'var(--surface)'};border:1px solid ${tierKey!=='common'?'rgba(255,255,255,.06)':'var(--border-soft)'}">${cards}</div></div>`;}).join('');
+    content=`<div style="background:linear-gradient(135deg,rgba(0,0,0,.7),rgba(10,10,30,.9));border:1.5px solid ${tm2.border}44;border-radius:20px;padding:1.25rem;margin-bottom:1.25rem;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.3)"><div style="position:relative;width:120px;height:120px;margin:0 auto 10px;display:flex;align-items:center;justify-content:center">${tierData.tier!=='common'?`<div style="position:absolute;inset:-6px;border-radius:50%;background:${tm2.ringGrad};animation:legendaryRing 1.8s linear infinite;z-index:0;filter:blur(1.5px)"></div><div style="position:absolute;inset:-11px;border-radius:50%;background:${tm2.ring2Grad};animation:legendaryRing2 3s linear infinite;z-index:0;opacity:.45;filter:blur(3px)"></div>`:''}<div style="position:relative;z-index:1;width:120px;height:120px;border-radius:50%;overflow:hidden;border:3px solid ${tm2.border};${tierData.tier==='legendary'?'animation:legendaryFloat 2.2s ease-in-out infinite,legendaryGlow 1.8s ease-in-out infinite;':tierData.tier==='rare'?'animation:rareFloat 2.5s ease-in-out infinite,rareGlow 2.2s ease-in-out infinite;':tierData.tier==='uncommon'?'animation:uncommonFloat 3s ease-in-out infinite,uncommonGlow 2.5s ease-in-out infinite;':'animation:commonBob 3s ease-in-out infinite;'}box-shadow:${tm2.glow||'0 4px 16px rgba(0,0,0,.15)'}">${drawAnimalSVG(currentAnimal,g,120)}</div><div style="position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);background:${tm2.badgeBg};color:white;font-size:9px;font-weight:900;padding:3px 10px;border-radius:999px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.3);z-index:2">${tm2.icon} ${tm2.label}</div></div><div style="font-size:14px;font-weight:700;color:white;margin-top:12px">${ANIMAL_NAMES[currentAnimal]||currentAnimal}</div><div style="font-size:12px;margin-top:4px;color:rgba(255,255,255,.5)">อันดับ: <strong style="color:${rank<=5?'#FFD700':rank<=10?'#00C8FF':rank<=20?'#2ECC40':'#9CA3AF'}">#${rank}</strong></div></div><div style="background:linear-gradient(135deg,#0D0D1A,#12121F);border-radius:16px;padding:1rem;border:1px solid rgba(255,255,255,.06)"><div style="font-size:11px;font-weight:800;color:#6B7280;letter-spacing:.1em;text-transform:uppercase;margin-bottom:1rem">🎭 เลือก Avatar</div>${tierSections2}</div>`;
   }
-  const isDeskS = window.innerWidth >= 768;
   return`
     ${isDeskS?'<div style="max-width:680px;margin:0 auto">':''}
     <button class="btn-back" onclick="go('tlist')"><i class="ti ti-arrow-left"></i> กลับ</button>
@@ -1355,44 +1392,124 @@ function vPView(){
     const rank=getPlayerRank(s);
     const tierData=getAvatarTier(currentAnimal);
 
-    // แสดง avatar ปัจจุบันพร้อม effect
-    const currentDisplay=`<div style="position:relative;width:100px;height:100px;margin:0 auto 8px">
-      ${tierData.tier==='legendary'?`<div style="position:absolute;inset:-8px;border-radius:50%;background:conic-gradient(from 0deg,#FFD700,#FF6600,#FF00FF,#00FFFF,#FFD700);animation:legendaryRing 2s linear infinite;z-index:0"></div>`:''}
-      <div style="position:relative;z-index:1;width:100px;height:100px;border-radius:50%;overflow:hidden;border:3px solid ${tierData.tier==='legendary'?'#FFD700':tierData.tier==='rare'?'#00BFFF':g?'#F4BFDA':'#B5D1F5'};${tierData.tier==='legendary'?'animation:legendaryFloat 2s ease-in-out infinite,legendaryGlow 1.5s ease-in-out infinite;':tierData.tier==='rare'?'animation:rareFloat 2.5s ease-in-out infinite,rareGlow 2s ease-in-out infinite;':''}box-shadow:0 4px 16px rgba(0,0,0,.2)">${drawAnimalSVG(currentAnimal,g,100)}</div>
-    </div>`;
+    // ─── สีและไอคอนแต่ละ tier ─────────────────────────────────────────
+    const TIER_META={
+      legendary:{
+        icon:'👑', label:'LEGENDARY',
+        ringGrad:'conic-gradient(from 0deg,#FFD700,#FF4500,#FF00CC,#00FFFF,#FFD700)',
+        ring2Grad:'conic-gradient(from 180deg,#FFD700,#9000FF,#FF4500,#00FFFF,#FFD700)',
+        border:'#FFD700', glow:'0 0 30px rgba(255,215,0,.9),0 0 60px rgba(255,80,0,.5)',
+        badgeBg:'linear-gradient(135deg,#FFD700,#FF4500)',
+        headerBg:'linear-gradient(135deg,#1A0A00,#3D1E00,#7A3A00)',
+        itemBg:'linear-gradient(135deg,rgba(255,215,0,.12),rgba(255,80,0,.07))',
+        itemBorder:'rgba(255,215,0,.35)',
+        chosenBorder:'#FFD700',chosenBg:'rgba(255,215,0,.18)',
+        rankText:'อันดับ 1–5'
+      },
+      rare:{
+        icon:'💎', label:'RARE',
+        ringGrad:'conic-gradient(from 0deg,#00C8FF,#7B2FBE,#FF00AA,#00C8FF)',
+        ring2Grad:'conic-gradient(from 180deg,#7B2FBE,#00C8FF,#FF00AA,#7B2FBE)',
+        border:'#00C8FF', glow:'0 0 22px rgba(0,200,255,.8),0 0 44px rgba(123,47,190,.4)',
+        badgeBg:'linear-gradient(135deg,#00C8FF,#7B2FBE)',
+        headerBg:'linear-gradient(135deg,#050020,#0D0040,#1A0060)',
+        itemBg:'linear-gradient(135deg,rgba(0,200,255,.1),rgba(123,47,190,.06))',
+        itemBorder:'rgba(0,200,255,.3)',
+        chosenBorder:'#00C8FF',chosenBg:'rgba(0,200,255,.15)',
+        rankText:'อันดับ 1–10'
+      },
+      uncommon:{
+        icon:'🌿', label:'UNCOMMON',
+        ringGrad:'conic-gradient(from 0deg,#2ECC40,#00FF88,#00C8FF,#2ECC40)',
+        ring2Grad:'conic-gradient(from 180deg,#00855A,#2ECC40,#00FF88,#00855A)',
+        border:'#2ECC40', glow:'0 0 18px rgba(46,204,64,.7),0 0 36px rgba(0,200,100,.3)',
+        badgeBg:'linear-gradient(135deg,#2ECC40,#00855A)',
+        headerBg:'linear-gradient(135deg,#001A08,#002E10,#004D1A)',
+        itemBg:'linear-gradient(135deg,rgba(46,204,64,.09),rgba(0,180,80,.05))',
+        itemBorder:'rgba(46,204,64,.3)',
+        chosenBorder:'#2ECC40',chosenBg:'rgba(46,204,64,.15)',
+        rankText:'อันดับ 1–20'
+      },
+      common:{
+        icon:'⭐', label:'COMMON',
+        ringGrad:'none',ring2Grad:'none',
+        border:'#9CA3AF', glow:'none',
+        badgeBg:'linear-gradient(135deg,#6B7280,#4B5563)',
+        headerBg:'linear-gradient(135deg,#1C1C2E,#2D2D44)',
+        itemBg:'var(--bg)',
+        itemBorder:'var(--border-soft)',
+        chosenBorder:'var(--blue)',chosenBg:'var(--blue-bg)',
+        rankText:'ทุกคน'
+      }
+    };
 
-    // สร้าง grid แต่ละ tier
+    const tm=TIER_META[tierData.tier]||TIER_META.common;
+
+    // ─── Current avatar display (large, with full effect) ──────────────
+    const currentDisplay=`
+      <div style="position:relative;width:120px;height:120px;margin:0 auto 10px;display:flex;align-items:center;justify-content:center">
+        ${tierData.tier!=='common'?`
+          <div style="position:absolute;inset:-6px;border-radius:50%;background:${tm.ringGrad};animation:legendaryRing 1.8s linear infinite;z-index:0;filter:blur(1.5px)"></div>
+          <div style="position:absolute;inset:-11px;border-radius:50%;background:${tm.ring2Grad};animation:legendaryRing2 3s linear infinite;z-index:0;opacity:.45;filter:blur(3px)"></div>
+        `:''}
+        <div style="position:relative;z-index:1;width:120px;height:120px;border-radius:50%;overflow:hidden;border:3px solid ${tm.border};
+          ${tierData.tier==='legendary'?'animation:legendaryFloat 2.2s ease-in-out infinite,legendaryGlow 1.8s ease-in-out infinite;':tierData.tier==='rare'?'animation:rareFloat 2.5s ease-in-out infinite,rareGlow 2.2s ease-in-out infinite;':tierData.tier==='uncommon'?'animation:uncommonFloat 3s ease-in-out infinite,uncommonGlow 2.5s ease-in-out infinite;':'animation:commonBob 3s ease-in-out infinite;'}
+          box-shadow:${tm.glow||'0 4px 16px rgba(0,0,0,.15)'}">
+          ${drawAnimalSVG(currentAnimal,g,120)}
+        </div>
+        <!-- tier badge on current avatar -->
+        <div style="position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);background:${tm.badgeBg};color:white;font-size:9px;font-weight:900;padding:3px 10px;border-radius:999px;letter-spacing:.06em;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.3);z-index:2">${tm.icon} ${tm.label}</div>
+      </div>`;
+
+    // ─── Tier sections with vivid headers ──────────────────────────────
     const tierSections=Object.entries(AVATAR_TIERS).map(([tierKey,td])=>{
       const unlocked=td.unlock(s);
+      const meta=TIER_META[tierKey]||TIER_META.common;
       const cards=td.animals.map(a=>{
         const chosen=currentAnimal===a;
         const isLocked=!unlocked;
-        return`<div onclick="${isLocked?'':`doChooseAnimal('${S.sid}','${a}')`}" style="cursor:${isLocked?'not-allowed':'pointer'};border-radius:14px;padding:8px 4px;border:2.5px solid ${chosen?'#1A6BC4':isLocked?'#E0E0E0':'transparent'};background:${chosen?'#EBF3FF':'var(--bg)'};transition:all .2s;text-align:center;position:relative">
-          ${isLocked?'<div style="position:absolute;top:4px;right:4px;font-size:14px">🔒</div>':''}
-          <div style="${tierKey==='legendary'?'animation:legendaryFloat 2s ease-in-out infinite':tierKey==='rare'?'animation:rareFloat 2.5s ease-in-out infinite':''}">${drawAnimalSVG(a,g,48)}</div>
-          <div style="font-size:10px;margin-top:3px;color:${chosen?'#1A6BC4':'var(--text)'};font-weight:${chosen?'700':'500'}">${ANIMAL_NAMES[a]||a}</div>
-          <div style="font-size:9px;margin-top:2px;padding:1px 5px;border-radius:999px;display:inline-block;background:${tierKey==='legendary'?'linear-gradient(135deg,#FFD700,#FF6600)':tierKey==='rare'?'linear-gradient(135deg,#00BFFF,#7B2FBE)':tierKey==='uncommon'?'linear-gradient(135deg,#43A047,#1B5E20)':'#E0E0E0'};color:${tierKey==='common'?'#555':'white'};font-weight:700">${tierKey==='legendary'?'✨ Legendary':tierKey==='rare'?'💎 Rare':tierKey==='uncommon'?'🌟 Uncommon':'⭐ Common'}</div>
-          ${isLocked?`<div style="font-size:9px;color:#E65100;margin-top:2px;font-weight:600">🔒 ต้องอันดับ ${tierKey==='legendary'?'1-5':tierKey==='rare'?'1-10':'1-20'}</div>`:''}
-          ${chosen?'<div style="font-size:9px;color:#1A6BC4;font-weight:700;margin-top:1px">✓ เลือกอยู่</div>':''}
+        const tierAnim=tierKey==='legendary'?'animation:legendaryFloat 2.2s ease-in-out infinite':tierKey==='rare'?'animation:rareFloat 2.5s ease-in-out infinite':tierKey==='uncommon'?'animation:uncommonFloat 3s ease-in-out infinite':'animation:commonBob 3s ease-in-out infinite';
+        return`<div class="av-card-item" onclick="${isLocked?'':`doChooseAnimal('${S.sid}','${a}')`}"
+          style="cursor:${isLocked?'not-allowed':'pointer'};border-radius:14px;padding:10px 5px 8px;border:2px solid ${chosen?meta.chosenBorder:isLocked?'#3A3A4A':meta.itemBorder};background:${chosen?meta.chosenBg:isLocked?'rgba(30,30,50,.6)':meta.itemBg};transition:all .22s;text-align:center;position:relative;${chosen?'box-shadow:0 0 16px '+meta.chosenBorder+'88;':''}" >
+          ${isLocked?`<div style="position:absolute;top:4px;right:5px;font-size:13px;line-height:1">🔒</div>`:''}
+          ${chosen?`<div style="position:absolute;top:3px;left:5px;font-size:11px;line-height:1;animation:sparkle 1s infinite">✨</div>`:''}
+          <div style="${isLocked?'filter:grayscale(1) brightness(.5)':''}${tierKey!=='common'?';'+tierAnim:''}">${drawAnimalSVG(a,g,48)}</div>
+          <div style="font-size:10px;margin-top:4px;color:${chosen?meta.chosenBorder:isLocked?'#555':'var(--text)'};font-weight:${chosen?'800':'500'};line-height:1.2">${ANIMAL_NAMES[a]||a}</div>
+          ${chosen?`<div style="font-size:8px;color:${meta.chosenBorder};font-weight:800;margin-top:2px;letter-spacing:.04em">✓ เลือกอยู่</div>`:''}
+          ${isLocked?`<div style="font-size:8px;color:#FF6B35;margin-top:2px;font-weight:700">${meta.rankText}</div>`:''}
         </div>`;
       }).join('');
-      return`<div style="margin-bottom:1.25rem">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:.5rem;padding:6px 12px;border-radius:10px;background:${!unlocked?'#f5f5f5':td.tier==='legendary'?'linear-gradient(135deg,#FFD700,#FF6600)':td.tier==='rare'?'linear-gradient(135deg,#00BFFF,#7B2FBE)':td.tier==='uncommon'?'linear-gradient(135deg,#43A047,#1B5E20)':'var(--border-soft)'}">
-          <span style="font-size:16px">${unlocked?'':'🔒 '}</span>
-          <span style="font-size:13px;font-weight:800;color:${unlocked&&tierKey!=='common'?'white':'var(--text)'}">${td.label}</span>
-          <span style="font-size:11px;color:${unlocked&&tierKey!=='common'?'rgba(255,255,255,.8)':'var(--muted)'}">· ${unlocked?'ปลดล็อคแล้ว':tierKey==='legendary'?'อันดับ 1-5':tierKey==='rare'?'อันดับ 1-10':'อันดับ 1-20'}</span>
+
+      return`<div style="margin-bottom:1.5rem">
+        <!-- Tier header -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:.625rem;padding:10px 16px;border-radius:14px;background:${meta.headerBg};border:${meta.itemBorder&&tierKey!=='common'?'1.5px solid '+meta.itemBorder:'1.5px solid #3A3A4A'};box-shadow:${tierKey!=='common'?'0 4px 16px rgba(0,0,0,.3)':'none'}">
+          <span style="font-size:20px">${unlocked?meta.icon:'🔒'}</span>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:900;color:${tierKey!=='common'?meta.border:'#C0C0C0'};letter-spacing:.08em">${meta.label}</div>
+            <div style="font-size:10px;color:${tierKey!=='common'?meta.border+'CC':'#6B7280'};margin-top:1px">${unlocked?'ปลดล็อคแล้ว · '+td.animals.length+' อวตาร์':'🔒 ต้องการ '+meta.rankText}</div>
+          </div>
+          ${unlocked?`<div style="background:${meta.badgeBg};color:white;font-size:10px;font-weight:800;padding:3px 10px;border-radius:999px;letter-spacing:.04em;box-shadow:0 2px 8px rgba(0,0,0,.25)">UNLOCKED</div>`:`<div style="background:rgba(255,100,50,.15);color:#FF6B35;border:1px solid rgba(255,100,50,.3);font-size:10px;font-weight:700;padding:3px 10px;border-radius:999px">${meta.rankText}</div>`}
         </div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">${cards}</div>
+        <!-- Avatar grid -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px;padding:10px;border-radius:14px;background:${tierKey!=='common'?'rgba(0,0,0,.25)':'var(--surface)'};border:1px solid ${tierKey!=='common'?'rgba(255,255,255,.06)':'var(--border-soft)'}">${cards}</div>
       </div>`;
     }).join('');
 
     content=`
-      <div style="text-align:center;margin-bottom:1rem">
+      <!-- current avatar card -->
+      <div style="background:linear-gradient(135deg,rgba(0,0,0,.7),rgba(10,10,30,.9));border:1.5px solid ${tm.border}44;border-radius:20px;padding:1.25rem;margin-bottom:1.25rem;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.05)">
         ${currentDisplay}
-        <div style="font-size:13px;color:var(--muted)">Avatar ปัจจุบัน: <strong style="color:var(--text)">${ANIMAL_NAMES[currentAnimal]||currentAnimal}</strong></div>
-        <div style="font-size:12px;margin-top:4px;color:var(--muted)">อันดับของคุณ: <strong style="color:${rank<=5?'#FFD700':rank<=10?'#00BFFF':rank<=20?'#43A047':'var(--muted)'}">#${rank}</strong></div>
+        <div style="font-size:14px;font-weight:700;color:white;margin-top:12px">${ANIMAL_NAMES[currentAnimal]||currentAnimal}</div>
+        <div style="font-size:12px;margin-top:4px;color:rgba(255,255,255,.5)">
+          อันดับของคุณ: <strong style="color:${rank<=5?'#FFD700':rank<=10?'#00C8FF':rank<=20?'#2ECC40':'#9CA3AF'};font-size:14px">#${rank}</strong>
+          <span style="margin-left:8px">${rank<=5?'👑 Top 5':rank<=10?'💎 Top 10':rank<=20?'🌿 Top 20':'⭐ ผู้เล่น'}</span>
+        </div>
       </div>
-      ${tierSections}`;
+      <!-- tier sections -->
+      <div style="background:linear-gradient(135deg,#0D0D1A,#12121F);border-radius:16px;padding:1rem;border:1px solid rgba(255,255,255,.06)">
+        <div style="font-size:11px;font-weight:800;color:#6B7280;letter-spacing:.1em;text-transform:uppercase;margin-bottom:1rem">🎭 เลือก Avatar ของคุณ</div>
+        ${tierSections}
+      </div>`;
   } else if(S.tab==='chat'){
     const pMsgs=Object.values(DB.messages||{}).filter(m=>m.studentId===S.sid).sort((a,b)=>(a.ts||0)-(b.ts||0));
     const pBubbles=pMsgs.length>0?pMsgs.map((m,mi)=>`
@@ -1448,8 +1565,10 @@ function vPView(){
           <span class="id-chip" style="margin-top:3px;display:inline-block"><i class="ti ti-id-badge" style="font-size:11px;vertical-align:-1px"></i> ${fmtId(s.idcard)}</span>
         </div>
         <!-- avatar ขวาสุด -->
-        <div style="flex-shrink:0;width:52px;height:52px;border-radius:50%;overflow:hidden;border:2px solid ${g?'#F4BFDA':'#B5D1F5'};opacity:.85">
-          ${drawAnimalSVG(getStudentAnimal(s),g,52)}
+        <div style="flex-shrink:0;position:relative;width:56px;height:56px;display:flex;align-items:center;justify-content:center">
+          ${(()=>{const an=getStudentAnimal(s);const td=getAvatarTier(an);const tm={legendary:{ring:'conic-gradient(from 0deg,#FFD700,#FF4500,#FF00CC,#00FFFF,#FFD700)',border:'#FFD700',anim:'legendaryFloat 2.2s ease-in-out infinite,legendaryGlow 1.8s ease-in-out infinite'},rare:{ring:'conic-gradient(from 0deg,#00C8FF,#7B2FBE,#FF00AA,#00C8FF)',border:'#00C8FF',anim:'rareFloat 2.5s ease-in-out infinite,rareGlow 2.2s ease-in-out infinite'},uncommon:{ring:'conic-gradient(from 0deg,#2ECC40,#00FF88,#00C8FF,#2ECC40)',border:'#2ECC40',anim:'uncommonFloat 3s ease-in-out infinite,uncommonGlow 2.5s ease-in-out infinite'}}[td.tier]||null;return`${tm?`<div style="position:absolute;inset:-4px;border-radius:50%;background:${tm.ring};animation:legendaryRing 2s linear infinite;z-index:0;filter:blur(1px)"></div>`:''}
+            <div style="position:relative;z-index:1;width:52px;height:52px;border-radius:50%;overflow:hidden;border:2.5px solid ${tm?tm.border:g?'#F4BFDA':'#B5D1F5'};${tm?'animation:'+tm.anim+';':''}box-shadow:${tm?'0 0 14px '+tm.border+'99':'0 2px 8px rgba(0,0,0,.1)'}">
+              ${drawAnimalSVG(an,g,52)}</div>`;})()}
         </div>
       </div>
     </div>
