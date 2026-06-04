@@ -1209,7 +1209,7 @@ function vTList(){
           <div style="position:absolute;bottom:0;right:0;width:18px;height:18px;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white">
             <i class="ti ti-camera" style="font-size:10px;color:#fff"></i>
           </div>
-          <input type="file" accept="image/*" style="display:none" onchange="doUploadPhoto(this)">
+          <input type="file" accept="image/*" style="display:none" onchange="openCropModal(this)">
         </label>
         <div style="flex:1;min-width:0">
           ${s.photo?`<button onclick="doRemovePhoto()" style="background:none;border:none;font-size:11px;color:var(--red);cursor:pointer;padding:0;margin-bottom:2px">ลบรูป</button>`:''}
@@ -1217,7 +1217,7 @@ function vTList(){
           <div style="font-size:15px;font-weight:700;font-family:'Prompt',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${(()=>{const ph=profileCardHeader(s);return ph.emoji+' ';})()}${s.name}</div>
           <span class="id-chip" style="margin-top:3px;display:inline-block"><i class="ti ti-id-badge" style="font-size:11px;vertical-align:-1px"></i> ${fmtId(s.idcard)}</span>
         </div>        <!-- avatar ขวา: chosenAnimal หรือ chick ถ้ายังไม่เลือก -->
-        ${(()=>{const _an=s.chosenAnimal||'chick';const _td=getAvatarTier(_an);const _ring=s.chosenAnimal&&_td.tier!=='common'?(_td.tier==='legendary'?'conic-gradient(from 0deg,#FFD700,#FF4500,#FF00CC,#00FFFF,#FFD700)':_td.tier==='rare'?'conic-gradient(from 0deg,#00C8FF,#7B2FBE,#FF00AA,#00C8FF)':'conic-gradient(from 0deg,#2ECC40,#00FF88,#00C8FF,#2ECC40)'):null;const _border=_td.tier==='legendary'&&s.chosenAnimal?'#FFD700':_td.tier==='rare'&&s.chosenAnimal?'#00C8FF':_td.tier==='uncommon'&&s.chosenAnimal?'#2ECC40':g?'#F4BFDA':'#B5D1F5';const _anim=s.chosenAnimal&&_td.tier==='legendary'?'legendaryFloat 2s ease-in-out infinite,legendaryGlow 1.5s ease-in-out infinite':s.chosenAnimal&&_td.tier==='rare'?'rareFloat 2.5s ease-in-out infinite,rareGlow 2s ease-in-out infinite':'none';return`<div style="flex-shrink:0;position:relative;width:56px;height:56px;display:flex;align-items:center;justify-content:center">${_ring?`<div style="position:absolute;inset:-4px;border-radius:50%;background:${_ring};animation:legendaryRing 2s linear infinite;z-index:0;filter:blur(1px)"></div>`:''}<div style="position:relative;z-index:1;width:52px;height:52px;border-radius:50%;overflow:hidden;border:2.5px solid ${_border};animation:${_anim};box-shadow:${_ring?'0 0 10px '+_border+'99':'none'}">${drawAnimalSVG(_an,g,52)}</div></div>`;})()} 
+        ${(()=>{const _an=s.chosenAnimal||'chick';const _td=getAvatarTier(_an);const _ring=s.chosenAnimal&&_td.tier!=='common'?(_td.tier==='legendary'?'conic-gradient(from 0deg,#FFD700,#FF4500,#FF00CC,#00FFFF,#FFD700)':_td.tier==='rare'?'conic-gradient(from 0deg,#00C8FF,#7B2FBE,#FF00AA,#00C8FF)':'conic-gradient(from 0deg,#2ECC40,#00FF88,#00C8FF,#2ECC40)'):null;const _border=_td.tier==='legendary'&&s.chosenAnimal?'#FFD700':_td.tier==='rare'&&s.chosenAnimal?'#00C8FF':_td.tier==='uncommon'&&s.chosenAnimal?'#2ECC40':g?'#F4BFDA':'#B5D1F5';const _anim=s.chosenAnimal&&_td.tier==='legendary'?'legendaryFloat 2s ease-in-out infinite,legendaryGlow 1.5s ease-in-out infinite':s.chosenAnimal&&_td.tier==='rare'?'rareFloat 2.5s ease-in-out infinite,rareGlow 2s ease-in-out infinite':'none';return`<div style="flex-shrink:0;position:relative;width:56px;height:56px;display:flex;align-items:center;justify-content:center">${_ring?`<div style="position:absolute;inset:-4px;border-radius:50%;background:${_ring};animation:legendaryRing 2s linear infinite;z-index:0;filter:blur(1px)"></div>`:''}<div style="position:relative;z-index:1;width:52px;height:52px;border-radius:50%;overflow:hidden;border:2.5px solid ${_border};animation:${_anim};box-shadow:${_ring?'0 0 10px '+_border+'99':'none'}">${s.photo?`<img src="${s.photo}" style="width:100%;height:100%;object-fit:cover">`:drawAnimalSVG(_an,g,52)}</div></div>`;})()} 
 
       </div>
     </div>
@@ -2220,5 +2220,185 @@ if('serviceWorker' in navigator){
   });
 }
 </script>
+
+<!-- ===== CROP MODAL ===== -->
+<div id="cropModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.88);align-items:center;justify-content:center;padding:1rem">
+  <div style="background:#1a1a2e;border-radius:20px;padding:1.5rem;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.5)">
+    <div style="font-size:16px;font-weight:700;color:white;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center">
+      <span>✂️ ปรับรูปให้ได้มุมที่ต้องการ</span>
+      <button onclick="closeCropModal()" style="background:rgba(255,255,255,.15);border:none;border-radius:50%;width:32px;height:32px;color:white;cursor:pointer;font-size:18px;line-height:1">✕</button>
+    </div>
+    <!-- พื้นที่ crop -->
+    <div id="cropArea" style="position:relative;width:100%;aspect-ratio:1;background:#111;border-radius:14px;overflow:hidden;margin-bottom:1rem;touch-action:none;user-select:none">
+      <canvas id="cropCanvas" style="position:absolute;inset:0;width:100%;height:100%"></canvas>
+      <!-- วงกลม guide overlay -->
+      <svg style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none" viewBox="0 0 300 300">
+        <defs><mask id="cMask"><rect width="300" height="300" fill="white"/><circle cx="150" cy="150" r="128" fill="black"/></mask></defs>
+        <rect width="300" height="300" fill="rgba(0,0,0,.55)" mask="url(#cMask)"/>
+        <circle cx="150" cy="150" r="128" fill="none" stroke="white" stroke-width="2" stroke-dasharray="8 4"/>
+      </svg>
+    </div>
+    <!-- Zoom slider -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
+      <span style="font-size:20px">🔍</span>
+      <input type="range" id="cropZoom" min="1" max="4" step="0.01" value="1"
+        style="flex:1;accent-color:#1A6BC4;height:4px;cursor:pointer">
+      <span style="font-size:20px">🔎</span>
+    </div>
+    <p style="font-size:12px;color:#888;text-align:center;margin-bottom:1rem">ลากรูปเพื่อจัดตำแหน่ง · เลื่อน slider เพื่อซูม</p>
+    <!-- Upload progress -->
+    <div id="cropUploadProgress" style="display:none;margin-bottom:1rem">
+      <div style="font-size:13px;color:#aaa;text-align:center;margin-bottom:6px">กำลังอัปโหลด...</div>
+      <div style="height:6px;background:rgba(255,255,255,.1);border-radius:999px;overflow:hidden">
+        <div id="cropProgressBar" style="height:100%;background:linear-gradient(90deg,#1A6BC4,#4DA0F0);border-radius:999px;width:0%;transition:width .3s"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="closeCropModal()" style="flex:1;padding:12px;border-radius:12px;border:1.5px solid #444;background:transparent;color:#aaa;font-family:Sarabun,sans-serif;font-size:14px;cursor:pointer">ยกเลิก</button>
+      <button id="cropConfirmBtn" onclick="confirmCrop()" style="flex:2;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,#1A6BC4,#4DA0F0);color:white;font-family:Sarabun,sans-serif;font-size:14px;font-weight:700;cursor:pointer">✓ ใช้รูปนี้</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== CROP SYSTEM =====
+(function(){
+  let _img=null, _scale=1, _ox=0, _oy=0, _sid=null;
+  let _drag=false, _lx=0, _ly=0, _zoom=1;
+  const SIZE=300;
+
+  window.openCropModal = function(input, sid){
+    const file = input.files[0];
+    if(!file) return;
+    _sid = sid||S.sid;
+    input.value='';
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        _img = img;
+        // ตั้งค่าเริ่มต้น: cover วงกลม
+        const minD = Math.min(img.width, img.height);
+        _scale = SIZE / minD;
+        _ox = (SIZE - img.width * _scale) / 2;
+        _oy = (SIZE - img.height * _scale) / 2;
+        _zoom = 1;
+        document.getElementById('cropZoom').value = 1;
+        document.getElementById('cropUploadProgress').style.display='none';
+        document.getElementById('cropConfirmBtn').disabled=false;
+        document.getElementById('cropConfirmBtn').textContent='✓ ใช้รูปนี้';
+        document.getElementById('cropModal').style.display='flex';
+        requestAnimationFrame(draw);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  function draw(){
+    const canvas = document.getElementById('cropCanvas');
+    if(!canvas||!_img) return;
+    const area = document.getElementById('cropArea');
+    const rect = area.getBoundingClientRect();
+    const px = rect.width||SIZE;
+    canvas.width = px; canvas.height = px;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,px,px);
+    const s = _scale * _zoom * (px/SIZE);
+    ctx.drawImage(_img, _ox*(px/SIZE), _oy*(px/SIZE), _img.width*s, _img.height*s);
+  }
+
+  // Mouse drag
+  document.addEventListener('mousedown', e=>{
+    if(!e.target.closest('#cropArea')) return;
+    _drag=true; _lx=e.clientX; _ly=e.clientY; e.preventDefault();
+  });
+  document.addEventListener('mousemove', e=>{
+    if(!_drag) return;
+    const px = document.getElementById('cropCanvas').width||SIZE;
+    _ox += (e.clientX-_lx)*(SIZE/px);
+    _oy += (e.clientY-_ly)*(SIZE/px);
+    _lx=e.clientX; _ly=e.clientY;
+    draw();
+  });
+  document.addEventListener('mouseup', ()=>{ _drag=false; });
+
+  // Touch drag
+  document.addEventListener('touchstart', e=>{
+    if(!e.target.closest('#cropArea')) return;
+    if(e.touches.length===1){ _drag=true; _lx=e.touches[0].clientX; _ly=e.touches[0].clientY; }
+    e.preventDefault();
+  },{passive:false});
+  document.addEventListener('touchmove', e=>{
+    if(!_drag||e.touches.length!==1) return;
+    const px = document.getElementById('cropCanvas').width||SIZE;
+    _ox += (e.touches[0].clientX-_lx)*(SIZE/px);
+    _oy += (e.touches[0].clientY-_ly)*(SIZE/px);
+    _lx=e.touches[0].clientX; _ly=e.touches[0].clientY;
+    draw();
+  },{passive:false});
+  document.addEventListener('touchend', ()=>{ _drag=false; });
+
+  // Zoom
+  document.addEventListener('input', e=>{
+    if(e.target.id!=='cropZoom') return;
+    const prev = _zoom;
+    _zoom = parseFloat(e.target.value);
+    // zoom จากกลาง
+    const ratio = _zoom/prev;
+    _ox = SIZE/2 - (_ox - SIZE/2) * (1/ratio) - (SIZE/2 - SIZE/2);
+    _oy = SIZE/2 - (_oy - SIZE/2) * (1/ratio) - (SIZE/2 - SIZE/2);
+    _ox = SIZE/2 + (_ox - SIZE/2) / ratio;
+    _oy = SIZE/2 + (_oy - SIZE/2) / ratio;
+    draw();
+  });
+
+  window.closeCropModal = function(){
+    document.getElementById('cropModal').style.display='none';
+    _img=null; _sid=null;
+  };
+
+  window.confirmCrop = async function(){
+    if(!_img) return;
+    const btn = document.getElementById('cropConfirmBtn');
+    const prog = document.getElementById('cropUploadProgress');
+    const bar = document.getElementById('cropProgressBar');
+    btn.disabled=true; btn.textContent='กำลังประมวลผล...';
+    prog.style.display='block'; bar.style.width='30%';
+
+    // export canvas วงกลม 400x400
+    const out = document.createElement('canvas');
+    out.width=400; out.height=400;
+    const ctx = out.getContext('2d');
+    ctx.beginPath(); ctx.arc(200,200,200,0,Math.PI*2); ctx.clip();
+    const px = document.getElementById('cropCanvas').width||SIZE;
+    const s = _scale*_zoom*(400/SIZE);
+    ctx.drawImage(_img, _ox*(400/SIZE), _oy*(400/SIZE), _img.width*s, _img.height*s);
+
+    bar.style.width='60%';
+    out.toBlob(async blob=>{
+      try{
+        bar.style.width='75%';
+        const file = new File([blob],'photo.jpg',{type:'image/jpeg'});
+        const url = await uploadToCloudinary(file,'rs9/profiles');
+        bar.style.width='95%';
+        const sid = _sid||S.sid;
+        const stu = DB.students[sid];
+        if(stu){
+          stu.photo=url;
+          await api('PATCH',`/students/${sid}`,{photo:url});
+        }
+        bar.style.width='100%';
+        setTimeout(()=>{ closeCropModal(); render(); }, 300);
+      }catch(err){
+        prog.style.display='none';
+        btn.disabled=false; btn.textContent='✓ ใช้รูปนี้';
+        alert('อัปโหลดไม่สำเร็จ: '+err.message);
+      }
+    },'image/jpeg',0.88);
+  };
+})();
+</script>
+
 </body>
 </html>
