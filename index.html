@@ -1254,18 +1254,93 @@ function vTList(){
 
 function vAddLog(){
   const s=DB.students[S.sid];const isP=S.addMode==='plus';
-  const pr=(isP?PP:PM).map(p=>`<button class="pbtn" onclick="doPreset(${p.sc},'${p.lb}')"><div style="font-weight:500;font-size:13px;margin-bottom:3px">${p.lb}</div><div style="font-size:12px;color:${isP?'var(--green)':'var(--red)'}">${p.sc>=0?'+':''}${p.sc} คะแนน</div></button>`).join('');
+  const arr=isP?PP:PM;
+  const pr=arr.map((p,i)=>`<div style="position:relative;display:flex;align-items:stretch;border-radius:14px;overflow:hidden;border:1.5px solid ${isP?'rgba(46,160,67,.25)':'rgba(220,53,69,.25)'};background:var(--bg);margin-bottom:0">
+    <button class="pbtn" style="flex:1;border:none;border-radius:0;margin:0;text-align:left" onclick="doPreset(${p.sc},'${p.lb}')">
+      <div style="font-weight:500;font-size:13px;margin-bottom:3px">${p.lb}</div>
+      <div style="font-size:12px;color:${isP?'var(--green)':'var(--red)'}">${p.sc>=0?'+':''}${p.sc} คะแนน</div>
+    </button>
+    <button onclick="openEditPreset(${i})" style="flex-shrink:0;width:36px;background:${isP?'rgba(46,160,67,.08)':'rgba(220,53,69,.08)'};border:none;border-left:1px solid ${isP?'rgba(46,160,67,.2)':'rgba(220,53,69,.2)'};cursor:pointer;display:flex;align-items:center;justify-content:center;color:${isP?'var(--green)':'var(--red)'}">
+      <i class="ti ti-pencil" style="font-size:14px"></i>
+    </button>
+  </div>`).join('');
   return`
     <button class="btn-back" onclick="go('tstudent')"><i class="ti ti-arrow-left"></i> กลับ</button>
     <div style="font-size:18px;font-weight:600;margin-bottom:1.5rem">${isP?'เพิ่มคะแนน':'ตัดคะแนน'} — ${s?shortName(s.name):''}</div>
-    <div class="sec">${isP?'พฤติกรรมดี':'พฤติกรรมไม่พึงประสงค์'}</div>
-    <div class="pgrid">${pr}</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+      <div class="sec" style="margin:0">${isP?'พฤติกรรมดี':'พฤติกรรมไม่พึงประสงค์'}</div>
+      <button onclick="openAddPreset()" style="background:none;border:1.5px solid ${isP?'var(--green)':'var(--red)'};color:${isP?'var(--green)':'var(--red)'};border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px"><i class="ti ti-plus" style="font-size:12px"></i> เพิ่มรายการ</button>
+    </div>
+    <div class="pgrid" style="gap:8px">${pr}</div>
     <div class="sec">กรอกเอง</div>
     <div class="card">
       <div class="frow"><label>รายละเอียด</label><input type="text" id="cd" placeholder="${isP?'เช่น ช่วยจัดห้องประชุม':'เช่น ส่งเสียงดัง'}"></div>
       <div class="frow"><label>คะแนน</label><input type="number" id="cs" placeholder="${isP?'เช่น 2':'เช่น -1'}"></div>
       <button class="btn ${isP?'btn-g':'btn-r'} btn-full" onclick="doAddCustom()"><i class="ti ti-device-floppy"></i> บันทึก</button>
+    </div>
+
+    <!-- Preset Edit/Add Modal -->
+    <div id="presetModal" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.5);align-items:center;justify-content:center;padding:1rem">
+      <div style="background:var(--surface);border-radius:20px;padding:1.5rem;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+        <div style="font-size:16px;font-weight:700;margin-bottom:1.25rem;display:flex;justify-content:space-between;align-items:center">
+          <span id="presetModalTitle">แก้ไขรายการ</span>
+          <button onclick="closePresetModal()" style="background:var(--bg);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:var(--text)">✕</button>
+        </div>
+        <div class="frow"><label>ชื่อพฤติกรรม</label><input type="text" id="presetName" placeholder="เช่น ตอบคำถามได้"></div>
+        <div class="frow"><label>คะแนน</label><input type="number" id="presetScore" placeholder="${isP?'เช่น 2':'เช่น -1'}"></div>
+        <div style="display:flex;gap:8px;margin-top:1rem">
+          <button id="presetDeleteBtn" onclick="deletePreset()" style="flex:1;padding:12px;border-radius:12px;border:1.5px solid var(--red);background:transparent;color:var(--red);font-family:Sarabun,sans-serif;font-size:14px;cursor:pointer">ลบ</button>
+          <button onclick="savePreset()" style="flex:2;padding:12px;border-radius:12px;border:none;background:${isP?'var(--green)':'var(--red)'};color:white;font-family:Sarabun,sans-serif;font-size:14px;font-weight:700;cursor:pointer">บันทึก</button>
+        </div>
+      </div>
     </div>`;}
+
+let _editPresetIdx=-1;
+function openEditPreset(i){
+  const isP=S.addMode==='plus';
+  const arr=isP?PP:PM;
+  _editPresetIdx=i;
+  document.getElementById('presetModalTitle').textContent='แก้ไขรายการ';
+  document.getElementById('presetName').value=arr[i].lb;
+  document.getElementById('presetScore').value=arr[i].sc;
+  document.getElementById('presetDeleteBtn').style.display='';
+  document.getElementById('presetModal').style.display='flex';
+}
+function openAddPreset(){
+  _editPresetIdx=-1;
+  const isP=S.addMode==='plus';
+  document.getElementById('presetModalTitle').textContent='เพิ่มรายการใหม่';
+  document.getElementById('presetName').value='';
+  document.getElementById('presetScore').value=isP?'1':'-1';
+  document.getElementById('presetDeleteBtn').style.display='none';
+  document.getElementById('presetModal').style.display='flex';
+}
+function closePresetModal(){
+  document.getElementById('presetModal').style.display='none';
+}
+function savePreset(){
+  const isP=S.addMode==='plus';
+  const arr=isP?PP:PM;
+  const name=document.getElementById('presetName').value.trim();
+  const score=parseInt(document.getElementById('presetScore').value);
+  if(!name||isNaN(score)){alert('กรุณากรอกข้อมูลให้ครบ');return;}
+  if(_editPresetIdx>=0){
+    arr[_editPresetIdx]={sc:score,lb:name};
+  } else {
+    arr.push({sc:score,lb:name});
+  }
+  closePresetModal();
+  render();
+}
+function deletePreset(){
+  const isP=S.addMode==='plus';
+  const arr=isP?PP:PM;
+  if(_editPresetIdx>=0){
+    arr.splice(_editPresetIdx,1);
+  }
+  closePresetModal();
+  render();
+}
 
 function vAddStudent(){return`
   <button class="btn-back" onclick="go('tlist')"><i class="ti ti-arrow-left"></i> กลับ</button>
