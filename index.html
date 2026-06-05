@@ -1083,7 +1083,7 @@ function vTList(){
     })()}
     ${vLeaderboard()}
     <div class="sw" style="position:sticky;top:56px;z-index:99;background:var(--bg);padding-bottom:.5rem"><i class="ti ti-search"></i>
-      <input type="text" placeholder="ค้นหาชื่อหรือเลขประจำตัว" oninput="S.search=this.value;render()" value="${S.search||''}">
+      <input type="text" placeholder="ค้นหาชื่อหรือเลขประจำตัว" oninput="S.search=this.value;render(true)" value="${S.search||''}">
     </div>
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;width:100%" class="av-grid">${cards}</div>
       </div>`;
