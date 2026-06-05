@@ -978,7 +978,7 @@ function vTList(){
   const pc=Object.values(DB.requests||{}).filter(r=>r.status==="pending").length;
   const q=(S.search||'').toLowerCase();
   const entries=Object.entries(DB.students)
-    .filter(([,s])=>!q||s.name.includes(S.search)||(s.idcard||'').includes(S.search)||(s.sid||'').includes(S.search))
+    .filter(([,s])=>!q||(s.name||'').toLowerCase().includes(q)||(s.idcard||'').includes(q)||(s.sid||'').includes(q)||String(s.no||'').includes(q))
     .sort(([,a],[,b])=>(a.no||999)-(b.no||999));
 
   const cards=entries.map(([sid,s])=>{
