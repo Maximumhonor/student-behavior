@@ -1101,7 +1101,13 @@ function vTList(){
         <button class="btn btn-g" style="font-size:13px;padding:6px 12px" onclick="doApprove('${req.id}')"><i class="ti ti-check"></i> อนุมัติ</button>
         <button class="btn btn-r" style="font-size:13px;padding:6px 12px" onclick="doReject('${req.id}')"><i class="ti ti-x"></i> ปฏิเสธ</button>
       </div></div>`).join('');
-    const lh=logs.map(l=>`<div class="log-item"><div><span class="badge ${l.score>=0?'bp':'bm'}">${l.score>=0?'+':''}${l.score}</span><span style="margin-left:8px">${l.desc}</span></div><div class="ldate">${l.date}</div></div>`).join('')||'<div style="text-align:center;padding:1rem;color:var(--muted);font-size:14px">ยังไม่มีประวัติ</div>';
+    const lh=logs.map((l,i)=>`<div class="log-item" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <div style="flex:1;min-width:0"><span class="badge ${l.score>=0?'bp':'bm'}">${l.score>=0?'+':''}${l.score}</span><span style="margin-left:8px">${l.desc}</span></div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <div class="ldate">${l.date}</div>
+        <button onclick="doDeleteLog('${S.sid}',${i})" style="background:none;border:1px solid var(--red);border-radius:8px;color:var(--red);cursor:pointer;padding:2px 8px;font-size:11px;line-height:1.5" title="ลบรายการนี้">ลบ</button>
+      </div>
+    </div>`).join('')||'<div style="text-align:center;padding:1rem;color:var(--muted);font-size:14px">ยังไม่มีประวัติ</div>';
     content=`${pend.length>0?`<div class="sec">คำขอรออนุมัติ (${pend.length})</div>${ph}`:''}
       <div style="display:flex;gap:8px;margin-bottom:1.25rem">
         <button class="btn btn-g" style="flex:1;justify-content:center" onclick="openLog('plus')"><i class="ti ti-plus"></i> เพิ่มคะแนน</button>
@@ -1843,6 +1849,19 @@ async function doPreset(score,desc){
   await api('PATCH',`/students/${S.sid}`,{logs:s.logs});
   S.view='tstudent';S.tab='score';render();
 }
+async function doDeleteLog(sid, idx){
+  if(!confirm('ลบประวัติรายการนี้?')) return;
+  const s = DB.students[sid];
+  if(!s||!s.logs) return;
+  // คำนวณคะแนนที่ต้องลบออก
+  const log = s.logs[idx];
+  s.logs.splice(idx, 1);
+  // อัปเดต score
+  s.score = (s.score||0) - (log.score||0);
+  await api('PATCH', `/students/${sid}`, {logs: s.logs, score: s.score});
+  render(true);
+}
+
 async function doAddCustom(){
   const desc=document.getElementById('cd')?.value?.trim()||'';const score=parseInt(document.getElementById('cs')?.value||'');
   if(!desc||isNaN(score)){alert('กรุณากรอกข้อมูลให้ครบ');return;}
