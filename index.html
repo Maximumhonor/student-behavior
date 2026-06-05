@@ -720,7 +720,12 @@ function startPoll(){if(pollTimer)clearInterval(pollTimer);pollTimer=setInterval
 function stopPoll(){if(pollTimer){clearInterval(pollTimer);pollTimer=null;}}
 
 function render(){
+  // ถ้า modal เปิดอยู่ หรือกำลังพิมพ์ใน input/textarea ไม่ต้อง re-render
+  const pm = document.getElementById('presetModal');
+  if(pm && pm.style.display==='flex') return;
   const active = document.activeElement;
+  const tag = active?.tagName?.toLowerCase();
+  if(tag==='input'||tag==='textarea') return;
   const prevId = active?.id||'';
   const prevVal = active?.value||'';
   const prevStart = active?.selectionStart;
