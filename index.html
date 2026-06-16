@@ -628,14 +628,14 @@ function tot(s){
   return s.logs.reduce((sum,l)=>sum+(l.score||0),0);
 }
 
-const PP=[
+let PP=[
   {sc:1,lb:'ตอบคำถามได้'},
   {sc:2,lb:'ช่วยเหลือครู'},
   {sc:3,lb:'ทำงานส่ง'},
   {sc:5,lb:'หัวหน้าห้อง'},
   {sc:10,lb:'ทำดีเด่น'}
 ];
-const PM=[
+let PM=[
   {sc:-1,lb:'ลืมการบ้าน'},
   {sc:-2,lb:'คุยในห้อง'},
   {sc:-3,lb:'นั่ง 2 ขา'},
@@ -673,6 +673,11 @@ async function api(method,path,body){
 async function loadDB(){
   const data=await api('GET','/data');
   DB=data||{students:{},requests:{}};
+  // โหลด presets จาก DB ถ้ามี
+  if(DB.settings){
+    if(DB.settings.pp && DB.settings.pp.length>0) PP=[...DB.settings.pp];
+    if(DB.settings.pm && DB.settings.pm.length>0) PM=[...DB.settings.pm];
+  }
   // Don't re-render if user is typing in chat box
   const active = document.activeElement;
   if(active && (active.id==='chat_input'||active.id==='chat_input_p')){
@@ -723,13 +728,13 @@ function render(force=false){
   // ถ้า preset modal เปิดอยู่ ไม่ต้อง re-render
   const pm = document.getElementById('presetModal');
   if(pm && pm.style.display==='flex') return;
-  // ถ้ากำลังพิมพ์ใน input/textarea และไม่ได้ force ไม่ต้อง re-render
+  // ถ้ากำลังพิมพ์ใน input/textarea ภายนอก modal ไม่ต้อง re-render
   if(!force){
-    const active2 = document.activeElement;
-    const tag2 = active2?.tagName?.toLowerCase();
-    if(tag2==='input'||tag2==='textarea') return;
+    const _a = document.activeElement;
+    const _t = _a?.tagName?.toLowerCase();
+    if((_t==='input'||_t==='textarea') && !_a?.closest('[style*="position:fixed"]')) return;
   }
-  const active = document.activeElement;
+    const active = document.activeElement;
   const prevId = active?.id||'';
   const prevVal = active?.value||'';
   const prevStart = active?.selectionStart;
@@ -1912,7 +1917,7 @@ function openAddPreset(){
 function closePresetModal(){
   document.getElementById('presetModal').style.display='none';
 }
-function savePreset(){
+async function savePreset(){
   const isP=S.addMode==='plus';
   const arr=isP?PP:PM;
   const name=document.getElementById('presetName').value.trim();
@@ -1920,13 +1925,23 @@ function savePreset(){
   if(!name||isNaN(score)){alert('กรุณากรอกข้อมูลให้ครบ');return;}
   if(_editPresetIdx>=0){arr[_editPresetIdx]={sc:score,lb:name};}
   else{arr.push({sc:score,lb:name});}
+  // บันทึกลง Firestore
+  if(!DB.settings) DB.settings={};
+  DB.settings.pp=[...PP];
+  DB.settings.pm=[...PM];
+  await api('POST','/data',DB);
   closePresetModal();
   render(true);
 }
-function deletePreset(){
+async function deletePreset(){
   const isP=S.addMode==='plus';
   const arr=isP?PP:PM;
   if(_editPresetIdx>=0){arr.splice(_editPresetIdx,1);}
+  // บันทึกลง Firestore
+  if(!DB.settings) DB.settings={};
+  DB.settings.pp=[...PP];
+  DB.settings.pm=[...PM];
+  await api('POST','/data',DB);
   closePresetModal();
   render(true);
 }
@@ -1999,11 +2014,12 @@ async function doApprove(rid){
   if(s){
     s.logs=s.logs||[];
     s.logs.unshift({desc:`ความดี: ${req.desc}`,score:req.score,date:today(),id:Date.now().toString()});
-    await api('PATCH',`/students/${req.studentId}`,{logs:s.logs});
+    s.score=(s.score||0)+req.score;
+    await api('PATCH',`/students/${req.studentId}`,{logs:s.logs,score:s.score});
   }
   await api('POST','/data',DB);
   await loadDB();
-  render();
+  render(true);
 }
 async function doReject(rid){
   const req=(DB.requests||{})[rid];if(!req)return;
