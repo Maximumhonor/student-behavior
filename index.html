@@ -614,7 +614,7 @@ function taskEmoji(s){const p=taskPct(s);if(p===100)return'⭐';if(p>=71)return'
 function hwPct(hw){const s=hwSum(hw);return s.total===0?0:Math.round(s.done/s.total*100);}
 function hwColor(hw){const p=hwPct(hw);if(p===100)return'#2E7D32';if(p>=71)return'#1565C0';if(p>=41)return'#F57F17';if(p>=11)return'#E65100';return'#B71C1C';}
 function hwColorBg(hw){const p=hwPct(hw);if(p===100)return'#E8F5E9';if(p>=71)return'#E3F2FD';if(p>=41)return'#FFFDE7';if(p>=11)return'#FFF3E0';return'#FFEBEE';}
-function pendSid(sid){return Object.values(DB.requests||{}).filter(r=>r.studentId===sid&&r.status==='pending');}
+function pendSid(sid){return Object.entries(DB.requests||{}).filter(([,r])=>r.studentId===sid&&r.status==='pending');}
 function accentOf(s){return isGirl(s.name)?'var(--pink)':'var(--blue)';}
 function avHtml(s,size,fontSize){
   const animal=s.animal||getStudentAnimal(s);
@@ -644,7 +644,7 @@ let PM=[
 ];
 
 function pendAll(){
-  return Object.values(DB.requests||{}).filter(r=>r.status==='pending');
+  return Object.entries(DB.requests||{}).filter(([,r])=>r.status==='pending');
 }
 
 function getRewards(){
@@ -1099,12 +1099,12 @@ function vTList(){
   const chatMsgs=Object.values(DB.messages||{}).filter(m=>m.studentId===S.sid);const unreadFromParent=chatMsgs.filter(m=>m.from==='parent'&&!m.read).length;const pendRedeemCount=Object.values(DB.redeemRequests||{}).filter(r=>r.studentId===S.sid&&r.status==='pending').length;const TABS=[{k:'score',l:'คะแนน',i:'ti-star',dot:pend.length>0},{k:'hw',l:'ส่งงาน',i:'ti-clipboard-check'},{k:'redeem',l:'แลกคะแนน',i:'ti-gift',dot:pendRedeemCount>0},{k:'radar',l:'สเตตัส',i:'ti-chart-radar'},{k:'chat',l:'ข้อความ',i:'ti-message-2',dot:unreadFromParent>0}];
   let content='';
   if(S.tab==='score'){
-    const ph=pend.map(req=>`<div class="pcard">
+    const ph=pend.map(([rid,req])=>`<div class="pcard">
       <div style="font-size:13px;font-weight:600;color:var(--amber);margin-bottom:5px">ขอเพิ่มคะแนน: "${req.desc}"</div>
       <div style="font-size:12px;color:#854F0B;margin-bottom:8px">เสนอ +${req.score} คะแนน · ${req.date}</div>
       <div style="display:flex;gap:8px">
-        <button class="btn btn-g" style="font-size:13px;padding:6px 12px" onclick="doApprove('${req.id}')"><i class="ti ti-check"></i> อนุมัติ</button>
-        <button class="btn btn-r" style="font-size:13px;padding:6px 12px" onclick="doReject('${req.id}')"><i class="ti ti-x"></i> ปฏิเสธ</button>
+        <button class="btn btn-g" style="font-size:13px;padding:6px 12px" onclick="doApprove('${rid}')"><i class="ti ti-check"></i> อนุมัติ</button>
+        <button class="btn btn-r" style="font-size:13px;padding:6px 12px" onclick="doReject('${rid}')"><i class="ti ti-x"></i> ปฏิเสธ</button>
       </div></div>`).join('');
     const lh=logs.map((l,i)=>`<div class="log-item" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
       <div style="flex:1;min-width:0"><span class="badge ${l.score>=0?'bp':'bm'}">${l.score>=0?'+':''}${l.score}</span><span style="margin-left:8px">${l.desc}</span></div>
@@ -1331,8 +1331,8 @@ function vPendingAll(){
     <div style="font-size:13px;color:var(--amber);margin-bottom:3px">ความดีที่ทำ: "${req.desc}"</div>
     <div style="font-size:12px;color:#854F0B;margin-bottom:8px">เสนอ +${req.score} คะแนน · ${req.date}</div>
     <div style="display:flex;gap:8px">
-      <button class="btn btn-g" style="font-size:13px;padding:6px 12px" onclick="doApprove('${req.id}')"><i class="ti ti-check"></i> อนุมัติ</button>
-      <button class="btn btn-r" style="font-size:13px;padding:6px 12px" onclick="doReject('${req.id}')"><i class="ti ti-x"></i> ปฏิเสธ</button>
+      <button class="btn btn-g" style="font-size:13px;padding:6px 12px" onclick="doApprove('${rid}')"><i class="ti ti-check"></i> อนุมัติ</button>
+      <button class="btn btn-r" style="font-size:13px;padding:6px 12px" onclick="doReject('${rid}')"><i class="ti ti-x"></i> ปฏิเสธ</button>
     </div></div>`;}).join('')||'<div style="text-align:center;padding:2rem;color:var(--muted)">ไม่มีคำขอ</div>';
   return`<button class="btn-back" onclick="go('tlist')"><i class="ti ti-arrow-left"></i> กลับ</button>
     <div style="font-size:18px;font-weight:600;margin-bottom:1.5rem">คำขอรออนุมัติ</div>${cards}`;}
@@ -2004,7 +2004,8 @@ const doRedeemP=doRedeem;
 async function doSubmitDeed(){
   const desc=document.getElementById('gd')?.value?.trim()||'';const score=parseInt(document.getElementById('gs')?.value||'');
   if(!desc||isNaN(score)||score<1){alert('กรุณากรอกข้อมูลให้ครบ');return;}
-  await api('POST','/requests',{studentId:S.sid,desc,score,date:today(),status:'pending'});
+  const reqId='req'+Date.now();
+  await api('POST','/requests',{id:reqId,studentId:S.sid,desc,score,date:today(),status:'pending'});
   await loadDB();alert('ส่งคำขอเรียบร้อย รอการอนุมัติจากครู');
 }
 async function doApprove(rid){
