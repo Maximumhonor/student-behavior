@@ -1465,7 +1465,7 @@ function vPView(){
   const t=tot(s);const hw=hwSum(s.hw);const g=isGirl(s.name);
   const logs=s.logs||[];const rl=s.redeemLogs||[];
   const myReqs=Object.entries(DB.requests||{}).filter(([,r])=>r.studentId===S.sid).map(([id,r])=>({id,...r})).reverse();
-  const unreadMsgs=Object.values(DB.messages||{}).filter(m=>m.studentId===S.sid&&m.from==='parent'&&!m.read).length;const TABS=[{k:'score',l:'คะแนน',i:'ti-star'},{k:'hw',l:'ส่งงาน',i:'ti-clipboard-check'},{k:'avatar',l:'Avatar',i:'ti-mood-smile'},{k:'redeem',l:'แลกคะแนน',i:'ti-gift'},{k:'request',l:'ขอคะแนน',i:'ti-pencil-plus'},{k:'chat',l:'ข้อความ',i:'ti-message-2',dot:unreadMsgs>0}];
+  const unreadMsgs=Object.values(DB.messages||{}).filter(m=>m.studentId===S.sid&&m.from==='parent'&&!m.read).length;const TABS=[{k:'score',l:'คะแนน',i:'ti-star'},{k:'hw',l:'ส่งงาน',i:'ti-clipboard-check'},{k:'avatar',l:'Avatar',i:'ti-mood-smile'},{k:'redeem',l:'แลกคะแนน',i:'ti-gift'},{k:'quest',l:'Quest',i:'ti-trophy'},{k:'request',l:'ขอคะแนน',i:'ti-pencil-plus'},{k:'chat',l:'ข้อความ',i:'ti-message-2',dot:unreadMsgs>0}];
   let content='';
   if(S.tab==='score'){
     const lh=logs.map(l=>`<div class="log-item"><div><span class="badge ${l.score>=0?'bp':'bm'}">${l.score>=0?'+':''}${l.score}</span><span style="margin-left:8px">${l.desc}</span></div><div class="ldate">${l.date}</div></div>`).join('')||'<div style="text-align:center;padding:1rem;color:var(--muted);font-size:14px">ยังไม่มีประวัติ</div>';
@@ -1565,8 +1565,47 @@ function vPView(){
         <div style="font-size:12px;margin-top:4px;color:var(--muted)">อันดับของคุณ: <strong style="color:${rank<=5?'#FFD700':rank<=10?'#00BFFF':rank<=20?'#43A047':'var(--muted)'}">#${rank}</strong></div>
       </div>
       ${tierSections}`;
-  } else if(S.tab==='chat'){
-    const pMsgs=Object.values(DB.messages||{}).filter(m=>m.studentId===S.sid).sort((a,b)=>(a.ts||0)-(b.ts||0));
+    } else if(S.tab==='quest'){
+    const quests=DB.quests||[];
+    const questCards=quests.map((q,qi)=>{
+      const prog=q.type==='hw'?(s.taskDone||0):tot(s);
+      const pct=Math.min(100,Math.round(prog/(q.target||1)*100));
+      const done=prog>=q.target;
+      const earnedIds=(s.questProgress||{})[q.id]||[];
+      const mCards=(q.milestones||[]).sort((a,b)=>a.at-b.at).map((m,mi)=>{
+        const reached=prog>=m.at;
+        const earned=earnedIds.includes(mi);
+        return`<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:10px;background:${earned?'rgba(46,160,67,.12)':reached?'rgba(26,107,196,.08)':'var(--bg)'};border:1px solid ${earned?'var(--green)':reached?'var(--blue)':'var(--border)'}">
+          <span style="font-size:16px">${earned?'✅':reached?'🎯':'⬜'}</span>
+          <div style="flex:1">
+            <div style="font-size:12px;color:var(--muted)">${q.type==='hw'?'ส่งงาน':'คะแนน'} ${m.at} ${q.type==='hw'?'ชิ้น':'คะแนน'}</div>
+            <div style="font-size:11px;color:${earned?'var(--green)':'var(--muted)'}">+${m.reward} คะแนน ${earned?'✓ รับแล้ว':''}</div>
+          </div>
+          ${reached&&!earned?'<span style="font-size:10px;background:var(--blue);color:white;padding:2px 8px;border-radius:999px;font-weight:700">รับได้!</span>':''}
+        </div>`;
+      }).join('');
+      return`<div style="background:var(--surface);border-radius:16px;padding:1rem;border:2px solid ${done?'var(--green)':'var(--border)'};margin-bottom:.75rem;${done?'box-shadow:0 0 12px rgba(46,160,67,.2)':''}">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:.75rem">
+          <span style="font-size:20px">${done?'🏆':q.type==='hw'?'📚':'⭐'}</span>
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:700">${q.name}</div>
+            <div style="font-size:12px;color:var(--muted)">${q.type==='hw'?'ส่งงานให้ครบ':'สะสมคะแนน'} ${q.target} ${q.type==='hw'?'ชิ้น':'คะแนน'}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:16px;font-weight:800;color:${done?'var(--green)':'var(--text)'}">${prog}/${q.target}</div>
+            <div style="font-size:11px;color:var(--muted)">${pct}%</div>
+          </div>
+        </div>
+        <div style="height:8px;background:var(--bg);border-radius:999px;overflow:hidden;margin-bottom:.75rem">
+          <div style="height:100%;width:${pct}%;background:${done?'var(--green)':'linear-gradient(90deg,#1A6BC4,#4DA0F0)'};border-radius:999px;transition:width .5s"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">${mCards}</div>
+      </div>`;
+    }).join('');
+    content=`
+      <div style="font-size:16px;font-weight:700;margin-bottom:1rem">🎯 ภารกิจพิเศษ</div>
+      ${quests.length===0?'<div style="text-align:center;padding:2rem;color:var(--muted);font-size:14px">ยังไม่มีภารกิจ<br>ครูจะเพิ่มภารกิจให้เร็วๆนี้ 🎯</div>':questCards}`;
+  } else if(S.tab==='chat'){   const pMsgs=Object.values(DB.messages||{}).filter(m=>m.studentId===S.sid).sort((a,b)=>(a.ts||0)-(b.ts||0));
     const pBubbles=pMsgs.length>0?pMsgs.map((m,mi)=>`
       <div style="display:flex;flex-direction:column;align-items:${m.from==='parent'?'flex-end':'flex-start'}">
         <div class="chat-name ${m.from==='parent'?'parent':''}">${m.from==='parent'?'คุณ':'ครู'}</div>
