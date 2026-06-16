@@ -1116,6 +1116,32 @@ function vTList(){
     <div class="sw" style="position:sticky;top:56px;z-index:99;background:var(--bg);padding-bottom:.5rem"><i class="ti ti-search"></i>
       <input type="text" placeholder="ค้นหาชื่อหรือเลขประจำตัว" oninput="S.search=this.value;render(true)" value="${S.search||''}">
     </div>
+    <!-- Quest Manager Button -->
+    <div onclick="S.showQuestMgr=!S.showQuestMgr;render(true)" style="cursor:pointer;background:linear-gradient(135deg,#7B2FBE,#C44569);border-radius:16px;padding:12px 18px;margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 4px 16px rgba(123,47,190,.3)">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:22px">🎯</span>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:white">จัดการภารกิจ Quest</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.75)">${(DB.quests||[]).length} ภารกิจทั้งหมด · กดเพื่อเพิ่ม/แก้ไข</div>
+        </div>
+      </div>
+      <i class="ti ti-chevron-${S.showQuestMgr?'up':'down'}" style="color:white;font-size:18px"></i>
+    </div>
+    ${S.showQuestMgr?`<div style="background:var(--surface);border-radius:16px;padding:1rem;margin-bottom:.75rem;border:1px solid var(--border)">
+      <button onclick="openQuestModal(-1)" style="width:100%;padding:10px;border-radius:12px;border:2px dashed var(--blue);background:var(--blue-bg);color:var(--blue);font-family:Sarabun,sans-serif;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:.75rem">
+        <i class="ti ti-plus"></i> สร้างภารกิจใหม่
+      </button>
+      ${(DB.quests||[]).length===0?'<div style="text-align:center;color:var(--muted);font-size:13px;padding:.5rem">ยังไม่มีภารกิจ</div>':''}
+      ${(DB.quests||[]).map((q,qi)=>`<div style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:12px;background:var(--bg);border:1px solid var(--border);margin-bottom:6px">
+        <span style="font-size:18px">${q.type==='hw'?'📚':'⭐'}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${q.name}</div>
+          <div style="font-size:11px;color:var(--muted)">${q.type==='hw'?'ส่งงาน':'คะแนน'} ${q.target} | ${(q.milestones||[]).length} ขั้นรางวัล</div>
+        </div>
+        <button onclick="openQuestModal(${qi})" style="background:var(--blue-bg);border:1px solid var(--blue);color:var(--blue);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer">แก้ไข</button>
+        <button onclick="doDeleteQuest(${qi})" style="background:var(--pink-bg);border:1px solid var(--red);color:var(--red);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer">ลบ</button>
+      </div>`).join('')}
+    </div>`:''}
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;width:100%" class="av-grid">${cards}</div>
       </div>`;
 }function vTStudent(){
