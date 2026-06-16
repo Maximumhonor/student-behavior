@@ -163,3 +163,45 @@ const listener = app.listen(process.env.PORT || 3000, async () => {
     } catch(e) {}
   }, 14 * 60 * 1000);
 });
+
+// เพิ่ม routes สำหรับ messages, redeemRequests, settings
+app.patch('/api/messages/:id', async (req, res) => {
+  const db2 = await readDB();
+  if (!db2.messages) db2.messages = {};
+  db2.messages[req.params.id] = { ...db2.messages[req.params.id], ...req.body };
+  await writeDB(db2);
+  res.json({ ok: true });
+});
+
+app.delete('/api/messages/:id', async (req, res) => {
+  const db2 = await readDB();
+  if (db2.messages) delete db2.messages[req.params.id];
+  await writeDB(db2);
+  res.json({ ok: true });
+});
+
+app.patch('/api/redeemRequests/:id', async (req, res) => {
+  const db2 = await readDB();
+  if (!db2.redeemRequests) db2.redeemRequests = {};
+  db2.redeemRequests[req.params.id] = { ...db2.redeemRequests[req.params.id], ...req.body };
+  await writeDB(db2);
+  res.json({ ok: true });
+});
+
+app.patch('/api/settings/:key', async (req, res) => {
+  const db2 = await readDB();
+  if (!db2.settings) db2.settings = {};
+  db2.settings[req.params.key] = req.body[req.params.key] || req.body;
+  await writeDB(db2);
+  res.json({ ok: true });
+});
+
+app.patch('/api/markread/:studentId', async (req, res) => {
+  const db2 = await readDB();
+  const { from } = req.body;
+  Object.values(db2.messages || {}).forEach(m => {
+    if (m.studentId === req.params.studentId && m.from === from) m.read = true;
+  });
+  await writeDB(db2);
+  res.json({ ok: true });
+});

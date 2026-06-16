@@ -2017,16 +2017,18 @@ async function doApprove(rid){
     s.score=(s.score||0)+req.score;
     await api('PATCH',`/students/${req.studentId}`,{logs:s.logs,score:s.score});
   }
-  await api('POST','/data',DB);
+  await api('PATCH',`/requests/${rid}`,{status:'approved'});
   await loadDB();
   render(true);
 }
 async function doReject(rid){
   const req=(DB.requests||{})[rid];if(!req)return;
   req.status='rejected';
-  await api('POST','/data',DB);
-  await loadDB();
-  render();
+  try{
+    await api('PATCH',`/requests/${rid}`,{status:'rejected'});
+    await loadDB();
+    render(true);
+  }catch(e){render(true);}
 }
 async function doUploadPhoto(input){
   const file=input.files[0];if(!file)return;
@@ -2124,9 +2126,9 @@ async function doSubmitRedeemReq(studentId){
   const id='rr'+Date.now();
   DB.redeemRequests[id]={id,studentId,name,cost,date:today(),status:'pending'};
   S.redeemReqName='';S.redeemReqCost='';
-  await api('POST','/data',DB);
+  try{ await api('PATCH',`/redeemRequests/${Object.keys(DB.redeemRequests).slice(-1)[0]}`,DB.redeemRequests[Object.keys(DB.redeemRequests).slice(-1)[0]]); }catch(e){}
   alert('ส่งคำขอให้ครูแล้ว รอการอนุมัติ');
-  render();
+  render(true);
 }
 async function doApproveRedeem(rid){
   const req=(DB.redeemRequests||{})[rid];if(!req)return;
@@ -2136,14 +2138,18 @@ async function doApproveRedeem(rid){
   s.logs=[{desc:`แลก (อนุมัติ): ${req.name}`,score:-req.cost,date:today()},...(s.logs||[])];
   s.redeemLogs=[{name:req.name,cost:req.cost,date:today()},...(s.redeemLogs||[])];
   await api('PATCH',`/students/${req.studentId}`,{logs:s.logs,redeemLogs:s.redeemLogs});
-  await api('POST','/data',DB);
-  render();
+  await api('PATCH',`/redeemRequests/${rid}`,{status:'approved'});
+  await loadDB();
+  render(true);
 }
 async function doRejectRedeem(rid){
   const req=(DB.redeemRequests||{})[rid];if(!req)return;
   req.status='rejected';
-  await api('POST','/data',DB);
-  render();
+  try{
+    await api('PATCH',`/redeemRequests/${rid}`,{status:'rejected'});
+    await loadDB();
+    render(true);
+  }catch(e){render(true);}
 }
 
 // ===== Reward Management =====
@@ -2163,16 +2169,20 @@ async function doSaveReward(idx){
     DB.rewards[idx]={...DB.rewards[idx],name,cost};
   }
   S.editRewardIdx=null;
-  await api('POST','/data',DB);
-  render();
+  try{
+    await api('PATCH','/settings/rewards',{rewards:DB.rewards});
+    render(true);
+  }catch(e){render(true);}
 }
 async function doDeleteReward(idx){
   const r=getRewards()[idx];if(!r)return;
   if(!confirm(`ลบ "${r.name}" ออกจากรายการแลกคะแนน?`))return;
   if(!DB.rewards||DB.rewards.length===0) DB.rewards=[...DEFAULT_REWARDS];
   DB.rewards.splice(idx,1);
-  await api('POST','/data',DB);
-  render();
+  try{
+    await api('PATCH','/settings/rewards',{rewards:DB.rewards});
+    render(true);
+  }catch(e){render(true);}
 }
 
 // ===== Chat Functions =====
@@ -2188,8 +2198,11 @@ async function doSendMsg(studentId, from){
   if(!DB.messages) DB.messages={};
   const msgId = 'msg'+Date.now();
   DB.messages[msgId]={id:msgId,studentId,from,text,ts:Date.now(),timeStr:nowStr(),read:false};
-  await api('POST','/data',DB);
-  render();
+  try{
+    const mid2=Object.keys(DB.messages).slice(-1)[0];
+    await api('PATCH',`/messages/${mid2}`,DB.messages[mid2]);
+  }catch(e){}
+  render(true);
   setTimeout(()=>{
     const cb=document.getElementById(from==='teacher'?'chatbox':'chatboxP');
     if(cb) cb.scrollTop=cb.scrollHeight;
@@ -2201,15 +2214,15 @@ async function doSendMsg(studentId, from){
 async function doMarkRead(studentId, from){
   let changed=false;
   Object.values(DB.messages||{}).forEach(m=>{if(m.studentId===studentId&&m.from===from&&!m.read){m.read=true;changed=true;}});
-  if(changed) await api('POST','/data',DB);
+  if(changed) try{ await api('PATCH',`/markread/${studentId}`,{from,ts:Date.now()}); }catch(e){}
 }
 
 async function doDeleteMsg(studentId, msgId){
   if(!msgId||!DB.messages||!DB.messages[msgId]) return;
   if(!confirm('ลบข้อความนี้?')) return;
   delete DB.messages[msgId];
-  await api('POST','/data',DB);
-  render();
+  try{ await api('DELETE',`/messages/${msgId}`,{}); }catch(e){}
+  render(true);
   setTimeout(()=>{
     const cb=document.getElementById('chatbox')||document.getElementById('chatboxP');
     if(cb) cb.scrollTop=cb.scrollHeight;
