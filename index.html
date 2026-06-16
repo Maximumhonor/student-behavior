@@ -519,7 +519,7 @@ function compressImage(file, maxW=1200, quality=0.82){
   });
 }
 
-const SUBJECTS=['วิทยาศาสตร์','เศรษฐศาสตร์การเงิน','ภาษาอังกฤษพื้นฐาน','ภาษาอังกฤษเพิ่มเติม','สุขศึกษาและพลศึกษา','ดนตรี','ศิลปะ','นาฏศิลป์','ภาษาไทย','คอมพิวเตอร์','ประวัติศาสตร์','สังคม'];
+const SUBJECTS=[];
 let S={view:'loading',role:null,sid:null,tab:'score',msg:'',search:'',newName:'',newId:'',monitorGroup:null};
 let pollTimer=null;
 
@@ -1122,7 +1122,7 @@ function vTList(){
   const s=DB.students[S.sid];if(!s)return'';
   const t=tot(s);const hw=hwSum(s.hw);const g=isGirl(s.name);
   const logs=s.logs||[];const rl=s.redeemLogs||[];const pend=pendSid(S.sid);
-  const chatMsgs=Object.values(DB.messages||{}).filter(m=>m.studentId===S.sid);const unreadFromParent=chatMsgs.filter(m=>m.from==='parent'&&!m.read).length;const pendRedeemCount=Object.values(DB.redeemRequests||{}).filter(r=>r.studentId===S.sid&&r.status==='pending').length;const TABS=[{k:'score',l:'คะแนน',i:'ti-star',dot:pend.length>0},{k:'hw',l:'ส่งงาน',i:'ti-clipboard-check'},{k:'redeem',l:'แลกคะแนน',i:'ti-gift',dot:pendRedeemCount>0},{k:'radar',l:'สเตตัส',i:'ti-chart-radar'},{k:'quest',l:'Quest',i:'ti-trophy'},{k:'chat',l:'ข้อความ',i:'ti-message-2',dot:unreadFromParent>0}];
+  const chatMsgs=Object.values(DB.messages||{}).filter(m=>m.studentId===S.sid);const unreadFromParent=chatMsgs.filter(m=>m.from==='parent'&&!m.read).length;const pendRedeemCount=Object.values(DB.redeemRequests||{}).filter(r=>r.studentId===S.sid&&r.status==='pending').length;const TABS=[{k:'score',l:'คะแนน',i:'ti-star',dot:pend.length>0},{k:'hw',l:'ส่งงาน',i:'ti-clipboard-check'},{k:'redeem',l:'แลกคะแนน',i:'ti-gift',dot:pendRedeemCount>0},{k:'quest',l:'Quest',i:'ti-trophy'},{k:'chat',l:'ข้อความ',i:'ti-message-2',dot:unreadFromParent>0}];
   let content='';
   if(S.tab==='score'){
     const ph=pend.map(([rid,req])=>`<div class="pcard">
@@ -1154,12 +1154,11 @@ function vTList(){
     </div>`:`<div style="margin-bottom:1rem;background:var(--bg);border:2px dashed var(--border);border-radius:var(--rs);padding:1rem;text-align:center;color:var(--muted);font-size:13px"><i class="ti ti-photo-off" style="font-size:24px;display:block;margin-bottom:.5rem"></i>ยังไม่มีรูปตัวอย่างงานครบ</div>`;
     content=`
       <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
-        <button class="btn btn-pk" style="flex:1;justify-content:center;min-width:140px" onclick="doMarkAllDone('${S.sid}')"><i class="ti ti-checks"></i> ส่งงานครบทุกวิชา</button>
-        <label class="btn btn-b" style="flex:1;justify-content:center;min-width:140px;cursor:pointer"><i class="ti ti-photo-up"></i> อัปโหลดตัวอย่างงานครบ<input type="file" accept="image/*" style="display:none" onchange="doUploadExamplePhoto(this)"></label>
+        
+        <label class="btn btn-b" style="flex:1;justify-content:center;min-width:140px;cursor:pointer"><i class="ti ti-photo-up"></i> หลักฐานงานนักเรียนที่มีความรับผิดชอบ<input type="file" accept="image/*" style="display:none" onchange="doUploadExamplePhoto(this)"></label>
       </div>
       ${exPhotoHtml}
-      <div style="font-size:13px;color:var(--muted);margin-bottom:.75rem">คลิกที่วิชาเพื่อสลับสถานะ</div>
-      <div class="hw-grid">${SUBJECTS.map(subj=>{const it=(s.hw||{})[subj]||{done:false,date:today()};return`<div class="hwc ${it.done?'hwd':'hwm'}" onclick="doToggleHw('${subj}')"><div style="display:flex;justify-content:space-between"><div class="hn">${subj}</div><i class="ti ${it.done?'ti-circle-check':'ti-circle-x'}" style="font-size:16px"></i></div><div class="hs">${it.done?'ส่งแล้ว':'ยังไม่ส่ง'}</div><div class="hdate">เช็ค: ${it.date}</div></div>`;}).join('')}</div>`;
+      </div>`;
   }else if(S.tab==='redeem'){
     const REWARDS=getRewards();
     const rh=REWARDS.map((r,ri)=>{const can=t>=r.cost;return`
