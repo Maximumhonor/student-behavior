@@ -673,6 +673,18 @@ async function api(method,path,body){
 async function loadDB(){
   const data=await api('GET','/data');
   DB=data||{students:{},requests:{}};
+  // เช็คและ reset อวตาร์ที่ไม่มีสิทธิ์แล้ว
+  let needSave=false;
+  Object.entries(DB.students||{}).forEach(([sid,s])=>{
+    if(s.chosenAnimal){
+      const td=getAvatarTier(s.chosenAnimal);
+      if(!td.unlock(s)){
+        s.chosenAnimal=null;
+        needSave=true;
+        api('PATCH',`/students/${sid}`,{chosenAnimal:null}).catch(()=>{});
+      }
+    }
+  });
   // โหลด presets จาก DB ถ้ามี
   if(DB.settings){
     if(DB.settings.pp && DB.settings.pp.length>0) PP=[...DB.settings.pp];
@@ -844,7 +856,20 @@ function getAnimal(name,isGirl){
   for(let i=0;i<name.length;i++) hash=(hash*31+name.charCodeAt(i))&0xFFFF;
   return animals[hash%animals.length];
 }
-function getStudentAnimal(s){return s.chosenAnimal||getAnimal(s.name,isGirl(s.name));}
+function getStudentAnimal(s){
+  if(s.chosenAnimal){
+    // เช็คว่ายังมีสิทธิ์ใช้อวตาร์นี้ไหม
+    const td=getAvatarTier(s.chosenAnimal);
+    const rank=getPlayerRank(s);
+    const allowed=td.unlock(s);
+    if(!allowed){
+      // อันดับตก ล็อคอวตาร์กลับเป็น common
+      return getAnimal(s.name,isGirl(s.name));
+    }
+    return s.chosenAnimal;
+  }
+  return getAnimal(s.name,isGirl(s.name));
+}
 async function doChooseAnimal(sid,animal){
   const s=DB.students[sid];if(!s)return;
   s.chosenAnimal=animal;
