@@ -1759,17 +1759,15 @@ function vMStudent(){
       <div class="sc"><div class="sl">ยังไม่ส่ง ❌</div><div class="sv" style="color:${(s.taskTotal||0)-(s.taskDone||0)>0?'var(--red)':'var(--green)'}">${(s.taskTotal||0)-(s.taskDone||0)}</div></div>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
-      <button class="btn btn-pk" style="flex:1;justify-content:center" onclick="doMMarkAllDone()">
-        <i class="ti ti-checks"></i> ส่งครบทุกวิชา
-      </button>
+      
       <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:12px;background:var(--blue-bg);border:1.5px solid var(--blue-bd);color:var(--blue);font-size:14px;font-weight:600;cursor:pointer;font-family:Sarabun,sans-serif">
-        <i class="ti ti-camera-upload"></i> ${s.hwPhoto?'เปลี่ยนรูปใบงาน':'อัพโหลดใบงาน'}
+        <i class="ti ti-camera-upload"></i> ${s.hwPhoto?'เปลี่ยนรูปใบงาน':'หลักฐานการส่งงาน'}
         <input type="file" accept="image/*" style="display:none" onchange="doMUploadHwPhoto(this)">
       </label>
     </div>
     ${hwPhotoHtml}
-    <div style="font-size:13px;color:var(--muted);margin-bottom:.75rem">แตะที่วิชาเพื่อสลับสถานะ</div>
-    <div class="hw-grid">${hwCards}</div>`;}
+    
+    `;}
 
 async function doMToggleHw(subj){
   const s=DB.students[S.sid];if(!s)return;
