@@ -689,6 +689,7 @@ async function loadDB(){
   if(DB.settings){
     if(DB.settings.pp && DB.settings.pp.length>0) PP=[...DB.settings.pp];
     if(DB.settings.pm && DB.settings.pm.length>0) PM=[...DB.settings.pm];
+    if(DB.settings.quests) DB.quests=[...DB.settings.quests];
   }
   // Don't re-render if user is typing in chat box
   const active = document.activeElement;
@@ -1121,7 +1122,7 @@ function vTList(){
   const s=DB.students[S.sid];if(!s)return'';
   const t=tot(s);const hw=hwSum(s.hw);const g=isGirl(s.name);
   const logs=s.logs||[];const rl=s.redeemLogs||[];const pend=pendSid(S.sid);
-  const chatMsgs=Object.values(DB.messages||{}).filter(m=>m.studentId===S.sid);const unreadFromParent=chatMsgs.filter(m=>m.from==='parent'&&!m.read).length;const pendRedeemCount=Object.values(DB.redeemRequests||{}).filter(r=>r.studentId===S.sid&&r.status==='pending').length;const TABS=[{k:'score',l:'คะแนน',i:'ti-star',dot:pend.length>0},{k:'hw',l:'ส่งงาน',i:'ti-clipboard-check'},{k:'redeem',l:'แลกคะแนน',i:'ti-gift',dot:pendRedeemCount>0},{k:'radar',l:'สเตตัส',i:'ti-chart-radar'},{k:'chat',l:'ข้อความ',i:'ti-message-2',dot:unreadFromParent>0}];
+  const chatMsgs=Object.values(DB.messages||{}).filter(m=>m.studentId===S.sid);const unreadFromParent=chatMsgs.filter(m=>m.from==='parent'&&!m.read).length;const pendRedeemCount=Object.values(DB.redeemRequests||{}).filter(r=>r.studentId===S.sid&&r.status==='pending').length;const TABS=[{k:'score',l:'คะแนน',i:'ti-star',dot:pend.length>0},{k:'hw',l:'ส่งงาน',i:'ti-clipboard-check'},{k:'redeem',l:'แลกคะแนน',i:'ti-gift',dot:pendRedeemCount>0},{k:'radar',l:'สเตตัส',i:'ti-chart-radar'},{k:'quest',l:'Quest',i:'ti-trophy'},{k:'chat',l:'ข้อความ',i:'ti-message-2',dot:unreadFromParent>0}];
   let content='';
   if(S.tab==='score'){
     const ph=pend.map(([rid,req])=>`<div class="pcard">
@@ -1233,6 +1234,48 @@ function vTList(){
     content=`<div style="display:flex;justify-content:center;margin-bottom:1rem">${svgR}</div>
       <div class="sec">ปรับคะแนนรายวิชา (1-5)</div>
       <div class="card" style="padding:.5rem 1rem">${rows}</div>`;
+  } else if(S.tab==='quest'){
+    const quests=DB.quests||[];
+    const questCards=quests.map((q,qi)=>{
+      const prog=q.type==='hw'?(s.taskDone||0):q.type==='score'?tot(s):0;
+      const total=q.target;
+      const pct=Math.min(100,Math.round(prog/total*100));
+      const done=prog>=total;
+      const milestones=(q.milestones||[]).sort((a,b)=>a.at-b.at);
+      const earnedIds=(s.questProgress||{})[q.id]||[];
+      const mCards=milestones.map((m,mi)=>{
+        const reached=prog>=m.at;
+        const earned=earnedIds.includes(mi);
+        return`<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:10px;background:${earned?'rgba(46,160,67,.12)':reached?'rgba(26,107,196,.08)':'var(--bg)'};border:1px solid ${earned?'var(--green)':reached?'var(--blue)':'var(--border)'}">
+          <span style="font-size:16px">${earned?'✅':reached?'🎯':'⬜'}</span>
+          <div style="flex:1">
+            <div style="font-size:12px;color:var(--muted)">${q.type==='hw'?'ส่งงาน':'คะแนน'} ${m.at} ${q.type==='hw'?'ชิ้น':'คะแนน'}</div>
+            <div style="font-size:11px;color:${earned?'var(--green)':'var(--muted)'}">+${m.reward} คะแนน ${earned?'(รับแล้ว)':''}</div>
+          </div>
+          ${reached&&!earned?`<span style="font-size:10px;background:var(--blue);color:white;padding:2px 8px;border-radius:999px;font-weight:700">รับได้!</span>`:''}
+        </div>`;
+      }).join('');
+      return`<div style="background:var(--surface);border-radius:16px;padding:1rem;border:2px solid ${done?'var(--green)':'var(--border)'};margin-bottom:.75rem;${done?'box-shadow:0 0 12px rgba(46,160,67,.2)':''}">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:.75rem">
+          <span style="font-size:20px">${done?'🏆':q.type==='hw'?'📚':'⭐'}</span>
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:700">${q.name}</div>
+            <div style="font-size:12px;color:var(--muted)">${q.type==='hw'?'ส่งงานให้ครบ':'สะสมคะแนน'} ${q.target} ${q.type==='hw'?'ชิ้น':'คะแนน'}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:16px;font-weight:800;color:${done?'var(--green)':'var(--text)'}">${prog}/${total}</div>
+            <div style="font-size:11px;color:var(--muted)">${pct}%</div>
+          </div>
+        </div>
+        <div style="height:8px;background:var(--bg);border-radius:999px;overflow:hidden;margin-bottom:.75rem">
+          <div style="height:100%;width:${pct}%;background:${done?'var(--green)':'linear-gradient(90deg,#1A6BC4,#4DA0F0)'};border-radius:999px;transition:width .5s"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">${mCards}</div>
+      </div>`;
+    }).join('');
+    content=`
+      <div style="font-size:16px;font-weight:700;margin-bottom:1rem">🎯 ภารกิจพิเศษ</div>
+      ${quests.length===0?'<div style="text-align:center;padding:2rem;color:var(--muted);font-size:14px">ยังไม่มีภารกิจ<br>ครูจะเพิ่มภารกิจให้เร็วๆนี้</div>':questCards}`;
   } else if(S.tab==='chat'){
     const msgs=chatMsgs.sort((a,b)=>(a.ts||0)-(b.ts||0));
     const bubbles=msgs.length>0?msgs.map((m,mi)=>`
@@ -1914,8 +1957,10 @@ async function doPreset(score,desc){
   S.view='tstudent';S.tab='score';render(true);
   try{
     await api('PATCH',`/students/${S.sid}`,{logs:s.logs,score:s.score});
+    await checkQuestProgress(S.sid);
   }catch(e){console.log('preset error:',e);}
   startPoll();
+  render(true);
 }
 async function doDeleteRedeemLog(sid, idx){
   if(!confirm('ลบประวัติการแลกนี้?')) return;
@@ -2599,6 +2644,133 @@ if('serviceWorker' in navigator){
     },'image/jpeg',0.88);
   };
 })();
+</script>
+
+
+<!-- ===== QUEST MODAL ===== -->
+<div id="questModal" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.6);align-items:center;justify-content:center;padding:1rem;overflow-y:auto">
+  <div style="background:var(--surface);border-radius:20px;padding:1.5rem;width:100%;max-width:420px;margin:auto">
+    <div style="font-size:16px;font-weight:700;margin-bottom:1.25rem;display:flex;justify-content:space-between;align-items:center">
+      <span id="questModalTitle">สร้างภารกิจใหม่</span>
+      <button onclick="closeQuestModal()" style="background:var(--bg);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:18px;color:var(--text)">✕</button>
+    </div>
+    <div class="frow"><label>ชื่อภารกิจ</label><input type="text" id="q_name" placeholder="เช่น นักส่งงานสัปดาห์ที่ 6"></div>
+    <div class="frow">
+      <label>ประเภท</label>
+      <select id="q_type" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--border);font-family:Sarabun,sans-serif;font-size:14px;background:var(--bg);color:var(--text)">
+        <option value="hw">📚 จำนวนงานที่ส่ง</option>
+        <option value="score">⭐ คะแนนพฤติกรรม</option>
+      </select>
+    </div>
+    <div class="frow"><label>เป้าหมายสูงสุด</label><input type="number" id="q_target" placeholder="เช่น 70"></div>
+    <div style="margin-bottom:1rem">
+      <label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px">🏅 ขั้นรางวัล (กรอกได้หลายขั้น)</label>
+      <div id="q_milestones"></div>
+      <button onclick="addMilestoneRow()" style="width:100%;padding:8px;border-radius:10px;border:1.5px dashed var(--border);background:var(--bg);color:var(--muted);font-family:Sarabun,sans-serif;font-size:13px;cursor:pointer;margin-top:6px">+ เพิ่มขั้นรางวัล</button>
+    </div>
+    <button onclick="saveQuest()" style="width:100%;padding:13px;border-radius:12px;border:none;background:linear-gradient(135deg,#7B2FBE,#C44569);color:white;font-family:Sarabun,sans-serif;font-size:15px;font-weight:700;cursor:pointer">💾 บันทึกภารกิจ</button>
+  </div>
+</div>
+
+<script>
+// ===== QUEST SYSTEM =====
+let _questEditIdx = -1;
+
+function openQuestModal(idx){
+  _questEditIdx = idx;
+  const isNew = idx === -1;
+  document.getElementById('questModalTitle').textContent = isNew ? '🎯 สร้างภารกิจใหม่' : '✏️ แก้ไขภารกิจ';
+  const q = isNew ? null : (DB.quests||[])[idx];
+  document.getElementById('q_name').value = q ? q.name : '';
+  document.getElementById('q_type').value = q ? q.type : 'hw';
+  document.getElementById('q_target').value = q ? q.target : '';
+  // milestones
+  const ms = q ? (q.milestones||[]) : [{at:40,reward:1},{at:50,reward:2},{at:60,reward:3}];
+  const box = document.getElementById('q_milestones');
+  box.innerHTML = '';
+  ms.forEach(m => addMilestoneRow(m.at, m.reward));
+  document.getElementById('questModal').style.display = 'flex';
+}
+
+function addMilestoneRow(at='', reward=''){
+  const box = document.getElementById('q_milestones');
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;align-items:center';
+  row.innerHTML = `
+    <input type="number" placeholder="ถึง" value="${at}" style="flex:1;padding:8px;border-radius:8px;border:1.5px solid var(--border);font-family:Sarabun,sans-serif;font-size:13px;background:var(--bg);color:var(--text)" class="ms_at">
+    <span style="font-size:12px;color:var(--muted)">→ +</span>
+    <input type="number" placeholder="คะแนน" value="${reward}" style="width:70px;padding:8px;border-radius:8px;border:1.5px solid var(--border);font-family:Sarabun,sans-serif;font-size:13px;background:var(--bg);color:var(--text)" class="ms_reward">
+    <button onclick="this.parentElement.remove()" style="background:var(--pink-bg);border:1px solid var(--red);color:var(--red);border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer">✕</button>`;
+  box.appendChild(row);
+}
+
+function closeQuestModal(){
+  document.getElementById('questModal').style.display = 'none';
+}
+
+async function saveQuest(){
+  const name = document.getElementById('q_name').value.trim();
+  const type = document.getElementById('q_type').value;
+  const target = parseInt(document.getElementById('q_target').value);
+  if(!name || isNaN(target)){ alert('กรุณากรอกชื่อและเป้าหมาย'); return; }
+  const rows = document.getElementById('q_milestones').querySelectorAll('div');
+  const milestones = [];
+  rows.forEach(row => {
+    const at = parseInt(row.querySelector('.ms_at')?.value);
+    const reward = parseInt(row.querySelector('.ms_reward')?.value);
+    if(!isNaN(at) && !isNaN(reward)) milestones.push({at, reward});
+  });
+  milestones.sort((a,b) => a.at - b.at);
+  if(!DB.quests) DB.quests = [];
+  const quest = { id: _questEditIdx >= 0 ? DB.quests[_questEditIdx].id : 'q'+Date.now(), name, type, target, milestones };
+  if(_questEditIdx >= 0){ DB.quests[_questEditIdx] = quest; }
+  else { DB.quests.push(quest); }
+  closeQuestModal();
+  try{ await api('PATCH', '/settings/quests', {quests: DB.quests}); }catch(e){}
+  render(true);
+}
+
+async function doDeleteQuest(idx){
+  if(!confirm('ลบภารกิจนี้?')) return;
+  DB.quests.splice(idx, 1);
+  try{ await api('PATCH', '/settings/quests', {quests: DB.quests}); }catch(e){}
+  render(true);
+}
+
+// เช็ค Quest progress และบวกคะแนนอัตโนมัติ
+async function checkQuestProgress(sid){
+  const s = DB.students[sid];
+  if(!s || !DB.quests || DB.quests.length === 0) return;
+  let changed = false;
+  for(const q of DB.quests){
+    const prog = q.type==='hw' ? (s.taskDone||0) : tot(s);
+    const earned = s.questProgress || {};
+    if(!earned[q.id]) earned[q.id] = [];
+    for(let mi=0; mi < (q.milestones||[]).length; mi++){
+      const m = q.milestones[mi];
+      if(prog >= m.at && !earned[q.id].includes(mi)){
+        // บวกคะแนน!
+        earned[q.id].push(mi);
+        s.score = (s.score||0) + m.reward;
+        s.logs = s.logs||[];
+        s.logs.unshift({desc:`🎯 Quest: ${q.name} (ถึง ${m.at})`, score:m.reward, date:today()});
+        changed = true;
+        // แสดง popup
+        setTimeout(()=>{
+          const popup = document.createElement('div');
+          popup.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#7B2FBE,#C44569);color:white;padding:12px 24px;border-radius:999px;font-size:14px;font-weight:700;z-index:99999;box-shadow:0 4px 20px rgba(0,0,0,.3);animation:fadeIn .3s';
+          popup.textContent = `🎯 Quest สำเร็จ! +${m.reward} คะแนน`;
+          document.body.appendChild(popup);
+          setTimeout(()=>popup.remove(), 3000);
+        }, 500);
+      }
+    }
+    if(changed) s.questProgress = earned;
+  }
+  if(changed){
+    await api('PATCH', `/students/${sid}`, {score:s.score, logs:s.logs, questProgress:s.questProgress});
+  }
+}
 </script>
 
 </body>
