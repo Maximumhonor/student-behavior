@@ -1148,7 +1148,13 @@ function vTList(){
           <button onclick="doDeleteReward(${ri})" style="background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);border-radius:var(--rs);padding:6px 8px;cursor:pointer;font-size:13px"><i class="ti ti-trash"></i></button>
         </div>
       </div>`;}).join('');
-    const rhl=rl.map(l=>`<div class="log-item"><div><span class="badge bb">-${l.cost}</span><span style="margin-left:8px">${l.name}</span></div><div class="ldate">${l.date}</div></div>`).join('');
+    const rhl=rl.map((l,i)=>`<div class="log-item" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <div style="flex:1;min-width:0"><span class="badge bb">-${l.cost}</span><span style="margin-left:8px">${l.name}</span></div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <div class="ldate">${l.date}</div>
+        <button onclick="doDeleteRedeemLog('${S.sid}',${i})" style="background:none;border:1px solid var(--red);border-radius:8px;color:var(--red);cursor:pointer;padding:2px 8px;font-size:11px;line-height:1.5" title="ลบรายการนี้">ลบ</button>
+      </div>
+    </div>`).join('');
 
     const rewardModal=(S.editRewardIdx!==null&&S.editRewardIdx!==undefined)?(()=>{
       const er=getRewards()[S.editRewardIdx];if(!er)return'';
@@ -1877,10 +1883,30 @@ function openLog(mode){S.addMode=mode;S.view='taddlog';render();}
 
 async function doPreset(score,desc){
   const s=DB.students[S.sid];if(!s)return;
+  stopPoll();
   s.logs=[{desc,score,date:today()},...(s.logs||[])];
-  await api('PATCH',`/students/${S.sid}`,{logs:s.logs});
-  S.view='tstudent';S.tab='score';render();
+  s.score=(s.score||0)+score;
+  S.view='tstudent';S.tab='score';render(true);
+  try{
+    await api('PATCH',`/students/${S.sid}`,{logs:s.logs,score:s.score});
+  }catch(e){console.log('preset error:',e);}
+  startPoll();
 }
+async function doDeleteRedeemLog(sid, idx){
+  if(!confirm('ลบประวัติการแลกนี้?')) return;
+  const s = DB.students[sid];
+  if(!s||!s.redeemLogs) return;
+  const log = s.redeemLogs[idx];
+  s.redeemLogs.splice(idx, 1);
+  // คืนคะแนนให้นักเรียน
+  s.score = (s.score||0) + (log.cost||0);
+  // คืน log คะแนนด้วย
+  s.logs = s.logs||[];
+  s.logs.unshift({desc:`คืนคะแนน: ${log.name}`, score:log.cost||0, date:today()});
+  await api('PATCH', `/students/${sid}`, {redeemLogs:s.redeemLogs, score:s.score, logs:s.logs});
+  render(true);
+}
+
 async function doDeleteLog(sid, idx){
   if(!confirm('ลบประวัติรายการนี้?')) return;
   const s = DB.students[sid];
@@ -1949,9 +1975,14 @@ async function doAddCustom(){
   const desc=document.getElementById('cd')?.value?.trim()||'';const score=parseInt(document.getElementById('cs')?.value||'');
   if(!desc||isNaN(score)){alert('กรุณากรอกข้อมูลให้ครบ');return;}
   const s=DB.students[S.sid];if(!s)return;
+  stopPoll();
   s.logs=[{desc,score,date:today()},...(s.logs||[])];
-  await api('PATCH',`/students/${S.sid}`,{logs:s.logs});
-  S.view='tstudent';S.tab='score';render();
+  s.score=(s.score||0)+score;
+  S.view='tstudent';S.tab='score';render(true);
+  try{
+    await api('PATCH',`/students/${S.sid}`,{logs:s.logs,score:s.score});
+  }catch(e){console.log('custom error:',e);}
+  startPoll();
 }
 async function doAddStudent(){
   const name=document.getElementById('nn')?.value?.trim()||'';const idcard=document.getElementById('nc')?.value?.trim()||'';
