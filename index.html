@@ -1155,7 +1155,7 @@ function vTList(){
     content=`
       <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
         
-        <label class="btn btn-b" style="flex:1;justify-content:center;min-width:140px;cursor:pointer"><i class="ti ti-photo-up"></i> หลักฐานงานนักเรียนที่มีความรับผิดชอบ<input type="file" accept="image/*" style="display:none" onchange="doUploadExamplePhoto(this)"></label>
+        <label class="btn btn-b" style="flex:1;justify-content:center;min-width:140px;cursor:pointer"><i class="ti ti-photo-up"></i> หลักฐานการส่งงานของนักเรียน<input type="file" accept="image/*" style="display:none" onchange="doUploadExamplePhoto(this)"></label>
       </div>
       ${exPhotoHtml}
       </div>`;
@@ -1761,7 +1761,7 @@ function vMStudent(){
     <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
       
       <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:12px;background:var(--blue-bg);border:1.5px solid var(--blue-bd);color:var(--blue);font-size:14px;font-weight:600;cursor:pointer;font-family:Sarabun,sans-serif">
-        <i class="ti ti-camera-upload"></i> ${s.hwPhoto?'เปลี่ยนรูปใบงาน':'หลักฐานการส่งงาน'}
+        <i class="ti ti-camera-upload"></i> ${s.hwPhoto?'เปลี่ยนรูปใบงาน':'หลักฐานการส่งงานของนักเรียน'}
         <input type="file" accept="image/*" style="display:none" onchange="doMUploadHwPhoto(this)">
       </label>
     </div>
