@@ -2867,9 +2867,25 @@ async function checkQuestProgress(sid){
       <label>เป้าหมายงานที่ต้องส่งร่วมกัน (ชิ้น)</label>
       <input type="number" id="bm_target" placeholder="เช่น 5" min="1">
     </div>
-    <div class="frow">
-      <label>รางวัลเมื่อทำภารกิจสำเร็จ (+คะแนน ต่อคน)</label>
-      <input type="number" id="bm_reward" placeholder="เช่น 3" min="1">
+    <div style="margin-bottom:1rem">
+      <label style="font-size:13px;font-weight:600;color:var(--muted);display:block;margin-bottom:8px">⭐ คะแนนรางวัลตาม tier ความยาก</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div style="background:var(--green-bg);border:1px solid var(--green-bd);border-radius:12px;padding:10px;text-align:center">
+          <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:4px">😊 ง่าย</div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:6px">ต่างกัน 0–5 ชิ้น</div>
+          <input type="number" id="bm_r_easy" value="1" min="1" oninput="updateBuddyPreview()" style="width:100%;text-align:center;padding:6px;border-radius:8px;border:1.5px solid var(--green-bd);font-family:Sarabun,sans-serif;font-size:16px;font-weight:700;background:white;color:var(--green)">
+        </div>
+        <div style="background:var(--amber-bg);border:1px solid var(--amber-bd);border-radius:12px;padding:10px;text-align:center">
+          <div style="font-size:11px;font-weight:700;color:var(--amber);margin-bottom:4px">💪 กลาง</div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:6px">ต่างกัน 6–15 ชิ้น</div>
+          <input type="number" id="bm_r_mid" value="2" min="1" oninput="updateBuddyPreview()" style="width:100%;text-align:center;padding:6px;border-radius:8px;border:1.5px solid var(--amber-bd);font-family:Sarabun,sans-serif;font-size:16px;font-weight:700;background:white;color:var(--amber)">
+        </div>
+        <div style="background:var(--pink-bg);border:1px solid var(--pink-bd);border-radius:12px;padding:10px;text-align:center">
+          <div style="font-size:11px;font-weight:700;color:var(--pink);margin-bottom:4px">🔥 ยาก</div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:6px">ต่างกัน 16+ ชิ้น</div>
+          <input type="number" id="bm_r_hard" value="3" min="1" oninput="updateBuddyPreview()" style="width:100%;text-align:center;padding:6px;border-radius:8px;border:1.5px solid var(--pink-bd);font-family:Sarabun,sans-serif;font-size:16px;font-weight:700;background:white;color:var(--pink)">
+        </div>
+      </div>
     </div>
     <div style="margin-bottom:1rem">
       <label style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:6px;display:block">จับคู่แบบ</label>
@@ -2936,30 +2952,53 @@ function toggleBuddyStudent(sid){
   renderBuddyStudentList();
 }
 
-function computeAutoPairs(){
-  // Sort by taskDone descending
+// คำนวณรางวัลจาก gap และ tier config ที่ครูกำหนด
+function calcBuddyReward(doneA, doneB, tiers){
+  const gap = Math.abs(doneA - doneB);
+  const t = tiers || {easy:1, mid:2, hard:3};
+  if(gap >= 16) return t.hard;
+  if(gap >= 6)  return t.mid;
+  return t.easy;
+}
+
+function computeAutoPairs(tiers){
   const students = Object.entries(DB.students)
-    .map(([sid,s])=>({sid,done:(s.taskDone||0),total:(s.taskTotal||0),name:s.name}))
+    .map(([sid,s])=>({sid,done:(s.taskDone||0)}))
     .sort((a,b)=>b.done-a.done);
   const pairs = [];
   const n = students.length;
   const half = Math.floor(n/2);
   for(let i=0;i<half;i++){
-    pairs.push([students[i].sid, students[n-1-i].sid]);
+    const a = students[i];
+    const b = students[n-1-i];
+    pairs.push({sids:[a.sid, b.sid], reward: calcBuddyReward(a.done, b.done, tiers)});
   }
   return pairs;
 }
 
+function readTiers(){
+  return {
+    easy: parseInt(document.getElementById('bm_r_easy')?.value)||1,
+    mid:  parseInt(document.getElementById('bm_r_mid')?.value)||2,
+    hard: parseInt(document.getElementById('bm_r_hard')?.value)||3,
+  };
+}
+
 function updateBuddyPreview(){
-  const pairs = computeAutoPairs();
+  const tiers = readTiers();
+  const pairs = computeAutoPairs(tiers);
   const previewEl = document.getElementById('bm_preview_pairs');
   if(!previewEl) return;
-  previewEl.innerHTML = pairs.map(([a,b])=>{
+  previewEl.innerHTML = pairs.map(({sids:[a,b], reward})=>{
     const sA = DB.students[a]; const sB = DB.students[b];
-    return `<div style="display:flex;align-items:center;gap:6px;font-size:12px;padding:4px 0;border-bottom:1px solid var(--green-bd)">
-      <span style="font-weight:600">${shortName(sA?.name||'')} (📋${sA?.taskDone||0})</span>
-      <span style="color:var(--green)">🤝</span>
-      <span style="font-weight:600">${shortName(sB?.name||'')} (📋${sB?.taskDone||0})</span>
+    const gap = Math.abs((sA?.taskDone||0)-(sB?.taskDone||0));
+    const tier = gap>=16?'🔥 ยาก':gap>=6?'💪 กลาง':'😊 ง่าย';
+    const col = gap>=16?'var(--pink)':gap>=6?'var(--amber)':'var(--green)';
+    return `<div style="display:flex;align-items:center;gap:6px;font-size:12px;padding:5px 0;border-bottom:1px solid var(--border-soft)">
+      <span style="font-weight:600">${shortName(sA?.name||'')} (${sA?.taskDone||0})</span>
+      <span>🤝</span>
+      <span style="font-weight:600">${shortName(sB?.name||'')} (${sB?.taskDone||0})</span>
+      <span style="margin-left:auto;color:${col};font-weight:700;font-size:11px">${tier} · +${reward}⭐</span>
     </div>`;
   }).join('') || '<div style="font-size:12px;color:var(--muted)">ไม่มีนักเรียน</div>';
 }
@@ -2969,7 +3008,9 @@ function openBuddyModal(){
   _buddySelectedIds = [];
   document.getElementById('bm_name').value = '';
   document.getElementById('bm_target').value = '';
-  document.getElementById('bm_reward').value = '';
+  document.getElementById('bm_r_easy').value = '1';
+  document.getElementById('bm_r_mid').value = '2';
+  document.getElementById('bm_r_hard').value = '3';
   document.getElementById('bm_manual_section').style.display = 'none';
   document.getElementById('bm_preview').style.display = 'block';
   updateBuddyPreview();
@@ -2987,35 +3028,35 @@ function closeBuddyModal(){
 async function saveBuddyMission(){
   const name = document.getElementById('bm_name').value.trim();
   const target = parseInt(document.getElementById('bm_target').value);
-  const reward = parseInt(document.getElementById('bm_reward').value);
-  if(!name || isNaN(target) || isNaN(reward) || target<1 || reward<1){
-    alert('กรุณากรอกข้อมูลให้ครบถ้วน'); return;
+  if(!name || isNaN(target) || target<1){
+    alert('กรุณากรอกชื่อภารกิจและเป้าหมาย'); return;
   }
+  const tiers = readTiers();
+  if(tiers.easy<1||tiers.mid<1||tiers.hard<1){ alert('คะแนนแต่ละ tier ต้องมากกว่า 0'); return; }
   let pairs = [];
   if(_buddyMode === 'auto'){
-    pairs = computeAutoPairs();
+    pairs = computeAutoPairs(tiers);
   } else {
-    // Build pairs from selected IDs (ต้องเลือกจำนวนคู่ที่ 2)
     if(_buddySelectedIds.length < 2){ alert('กรุณาเลือกนักเรียนอย่างน้อย 2 คน'); return; }
     for(let i=0;i+1<_buddySelectedIds.length;i+=2){
-      pairs.push([_buddySelectedIds[i], _buddySelectedIds[i+1]]);
+      const a = _buddySelectedIds[i], b = _buddySelectedIds[i+1];
+      const sA = DB.students[a], sB = DB.students[b];
+      pairs.push({sids:[a,b], reward: calcBuddyReward(sA?.taskDone||0, sB?.taskDone||0, tiers)});
     }
   }
   if(!DB.buddyMissions) DB.buddyMissions = [];
   const mission = {
     id: 'bm'+Date.now(),
-    name, target, reward,
-    pairs, // [[sidA, sidB], ...]
+    name, target, tiers,
+    pairs,
     active: true,
     createdAt: today(),
-    // track who already completed
-    completed: {} // {pairKey: true}
+    completed: {}
   };
   DB.buddyMissions.push(mission);
   closeBuddyModal();
   try{ await api('PATCH', '/settings/buddyMissions', {buddyMissions: DB.buddyMissions}); }catch(e){}
   render(true);
-  // show success popup
   const popup = document.createElement('div');
   popup.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#0B7A6B,#17C1A8);color:white;padding:12px 24px;border-radius:999px;font-size:14px;font-weight:700;z-index:99999;box-shadow:0 4px 20px rgba(0,0,0,.3)';
   popup.textContent = `🤝 สร้าง Buddy Mission สำเร็จ! ${pairs.length} คู่`;
@@ -3045,35 +3086,31 @@ async function checkBuddyMissions(sid){
   let anyChanged = false;
   for(const mission of DB.buddyMissions){
     if(!mission.active) continue;
-    // หาคู่ของ sid นี้
-    for(const pair of (mission.pairs||[])){
-      const [sidA, sidB] = pair;
+    for(const pairObj of (mission.pairs||[])){
+      // รองรับทั้ง format เก่า [sidA,sidB] และใหม่ {sids:[sidA,sidB], reward}
+      const sids = Array.isArray(pairObj) ? pairObj : (pairObj.sids||[]);
+      const pairReward = Array.isArray(pairObj) ? (mission.reward||1) : (pairObj.reward||1);
+      const [sidA, sidB] = sids;
       if(sidA !== sid && sidB !== sid) continue;
       const pairKey = [sidA, sidB].sort().join('_');
-      if((mission.completed||{})[pairKey]) continue; // already done
+      if((mission.completed||{})[pairKey]) continue;
       const sA = DB.students[sidA];
       const sB = DB.students[sidB];
       if(!sA || !sB) continue;
-      // ตรวจว่าทั้งคู่ส่งงานถึงเป้าหมายหรือยัง
-      const doneA = sA.taskDone||0;
-      const doneB = sB.taskDone||0;
-      if(doneA >= mission.target && doneB >= mission.target){
-        // ทั้งคู่สำเร็จ! ให้รางวัล
+      if((sA.taskDone||0) >= mission.target && (sB.taskDone||0) >= mission.target){
         if(!mission.completed) mission.completed = {};
         mission.completed[pairKey] = true;
-        // บวกคะแนนให้ทั้งคู่
         for(const [csid, cs] of [[sidA, sA],[sidB, sB]]){
-          cs.score = (cs.score||0) + mission.reward;
+          cs.score = (cs.score||0) + pairReward;
           cs.logs = cs.logs||[];
-          cs.logs.unshift({desc:`🤝 Buddy Mission: ${mission.name} (+${mission.reward} คะแนน)`, score:mission.reward, date:today()});
+          cs.logs.unshift({desc:`🤝 Buddy Mission: ${mission.name} (+${pairReward} คะแนน)`, score:pairReward, date:today()});
           anyChanged = true;
           await api('PATCH', `/students/${csid}`, {score:cs.score, logs:cs.logs});
         }
-        // แสดง popup
         setTimeout(()=>{
           const popup = document.createElement('div');
           popup.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#0B7A6B,#17C1A8);color:white;padding:12px 24px;border-radius:999px;font-size:14px;font-weight:700;z-index:99999;box-shadow:0 4px 20px rgba(0,0,0,.3)';
-          popup.textContent = `🤝 Buddy Mission สำเร็จ! +${mission.reward} คะแนน`;
+          popup.textContent = `🤝 Buddy Mission สำเร็จ! +${pairReward} คะแนน`;
           document.body.appendChild(popup);
           setTimeout(()=>popup.remove(), 3500);
         }, 800);
@@ -3098,7 +3135,7 @@ function vBuddyMgrPanel(){
         <span style="font-size:16px">${m.active?'🤝':'⏸'}</span>
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.name}</div>
-          <div style="font-size:11px;color:var(--muted)">เป้า ${m.target} ชิ้น · รางวัล +${m.reward} คะแนน · ${(m.pairs||[]).length} คู่ · ${Object.keys(m.completed||{}).length} คู่สำเร็จ</div>
+          <div style="font-size:11px;color:var(--muted)">เป้า ${m.target} ชิ้น · รางวัลตามความยาก (+1/+2/+3) · ${(m.pairs||[]).length} คู่ · ${Object.keys(m.completed||{}).length} คู่สำเร็จ</div>
         </div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
@@ -3115,7 +3152,10 @@ function vBuddyTabForStudent(sid){
   if(!s) return '';
   const missions = DB.buddyMissions||[];
   // หา missions ที่ sid นี้อยู่
-  const myMissions = missions.filter(m=> (m.pairs||[]).some(p=>p.includes(sid)));
+  const myMissions = missions.filter(m=> (m.pairs||[]).some(p=>{
+    const sids = Array.isArray(p) ? p : (p.sids||[]);
+    return sids.includes(sid);
+  }));
   if(myMissions.length === 0){
     return `<div style="text-align:center;padding:2rem;color:var(--muted)">
       <div style="font-size:36px;margin-bottom:1rem">🤝</div>
@@ -3123,12 +3163,17 @@ function vBuddyTabForStudent(sid){
     </div>`;
   }
   const cards = myMissions.map(m=>{
-    // หาคู่ของ sid
-    const pair = (m.pairs||[]).find(p=>p.includes(sid));
-    if(!pair) return '';
-    const buddySid = pair.find(x=>x!==sid)||pair[0];
+    // หาคู่ของ sid (รองรับ format เก่าและใหม่)
+    const pairObj = (m.pairs||[]).find(p=>{
+      const sids = Array.isArray(p) ? p : (p.sids||[]);
+      return sids.includes(sid);
+    });
+    if(!pairObj) return '';
+    const sids = Array.isArray(pairObj) ? pairObj : (pairObj.sids||[]);
+    const pairReward = Array.isArray(pairObj) ? (m.reward||1) : (pairObj.reward||1);
+    const buddySid = sids.find(x=>x!==sid)||sids[0];
     const buddy = DB.students[buddySid];
-    const pairKey = [...pair].sort().join('_');
+    const pairKey = [...sids].sort().join('_');
     const isDone = !!(m.completed||{})[pairKey];
     const myDone = s.taskDone||0;
     const buddyDone = buddy ? (buddy.taskDone||0) : 0;
@@ -3139,7 +3184,7 @@ function vBuddyTabForStudent(sid){
         <span style="font-size:22px">${isDone?'🏆':m.active?'🤝':'⏸'}</span>
         <div style="flex:1">
           <div style="font-size:14px;font-weight:700">${m.name}</div>
-          <div style="font-size:11px;color:var(--muted)">เป้า ${m.target} ชิ้น · รางวัล +${m.reward} คะแนน/คน</div>
+          <div style="font-size:11px;color:var(--muted)">เป้า ${m.target} ชิ้น · รางวัลคู่นี้ +${pairReward} คะแนน/คน</div>
         </div>
         ${isDone?`<div style="background:var(--green);color:white;border-radius:999px;padding:3px 12px;font-size:12px;font-weight:700">✅ สำเร็จ</div>`:''}
       </div>
@@ -3166,7 +3211,7 @@ function vBuddyTabForStudent(sid){
       ${!isDone&&m.active?`<div style="background:var(--amber-bg);border:1px solid var(--amber-bd);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--amber);text-align:center">
         ${myDone>=m.target&&buddyDone<m.target?`⏳ รอบัดดี้ส่งงานอีก ${m.target-buddyDone} ชิ้น!`:
           buddyDone>=m.target&&myDone<m.target?`📚 ส่งงานอีก ${m.target-myDone} ชิ้น เพื่อรับรางวัล!`:
-          `📚 ส่งงานให้ครบ ${m.target} ชิ้น ทั้งสองคน รับ +${m.reward} คะแนน!`}
+          `📚 ส่งงานให้ครบ ${m.target} ชิ้น ทั้งสองคน รับ +${pairReward} คะแนน!`}
       </div>`:''}
     </div>`;
   }).join('');
