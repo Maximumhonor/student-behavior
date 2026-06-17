@@ -1309,7 +1309,7 @@ function vTList(){
           <span style="font-size:20px">${done?'🏆':q.type==='hw'?'📚':'⭐'}</span>
           <div style="flex:1">
             <div style="font-size:14px;font-weight:700">${q.name}</div>
-            <div style="font-size:12px;color:var(--muted)">${q.type==='hw'?'ส่งงานให้ครบ':'สะสมคะแนน'} ${q.target} ${q.type==='hw'?'ชิ้น':'คะแนน'}${q.deadline?` · <span style="color:${isQuestExpired(q)?'var(--red)':Math.ceil((new Date(q.deadline+'T23:59:59')-new Date())/86400000)<=3?'var(--amber)':'var(--muted)'}">${questDeadlineLabel(q)}</span>`:''}</div>
+            <div style="font-size:12px;color:var(--muted)">${q.type==='hw'?'ส่งงานให้ครบ':'สะสมคะแนน'} ${q.target} ${q.type==='hw'?'ชิ้น':'คะแนน'}${q.deadline?questDeadlineBadge(q):''}</div>
           </div>
           <div style="text-align:right">
             <div style="font-size:16px;font-weight:800;color:${done?'var(--green)':'var(--text)'}">${prog}/${total}</div>
@@ -1615,7 +1615,7 @@ function vPView(){
           <span style="font-size:20px">${done?'🏆':q.type==='hw'?'📚':'⭐'}</span>
           <div style="flex:1">
             <div style="font-size:14px;font-weight:700">${q.name}</div>
-            <div style="font-size:12px;color:var(--muted)">${q.type==='hw'?'ส่งงานให้ครบ':'สะสมคะแนน'} ${q.target} ${q.type==='hw'?'ชิ้น':'คะแนน'}${q.deadline?` · <span style="color:${isQuestExpired(q)?'var(--red)':Math.ceil((new Date(q.deadline+'T23:59:59')-new Date())/86400000)<=3?'var(--amber)':'var(--muted)'}">${questDeadlineLabel(q)}</span>`:''}</div>
+            <div style="font-size:12px;color:var(--muted)">${q.type==='hw'?'ส่งงานให้ครบ':'สะสมคะแนน'} ${q.target} ${q.type==='hw'?'ชิ้น':'คะแนน'}${q.deadline?questDeadlineBadge(q):''}</div>
           </div>
           <div style="text-align:right">
             <div style="font-size:16px;font-weight:800;color:${done?'var(--green)':'var(--text)'}">${prog}/${q.target}</div>
@@ -2871,9 +2871,21 @@ function questDeadlineLabel(q){
   if(now > dl) return '⛔ หมดเขตแล้ว';
   const days = Math.ceil((dl-now)/86400000);
   if(days<=1) return '🔴 หมดเขตวันนี้!';
-  if(days<=3) return `⚠️ เหลือ ${days} วัน`;
-  return `📅 ถึง ${q.deadline}`;
+  if(days<=3) return '⚠️ เหลือ ' + days + ' วัน';
+  return '📅 ถึง ' + q.deadline;
 }
+function questDeadlineBadge(q){
+  if(!q.deadline) return '';
+  const expired = isQuestExpired(q);
+  const dl = new Date(q.deadline+'T23:59:59');
+  const days = Math.ceil((dl - new Date()) / 86400000);
+  const color = expired ? 'var(--red)' : days <= 3 ? 'var(--amber)' : 'var(--muted)';
+  const label = questDeadlineLabel(q);
+  return ' · <span style="color:' + color + '">' + label + '</span>';
+}
+
+// เช็ค Quest progress และบวกคะแนนอัตโนมัติ
+async function checkQuestProgress(sid){
   const s = DB.students[sid];
   if(!s || !DB.quests || DB.quests.length === 0) return;
   let changed = false;
