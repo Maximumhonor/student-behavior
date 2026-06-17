@@ -90,8 +90,9 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px;font-wei
 .avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 .av-boy{background:var(--blue-light);color:var(--blue-dark)}
 .av-girl{background:var(--pink-light);color:var(--pink-dark)}
-.tabs{display:flex;border-bottom:2px solid var(--border-soft);margin-bottom:1.25rem;overflow-x:auto;gap:4px;scrollbar-width:none;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scroll-snap-type:none}
+.tabs{display:flex;border-bottom:2px solid var(--border-soft);margin-bottom:1.25rem;overflow-x:auto;gap:4px;scrollbar-width:none;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scroll-snap-type:none;touch-action:pan-x}
 .tabs::-webkit-scrollbar{display:none}
+.tabs .tab{flex-shrink:0}
 .tab{background:none;border:none;border-bottom:3px solid transparent;padding:9px 14px;font-family:'Sarabun',sans-serif;font-size:13px;color:var(--muted);cursor:pointer;white-space:nowrap;margin-bottom:-2px;transition:all .2s;font-weight:500;border-radius:8px 8px 0 0}
 .tab:hover{background:var(--blue-bg);color:var(--blue)}
 .tab.on{color:var(--blue);border-bottom-color:var(--blue);font-weight:700;background:var(--blue-bg)}
@@ -2691,6 +2692,21 @@ if('serviceWorker' in navigator){
     _oy = SIZE/2 + (_oy - SIZE/2) / ratio;
     draw();
   });
+
+  // กัน page เด้งเวลาเลื่อน tab bar แนวนอน
+  document.addEventListener('touchstart', e=>{
+    const tabs = e.target.closest('.tabs');
+    if(!tabs) return;
+    tabs._startX = e.touches[0].clientX;
+    tabs._startY = e.touches[0].clientY;
+  }, {passive:true});
+  document.addEventListener('touchmove', e=>{
+    const tabs = e.target.closest('.tabs');
+    if(!tabs) return;
+    const dx = Math.abs(e.touches[0].clientX - (tabs._startX||0));
+    const dy = Math.abs(e.touches[0].clientY - (tabs._startY||0));
+    if(dx > dy) e.preventDefault(); // เลื่อนแนวนอน — กัน page scroll
+  }, {passive:false});
 
   window.closeCropModal = function(){
     document.getElementById('cropModal').style.display='none';
