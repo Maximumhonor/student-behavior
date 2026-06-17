@@ -93,6 +93,10 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px;font-wei
 .tabs{display:flex;border-bottom:2px solid var(--border-soft);margin-bottom:1.25rem;overflow-x:scroll;gap:4px;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
 .tabs .tab{flex-shrink:0}
+.tabs-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:1.25rem}
+.tabs-grid .tab{flex-shrink:unset;display:flex;align-items:center;justify-content:center;gap:4px;border-radius:10px;border-bottom:none;border:1.5px solid var(--border-soft);padding:8px 4px;font-size:11px;white-space:nowrap;margin-bottom:0;position:relative}
+.tabs-grid .tab.on{border-color:var(--blue);background:var(--blue-bg);color:var(--blue);border-bottom:1.5px solid var(--blue)}
+@media (max-width:380px){.tabs-grid{grid-template-columns:repeat(3,1fr)}.tabs-grid .tab{font-size:10px;padding:7px 2px}}
 .tab{background:none;border:none;border-bottom:3px solid transparent;padding:9px 14px;font-family:'Sarabun',sans-serif;font-size:13px;color:var(--muted);cursor:pointer;white-space:nowrap;margin-bottom:-2px;transition:all .2s;font-weight:500;border-radius:8px 8px 0 0}
 .tab:hover{background:var(--blue-bg);color:var(--blue)}
 .tab.on{color:var(--blue);border-bottom-color:var(--blue);font-weight:700;background:var(--blue-bg)}
@@ -779,6 +783,11 @@ function render(force=false){
   // Restore lb-scroll position
   const lbEl=document.getElementById('lb-scroll');
   if(lbEl && S._lbScroll) lbEl.scrollLeft=S._lbScroll;
+  // เลื่อน tab bar ให้ tab ที่ active อยู่ในมุมมองเสมอ (กันเด้งกลับไปซ้ายสุด)
+  const activeTabBtn = document.querySelector('.tabs .tab.on');
+  if(activeTabBtn){
+    activeTabBtn.scrollIntoView({block:'nearest', inline:'nearest'});
+  }
   // Restore focus
   if(prevId && (prevTag==='INPUT'||prevTag==='TEXTAREA')){
     const inp = document.getElementById(prevId);
@@ -1395,7 +1404,7 @@ function vTList(){
       <div class="sc"><div class="sl">ยังไม่ส่ง ❌</div><div class="sv" style="color:${(s.taskTotal||0)-(s.taskDone||0)>0?'var(--red)':'var(--green)'}">${(s.taskTotal||0)-(s.taskDone||0)}</div></div>
       <div class="sc"><div class="sl">แลกแล้ว</div><div class="sv" style="color:var(--blue)">${rl.length}</div></div>
     </div>
-    <div class="tabs">${TABS.map(tb=>`<button class="tab ${S.tab===tb.k?'on':''}" onclick="setTab('${tb.k}')"><i class="ti ${tb.i}"></i> ${tb.l}${tb.dot?'<span class="ndot"></span>':''}</button>`).join('')}</div>
+    <div class="tabs-grid">${TABS.map(tb=>`<button class="tab ${S.tab===tb.k?'on':''}" onclick="setTab('${tb.k}')"><i class="ti ${tb.i}"></i> ${tb.l}${tb.dot?'<span class="ndot"></span>':''}</button>`).join('')}</div>
     ${content}`;}
 
 function vAddLog(){
@@ -1694,7 +1703,7 @@ function vPView(){
       <div class="sc"><div class="sl">ยังไม่ส่ง</div><div class="sv" style="color:${(s.taskTotal||0)-(s.taskDone||0)>0?'var(--red)':'var(--green)'}">${(s.taskTotal||0)-(s.taskDone||0)}</div></div>
       <div class="sc"><div class="sl">แลกแล้ว</div><div class="sv" style="color:var(--blue)">${rl.length}</div></div>
     </div>
-    <div class="tabs">${TABS.map(tb=>`<button class="tab ${S.tab===tb.k?'on':''}" onclick="setTab('${tb.k}')"><i class="ti ${tb.i}"></i> ${tb.l}${tb.dot?'<span class="ndot"></span>':''}</button>`).join('')}</div>
+    <div class="tabs-grid">${TABS.map(tb=>`<button class="tab ${S.tab===tb.k?'on':''}" onclick="setTab('${tb.k}')"><i class="ti ${tb.i}"></i> ${tb.l}${tb.dot?'<span class="ndot"></span>':''}</button>`).join('')}</div>
     ${content}`;}
 
 function go(v){
