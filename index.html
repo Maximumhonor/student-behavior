@@ -2871,7 +2871,11 @@ async function doDeleteQuest(idx){
 // ครูกด "แจกคะแนน Quest" — ตรวจทุกคนพร้อมกัน
 async function doDistributeAllQuests(){
   if(!DB.quests || DB.quests.length===0){ alert('ยังไม่มีภารกิจ'); return; }
-  if(!confirm('แจกคะแนน Quest ให้ทุกคนที่ถึงเกณฑ์ตอนนี้เลยไหม?')) return;
+  const activeQuests = DB.quests.filter(q=>!isQuestExpired(q));
+  const expiredCount = DB.quests.length - activeQuests.length;
+  if(activeQuests.length===0){ alert('ภารกิจทั้งหมดหมดเขตแล้ว ไม่มีภารกิจที่ใช้งานได้'); return; }
+  const expiredNote = expiredCount>0 ? `\n(มี ${expiredCount} ภารกิจที่หมดเขตแล้ว จะไม่ถูกตรวจ)` : '';
+  if(!confirm(`แจกคะแนน Quest ให้ทุกคนที่ถึงเกณฑ์ตอนนี้เลยไหม?${expiredNote}`)) return;
   let totalGiven = 0;
   let totalStudents = 0;
   for(const sid of Object.keys(DB.students)){
@@ -2925,29 +2929,38 @@ async function checkQuestProgress(sid){
   if(!s || !DB.quests || DB.quests.length === 0) return;
   let changed = false;
   for(const q of DB.quests){
+    if(isQuestExpired(q)) continue; // ตัดภารกิจที่หมดเขตแล้ว ไม่ตรวจ/บวกคะแนนอีก
     const prog = q.type==='hw' ? (s.taskDone||0) : tot(s);
     const earned = s.questProgress || {};
     if(!earned[q.id]) earned[q.id] = [];
+    // หา milestone ที่สูงสุดที่ถึงแล้ว และยังไม่เคยได้รับ
+    let bestIdx = -1;
     for(let mi=0; mi < (q.milestones||[]).length; mi++){
       const m = q.milestones[mi];
       if(prog >= m.at && !earned[q.id].includes(mi)){
-        // บวกคะแนน!
-        earned[q.id].push(mi);
-        s.score = (s.score||0) + m.reward;
-        s.logs = s.logs||[];
-        s.logs.unshift({desc:`🎯 Quest: ${q.name} (ถึง ${m.at})`, score:m.reward, date:today()});
-        changed = true;
-        // แสดง popup
-        setTimeout(()=>{
-          const popup = document.createElement('div');
-          popup.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#7B2FBE,#C44569);color:white;padding:12px 24px;border-radius:999px;font-size:14px;font-weight:700;z-index:99999;box-shadow:0 4px 20px rgba(0,0,0,.3);animation:fadeIn .3s';
-          popup.textContent = `🎯 Quest สำเร็จ! +${m.reward} คะแนน`;
-          document.body.appendChild(popup);
-          setTimeout(()=>popup.remove(), 3000);
-        }, 500);
+        if(bestIdx===-1 || m.at > q.milestones[bestIdx].at) bestIdx = mi;
       }
     }
-    if(changed) s.questProgress = earned;
+    if(bestIdx !== -1){
+      const m = q.milestones[bestIdx];
+      // mark ทุกขั้นที่ <= ขั้นนี้ ว่าได้รับแล้ว กันบวกซ้ำตอนขั้นล่างถูกแซงทีหลัง
+      for(let mi=0; mi < (q.milestones||[]).length; mi++){
+        if(q.milestones[mi].at <= m.at && !earned[q.id].includes(mi)) earned[q.id].push(mi);
+      }
+      s.score = (s.score||0) + m.reward;
+      s.logs = s.logs||[];
+      s.logs.unshift({desc:`🎯 Quest: ${q.name} (ถึง ${m.at})`, score:m.reward, date:today()});
+      changed = true;
+      s.questProgress = earned;
+      // แสดง popup
+      setTimeout(()=>{
+        const popup = document.createElement('div');
+        popup.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#7B2FBE,#C44569);color:white;padding:12px 24px;border-radius:999px;font-size:14px;font-weight:700;z-index:99999;box-shadow:0 4px 20px rgba(0,0,0,.3);animation:fadeIn .3s';
+        popup.textContent = `🎯 Quest สำเร็จ! +${m.reward} คะแนน`;
+        document.body.appendChild(popup);
+        setTimeout(()=>popup.remove(), 3000);
+      }, 500);
+    }
   }
   if(changed){
     await api('PATCH', `/students/${sid}`, {score:s.score, logs:s.logs, questProgress:s.questProgress});
