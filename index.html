@@ -90,8 +90,17 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px;font-wei
 .avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 .av-boy{background:var(--blue-light);color:var(--blue-dark)}
 .av-girl{background:var(--pink-light);color:var(--pink-dark)}
-.tabs{display:flex;border-bottom:2px solid var(--border-soft);margin-bottom:1.25rem;overflow-x:auto;gap:4px;scrollbar-width:none}
+.tabs{display:flex;border-bottom:2px solid var(--border-soft);margin-bottom:1.25rem;overflow-x:scroll;gap:4px;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
+.tabs .tab{flex-shrink:0}
+.tabs-grid{display:flex;gap:6px;margin-bottom:1.25rem;flex-wrap:wrap}
+.tabs-grid .tab{flex-shrink:0;display:flex;align-items:center;justify-content:center;gap:4px;border-radius:10px;border-bottom:none;border:1.5px solid var(--border-soft);padding:8px 16px;font-size:13px;white-space:nowrap;margin-bottom:0;position:relative}
+.tabs-grid .tab.on{border-color:var(--blue);background:var(--blue-bg);color:var(--blue);border-bottom:1.5px solid var(--blue)}
+@media (max-width:680px){
+  .tabs-grid{display:grid;grid-template-columns:repeat(4,1fr);flex-wrap:unset}
+  .tabs-grid .tab{padding:8px 4px;font-size:11px}
+}
+@media (max-width:380px){.tabs-grid{grid-template-columns:repeat(3,1fr)}.tabs-grid .tab{font-size:10px;padding:7px 2px}}
 .tab{background:none;border:none;border-bottom:3px solid transparent;padding:9px 14px;font-family:'Sarabun',sans-serif;font-size:13px;color:var(--muted);cursor:pointer;white-space:nowrap;margin-bottom:-2px;transition:all .2s;font-weight:500;border-radius:8px 8px 0 0}
 .tab:hover{background:var(--blue-bg);color:var(--blue)}
 .tab.on{color:var(--blue);border-bottom-color:var(--blue);font-weight:700;background:var(--blue-bg)}
@@ -602,7 +611,7 @@ function vLeaderboard(){
       <button onclick="S._lbTab='score';render()" style="padding:4px 10px;border-radius:8px;border:1.5px solid ${tab==='score'?'var(--blue)':'var(--border-soft)'};background:${tab==='score'?'var(--blue-bg)':'transparent'};color:${tab==='score'?'var(--blue)':'var(--muted)'};font-size:11px;font-weight:700;cursor:pointer;font-family:Sarabun,sans-serif">⭐ คะแนน</button>
       <button onclick="S._lbTab='task';render()" style="padding:4px 10px;border-radius:8px;border:1.5px solid ${tab==='task'?'var(--green)':'var(--border-soft)'};background:${tab==='task'?'var(--green-bg)':'transparent'};color:${tab==='task'?'var(--green)':'var(--muted)'};font-size:11px;font-weight:700;cursor:pointer;font-family:Sarabun,sans-serif">📋 งาน</button>
     </div>
-    <div id="lb-scroll" class="lb-scroll" style="display:flex;gap:8px;overflow-x:scroll;padding-bottom:8px;-webkit-overflow-scrolling:touch;width:100%;cursor:grab;user-select:none" onscroll="S._lbScroll=this.scrollLeft">
+    <div id="lb-scroll" class="lb-scroll" style="display:flex;gap:8px;overflow-x:scroll;padding-bottom:8px;width:100%;cursor:grab;user-select:none" onscroll="S._lbScroll=this.scrollLeft">
       ${tab==='combined'?combinedCards:tab==='score'?scoreCards:taskCards}
     </div>
   </div>`;}
@@ -690,6 +699,7 @@ async function loadDB(){
     if(DB.settings.pp && DB.settings.pp.length>0) PP=[...DB.settings.pp];
     if(DB.settings.pm && DB.settings.pm.length>0) PM=[...DB.settings.pm];
     if(DB.settings.quests) DB.quests=[...DB.settings.quests];
+    if(DB.settings.buddyMissions) DB.buddyMissions=[...DB.settings.buddyMissions];
   }
   // Don't re-render if user is typing in chat box
   const active = document.activeElement;
@@ -777,6 +787,11 @@ function render(force=false){
   // Restore lb-scroll position
   const lbEl=document.getElementById('lb-scroll');
   if(lbEl && S._lbScroll) lbEl.scrollLeft=S._lbScroll;
+  // เลื่อน tab bar ให้ tab ที่ active อยู่ในมุมมองเสมอ (กันเด้งกลับไปซ้ายสุด)
+  const activeTabBtn = document.querySelector('.tabs .tab.on');
+  if(activeTabBtn){
+    activeTabBtn.scrollIntoView({block:'nearest', inline:'nearest'});
+  }
   // Restore focus
   if(prevId && (prevTag==='INPUT'||prevTag==='TEXTAREA')){
     const inp = document.getElementById(prevId);
@@ -1131,24 +1146,47 @@ function vTList(){
       <button onclick="openQuestModal(-1)" style="width:100%;padding:10px;border-radius:12px;border:2px dashed var(--blue);background:var(--blue-bg);color:var(--blue);font-family:Sarabun,sans-serif;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:.75rem">
         <i class="ti ti-plus"></i> สร้างภารกิจใหม่
       </button>
+      ${(DB.quests||[]).length>0?`<button onclick="doDistributeAllQuests()" style="width:100%;padding:10px;border-radius:12px;border:none;background:linear-gradient(135deg,#7B2FBE,#C44569);color:white;font-family:Sarabun,sans-serif;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:.75rem;box-shadow:0 2px 8px rgba(123,47,190,.3)">
+        🎁 แจกคะแนน Quest ทุกคนตอนนี้
+      </button>`:''}
       ${(DB.quests||[]).length===0?'<div style="text-align:center;color:var(--muted);font-size:13px;padding:.5rem">ยังไม่มีภารกิจ</div>':''}
-      ${(DB.quests||[]).map((q,qi)=>`<div style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:12px;background:var(--bg);border:1px solid var(--border);margin-bottom:6px">
-        <span style="font-size:18px">${q.type==='hw'?'📚':'⭐'}</span>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${q.name}</div>
-          <div style="font-size:11px;color:var(--muted)">${q.type==='hw'?'ส่งงาน':'คะแนน'} ${q.target} | ${(q.milestones||[]).length} ขั้นรางวัล</div>
-        </div>
-        <button onclick="openQuestModal(${qi})" style="background:var(--blue-bg);border:1px solid var(--blue);color:var(--blue);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer">แก้ไข</button>
-        <button onclick="doDeleteQuest(${qi})" style="background:var(--pink-bg);border:1px solid var(--red);color:var(--red);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer">ลบ</button>
-      </div>`).join('')}
+      ${(DB.quests||[]).map((q,qi)=>{
+        const now = new Date(); const dl = q.deadline ? new Date(q.deadline+'T23:59:59') : null;
+        const expired = dl && now > dl;
+        const daysLeft = dl ? Math.ceil((dl-now)/86400000) : null;
+        const dlLabel = dl ? (expired ? '⛔ หมดเขตแล้ว' : daysLeft<=3 ? `⚠️ เหลือ ${daysLeft} วัน` : `📅 ถึง ${q.deadline}`) : '';
+        return`<div style="border-radius:12px;background:${expired?'#FEF0EE':q.deadline?'var(--bg)':'var(--bg)'};border:1px solid ${expired?'var(--red-bd)':'var(--border)'};padding:10px 12px;margin-bottom:6px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:18px">${expired?'🔒':q.type==='hw'?'📚':'⭐'}</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${q.name}</div>
+              <div style="font-size:11px;color:var(--muted)">${q.type==='hw'?'ส่งงาน':'คะแนน'} ${q.target} | ${(q.milestones||[]).length} ขั้นรางวัล${dlLabel?' · <span style="color:'+(expired?'var(--red)':daysLeft<=3?'var(--amber)':'var(--muted)')+'">'+dlLabel+'</span>':''}</div>
+            </div>
+            <button onclick="openQuestModal(${qi})" style="background:var(--blue-bg);border:1px solid var(--blue);color:var(--blue);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer">แก้ไข</button>
+            <button onclick="doDeleteQuest(${qi})" style="background:var(--pink-bg);border:1px solid var(--red);color:var(--red);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer">ลบ</button>
+          </div>
+        </div>`;
+      }).join('')}
     </div>`:''}
+    <!-- Buddy Mission Manager Button -->
+    <div onclick="S.showBuddyMgr=!S.showBuddyMgr;render(true)" style="cursor:pointer;background:linear-gradient(135deg,#0B7A6B,#17C1A8);border-radius:16px;padding:12px 18px;margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 4px 16px rgba(11,122,107,.3)">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:22px">🤝</span>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:white">Buddy Mission</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.8)">${(DB.buddyMissions||[]).filter(b=>b.active).length} คู่ที่ใช้งาน · จับคู่งานเยอะ↔น้อยอัตโนมัติ</div>
+        </div>
+      </div>
+      <i class="ti ti-chevron-${S.showBuddyMgr?'up':'down'}" style="color:white;font-size:18px"></i>
+    </div>
+    ${S.showBuddyMgr?vBuddyMgrPanel():''}
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;width:100%" class="av-grid">${cards}</div>
       </div>`;
 }function vTStudent(){
   const s=DB.students[S.sid];if(!s)return'';
   const t=tot(s);const hw=hwSum(s.hw);const g=isGirl(s.name);
   const logs=s.logs||[];const rl=s.redeemLogs||[];const pend=pendSid(S.sid);
-  const chatMsgs=Object.values(DB.messages||{}).filter(m=>m.studentId===S.sid);const unreadFromParent=chatMsgs.filter(m=>m.from==='parent'&&!m.read).length;const pendRedeemCount=Object.values(DB.redeemRequests||{}).filter(r=>r.studentId===S.sid&&r.status==='pending').length;const TABS=[{k:'score',l:'คะแนน',i:'ti-star',dot:pend.length>0},{k:'hw',l:'ส่งงาน',i:'ti-clipboard-check'},{k:'redeem',l:'แลกคะแนน',i:'ti-gift',dot:pendRedeemCount>0},{k:'quest',l:'Quest',i:'ti-trophy'},{k:'chat',l:'ข้อความ',i:'ti-message-2',dot:unreadFromParent>0}];
+  const chatMsgs=Object.values(DB.messages||{}).filter(m=>m.studentId===S.sid);const unreadFromParent=chatMsgs.filter(m=>m.from==='parent'&&!m.read).length;const pendRedeemCount=Object.values(DB.redeemRequests||{}).filter(r=>r.studentId===S.sid&&r.status==='pending').length;const TABS=[{k:'score',l:'คะแนน',i:'ti-star',dot:pend.length>0},{k:'hw',l:'ส่งงาน',i:'ti-clipboard-check'},{k:'redeem',l:'แลกคะแนน',i:'ti-gift',dot:pendRedeemCount>0},{k:'quest',l:'Quest',i:'ti-trophy'},{k:'buddy',l:'Buddy',i:'ti-users-group'},{k:'chat',l:'ข้อความ',i:'ti-message-2',dot:unreadFromParent>0}];
   let content='';
   if(S.tab==='score'){
     const ph=pend.map(([rid,req])=>`<div class="pcard">
@@ -1285,7 +1323,7 @@ function vTList(){
           <span style="font-size:20px">${done?'🏆':q.type==='hw'?'📚':'⭐'}</span>
           <div style="flex:1">
             <div style="font-size:14px;font-weight:700">${q.name}</div>
-            <div style="font-size:12px;color:var(--muted)">${q.type==='hw'?'ส่งงานให้ครบ':'สะสมคะแนน'} ${q.target} ${q.type==='hw'?'ชิ้น':'คะแนน'}</div>
+            <div style="font-size:12px;color:var(--muted)">${q.type==='hw'?'ส่งงานให้ครบ':'สะสมคะแนน'} ${q.target} ${q.type==='hw'?'ชิ้น':'คะแนน'}${q.deadline?questDeadlineBadge(q):''}</div>
           </div>
           <div style="text-align:right">
             <div style="font-size:16px;font-weight:800;color:${done?'var(--green)':'var(--text)'}">${prog}/${total}</div>
@@ -1301,6 +1339,8 @@ function vTList(){
     content=`
       <div style="font-size:16px;font-weight:700;margin-bottom:1rem">🎯 ภารกิจพิเศษ</div>
       ${quests.length===0?'<div style="text-align:center;padding:2rem;color:var(--muted);font-size:14px">ยังไม่มีภารกิจ<br>ครูจะเพิ่มภารกิจให้เร็วๆนี้</div>':questCards}`;
+  } else if(S.tab==='buddy'){
+    content = vBuddyTabForStudent(S.sid);
   } else if(S.tab==='chat'){
     const msgs=chatMsgs.sort((a,b)=>(a.ts||0)-(b.ts||0));
     const bubbles=msgs.length>0?msgs.map((m,mi)=>`
@@ -1368,7 +1408,7 @@ function vTList(){
       <div class="sc"><div class="sl">ยังไม่ส่ง ❌</div><div class="sv" style="color:${(s.taskTotal||0)-(s.taskDone||0)>0?'var(--red)':'var(--green)'}">${(s.taskTotal||0)-(s.taskDone||0)}</div></div>
       <div class="sc"><div class="sl">แลกแล้ว</div><div class="sv" style="color:var(--blue)">${rl.length}</div></div>
     </div>
-    <div class="tabs">${TABS.map(tb=>`<button class="tab ${S.tab===tb.k?'on':''}" onclick="setTab('${tb.k}')"><i class="ti ${tb.i}"></i> ${tb.l}${tb.dot?'<span class="ndot"></span>':''}</button>`).join('')}</div>
+    <div class="tabs-grid">${TABS.map(tb=>`<button class="tab ${S.tab===tb.k?'on':''}" onclick="setTab('${tb.k}')"><i class="ti ${tb.i}"></i> ${tb.l}${tb.dot?'<span class="ndot"></span>':''}</button>`).join('')}</div>
     ${content}`;}
 
 function vAddLog(){
@@ -1465,7 +1505,7 @@ function vPView(){
   const t=tot(s);const hw=hwSum(s.hw);const g=isGirl(s.name);
   const logs=s.logs||[];const rl=s.redeemLogs||[];
   const myReqs=Object.entries(DB.requests||{}).filter(([,r])=>r.studentId===S.sid).map(([id,r])=>({id,...r})).reverse();
-  const unreadMsgs=Object.values(DB.messages||{}).filter(m=>m.studentId===S.sid&&m.from==='parent'&&!m.read).length;const TABS=[{k:'score',l:'คะแนน',i:'ti-star'},{k:'hw',l:'ส่งงาน',i:'ti-clipboard-check'},{k:'avatar',l:'Avatar',i:'ti-mood-smile'},{k:'redeem',l:'แลกคะแนน',i:'ti-gift'},{k:'quest',l:'Quest',i:'ti-trophy'},{k:'request',l:'ขอคะแนน',i:'ti-pencil-plus'},{k:'chat',l:'ข้อความ',i:'ti-message-2',dot:unreadMsgs>0}];
+  const unreadMsgs=Object.values(DB.messages||{}).filter(m=>m.studentId===S.sid&&m.from==='parent'&&!m.read).length;const TABS=[{k:'score',l:'คะแนน',i:'ti-star'},{k:'hw',l:'ส่งงาน',i:'ti-clipboard-check'},{k:'avatar',l:'Avatar',i:'ti-mood-smile'},{k:'redeem',l:'แลกคะแนน',i:'ti-gift'},{k:'quest',l:'Quest',i:'ti-trophy'},{k:'buddy',l:'Buddy',i:'ti-users-group'},{k:'request',l:'ขอคะแนน',i:'ti-pencil-plus'},{k:'chat',l:'ข้อความ',i:'ti-message-2',dot:unreadMsgs>0}];
   let content='';
   if(S.tab==='score'){
     const lh=logs.map(l=>`<div class="log-item"><div><span class="badge ${l.score>=0?'bp':'bm'}">${l.score>=0?'+':''}${l.score}</span><span style="margin-left:8px">${l.desc}</span></div><div class="ldate">${l.date}</div></div>`).join('')||'<div style="text-align:center;padding:1rem;color:var(--muted);font-size:14px">ยังไม่มีประวัติ</div>';
@@ -1589,7 +1629,7 @@ function vPView(){
           <span style="font-size:20px">${done?'🏆':q.type==='hw'?'📚':'⭐'}</span>
           <div style="flex:1">
             <div style="font-size:14px;font-weight:700">${q.name}</div>
-            <div style="font-size:12px;color:var(--muted)">${q.type==='hw'?'ส่งงานให้ครบ':'สะสมคะแนน'} ${q.target} ${q.type==='hw'?'ชิ้น':'คะแนน'}</div>
+            <div style="font-size:12px;color:var(--muted)">${q.type==='hw'?'ส่งงานให้ครบ':'สะสมคะแนน'} ${q.target} ${q.type==='hw'?'ชิ้น':'คะแนน'}${q.deadline?questDeadlineBadge(q):''}</div>
           </div>
           <div style="text-align:right">
             <div style="font-size:16px;font-weight:800;color:${done?'var(--green)':'var(--text)'}">${prog}/${q.target}</div>
@@ -1605,6 +1645,8 @@ function vPView(){
     content=`
       <div style="font-size:16px;font-weight:700;margin-bottom:1rem">🎯 ภารกิจพิเศษ</div>
       ${quests.length===0?'<div style="text-align:center;padding:2rem;color:var(--muted);font-size:14px">ยังไม่มีภารกิจ<br>ครูจะเพิ่มภารกิจให้เร็วๆนี้ 🎯</div>':questCards}`;
+  } else if(S.tab==='buddy'){
+    content = vBuddyTabForStudent(S.sid);
   } else if(S.tab==='chat'){   const pMsgs=Object.values(DB.messages||{}).filter(m=>m.studentId===S.sid).sort((a,b)=>(a.ts||0)-(b.ts||0));
     const pBubbles=pMsgs.length>0?pMsgs.map((m,mi)=>`
       <div style="display:flex;flex-direction:column;align-items:${m.from==='parent'?'flex-end':'flex-start'}">
@@ -1665,7 +1707,7 @@ function vPView(){
       <div class="sc"><div class="sl">ยังไม่ส่ง</div><div class="sv" style="color:${(s.taskTotal||0)-(s.taskDone||0)>0?'var(--red)':'var(--green)'}">${(s.taskTotal||0)-(s.taskDone||0)}</div></div>
       <div class="sc"><div class="sl">แลกแล้ว</div><div class="sv" style="color:var(--blue)">${rl.length}</div></div>
     </div>
-    <div class="tabs">${TABS.map(tb=>`<button class="tab ${S.tab===tb.k?'on':''}" onclick="setTab('${tb.k}')"><i class="ti ${tb.i}"></i> ${tb.l}${tb.dot?'<span class="ndot"></span>':''}</button>`).join('')}</div>
+    <div class="tabs-grid">${TABS.map(tb=>`<button class="tab ${S.tab===tb.k?'on':''}" onclick="setTab('${tb.k}')"><i class="ti ${tb.i}"></i> ${tb.l}${tb.dot?'<span class="ndot"></span>':''}</button>`).join('')}</div>
     ${content}`;}
 
 function go(v){
@@ -1949,6 +1991,8 @@ async function doEditTaskDone(){
   if(isNaN(n)||n<0||n>total){alert(`กรอกตัวเลข 0-${total}`);return;}
   s.taskDone=n;
   await api('PATCH',`/students/${S.sid}`,{taskDone:n});
+  await checkQuestProgress(S.sid);
+  await checkBuddyMissions(S.sid);
   render();
 }
 async function doMEditTaskDone(){
@@ -1962,6 +2006,7 @@ async function doMEditTaskDone(){
   if(isNaN(n)||n<0||n>total){alert(`กรอกตัวเลข 0-${total}`);return;}
   s.taskDone=n;
   await api('PATCH',`/students/${S.sid}`,{taskDone:n});
+  await checkBuddyMissions(S.sid);
   render();
 }
 async function doEditHwCount(type){
@@ -2655,7 +2700,6 @@ if('serviceWorker' in navigator){
     if(e.target.id!=='cropZoom') return;
     const prev = _zoom;
     _zoom = parseFloat(e.target.value);
-    // zoom จากกลาง
     const ratio = _zoom/prev;
     _ox = SIZE/2 - (_ox - SIZE/2) * (1/ratio) - (SIZE/2 - SIZE/2);
     _oy = SIZE/2 - (_oy - SIZE/2) * (1/ratio) - (SIZE/2 - SIZE/2);
@@ -2728,6 +2772,7 @@ if('serviceWorker' in navigator){
       </select>
     </div>
     <div class="frow"><label>เป้าหมายสูงสุด</label><input type="number" id="q_target" placeholder="เช่น 70"></div>
+    <div class="frow"><label>📅 วันหมดเขต (ไม่บังคับ)</label><input type="date" id="q_deadline" style="color:var(--text)"></div>
     <div style="margin-bottom:1rem">
       <label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px">🏅 ขั้นรางวัล (กรอกได้หลายขั้น)</label>
       <div id="q_milestones"></div>
@@ -2749,6 +2794,7 @@ function openQuestModal(idx){
   document.getElementById('q_name').value = q ? q.name : '';
   document.getElementById('q_type').value = q ? q.type : 'hw';
   document.getElementById('q_target').value = q ? q.target : '';
+  document.getElementById('q_deadline').value = q ? (q.deadline||'') : '';
   // milestones
   const ms = q ? (q.milestones||[]) : [{at:40,reward:1},{at:50,reward:2},{at:60,reward:3}];
   const box = document.getElementById('q_milestones');
@@ -2778,6 +2824,7 @@ async function saveQuest(){
   const type = document.getElementById('q_type').value;
   const target = parseInt(document.getElementById('q_target').value);
   if(!name || isNaN(target)){ alert('กรุณากรอกชื่อและเป้าหมาย'); return; }
+  const deadline = document.getElementById('q_deadline').value || '';
   const rows = document.getElementById('q_milestones').querySelectorAll('div');
   const milestones = [];
   rows.forEach(row => {
@@ -2787,7 +2834,7 @@ async function saveQuest(){
   });
   milestones.sort((a,b) => a.at - b.at);
   if(!DB.quests) DB.quests = [];
-  const quest = { id: _questEditIdx >= 0 ? DB.quests[_questEditIdx].id : 'q'+Date.now(), name, type, target, milestones };
+  const quest = { id: _questEditIdx >= 0 ? DB.quests[_questEditIdx].id : 'q'+Date.now(), name, type, target, deadline, milestones };
   if(_questEditIdx >= 0){ DB.quests[_questEditIdx] = quest; }
   else { DB.quests.push(quest); }
   closeQuestModal();
@@ -2800,6 +2847,57 @@ async function doDeleteQuest(idx){
   DB.quests.splice(idx, 1);
   try{ await api('PATCH', '/settings/quests', {quests: DB.quests}); }catch(e){}
   render(true);
+}
+
+// ครูกด "แจกคะแนน Quest" — ตรวจทุกคนพร้อมกัน
+async function doDistributeAllQuests(){
+  if(!DB.quests || DB.quests.length===0){ alert('ยังไม่มีภารกิจ'); return; }
+  if(!confirm('แจกคะแนน Quest ให้ทุกคนที่ถึงเกณฑ์ตอนนี้เลยไหม?')) return;
+  let totalGiven = 0;
+  let totalStudents = 0;
+  for(const sid of Object.keys(DB.students)){
+    const before = totalGiven;
+    await checkQuestProgress(sid);
+    // นับว่าให้ใครไปบ้างจาก logs ที่เพิ่งเพิ่ม (checkQuestProgress จัดการแล้ว)
+  }
+  // นับรวมจาก logs ที่มี Quest ในวันนี้
+  const td = today();
+  for(const s of Object.values(DB.students)){
+    const todayQuest = (s.logs||[]).filter(l=>l.date===td && l.desc?.startsWith('🎯 Quest:'));
+    if(todayQuest.length>0) totalStudents++;
+    totalGiven += todayQuest.reduce((sum,l)=>sum+(l.score||0),0);
+  }
+  render(true);
+  const popup = document.createElement('div');
+  popup.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#7B2FBE,#C44569);color:white;padding:14px 28px;border-radius:999px;font-size:15px;font-weight:700;z-index:99999;box-shadow:0 4px 20px rgba(0,0,0,.3);text-align:center';
+  popup.innerHTML = `🎯 แจกคะแนน Quest เสร็จแล้ว!<br><span style="font-size:12px;font-weight:400">รวม ${totalStudents} คนที่ได้รับ · ${totalGiven} คะแนนที่แจกออกไป</span>`;
+  document.body.appendChild(popup);
+  setTimeout(()=>popup.remove(), 4000);
+}
+
+// helper ตรวจว่า Quest หมดเขตแล้วไหม
+function isQuestExpired(q){
+  if(!q.deadline) return false;
+  return new Date() > new Date(q.deadline+'T23:59:59');
+}
+function questDeadlineLabel(q){
+  if(!q.deadline) return '';
+  const dl = new Date(q.deadline+'T23:59:59');
+  const now = new Date();
+  if(now > dl) return '⛔ หมดเขตแล้ว';
+  const days = Math.ceil((dl-now)/86400000);
+  if(days<=1) return '🔴 หมดเขตวันนี้!';
+  if(days<=3) return '⚠️ เหลือ ' + days + ' วัน';
+  return '📅 ถึง ' + q.deadline;
+}
+function questDeadlineBadge(q){
+  if(!q.deadline) return '';
+  const expired = isQuestExpired(q);
+  const dl = new Date(q.deadline+'T23:59:59');
+  const days = Math.ceil((dl - new Date()) / 86400000);
+  const color = expired ? 'var(--red)' : days <= 3 ? 'var(--amber)' : 'var(--muted)';
+  const label = questDeadlineLabel(q);
+  return ' · <span style="color:' + color + '">' + label + '</span>';
 }
 
 // เช็ค Quest progress และบวกคะแนนอัตโนมัติ
@@ -2838,5 +2936,374 @@ async function checkQuestProgress(sid){
 }
 </script>
 
+<!-- ===== BUDDY MISSION MODAL ===== -->
+<div id="buddyMissionModal" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.6);align-items:center;justify-content:center;padding:1rem;overflow-y:auto">
+  <div style="background:var(--surface);border-radius:20px;padding:1.5rem;width:100%;max-width:440px;margin:auto">
+    <div style="font-size:16px;font-weight:700;margin-bottom:1.25rem;display:flex;justify-content:space-between;align-items:center">
+      <span>🤝 สร้าง Buddy Mission</span>
+      <button onclick="closeBuddyModal()" style="background:var(--bg);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:18px;color:var(--text)">✕</button>
+    </div>
+    <div class="frow"><label>ชื่อภารกิจ Buddy</label><input type="text" id="bm_name" placeholder="เช่น คู่หูส่งงาน สัปดาห์ที่ 1"></div>
+    <div class="frow">
+      <label>เป้าหมายงานที่ต้องส่งร่วมกัน (ชิ้น)</label>
+      <input type="number" id="bm_target" placeholder="เช่น 5" min="1">
+    </div>
+    <div style="margin-bottom:1rem">
+      <label style="font-size:13px;font-weight:600;color:var(--muted);display:block;margin-bottom:8px">⭐ คะแนนรางวัลตาม tier ความยาก</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div style="background:var(--green-bg);border:1px solid var(--green-bd);border-radius:12px;padding:10px;text-align:center">
+          <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:4px">😊 ง่าย</div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:6px">ต่างกัน 0–5 ชิ้น</div>
+          <input type="number" id="bm_r_easy" value="1" min="1" oninput="updateBuddyPreview()" style="width:100%;text-align:center;padding:6px;border-radius:8px;border:1.5px solid var(--green-bd);font-family:Sarabun,sans-serif;font-size:16px;font-weight:700;background:white;color:var(--green)">
+        </div>
+        <div style="background:var(--amber-bg);border:1px solid var(--amber-bd);border-radius:12px;padding:10px;text-align:center">
+          <div style="font-size:11px;font-weight:700;color:var(--amber);margin-bottom:4px">💪 กลาง</div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:6px">ต่างกัน 6–15 ชิ้น</div>
+          <input type="number" id="bm_r_mid" value="2" min="1" oninput="updateBuddyPreview()" style="width:100%;text-align:center;padding:6px;border-radius:8px;border:1.5px solid var(--amber-bd);font-family:Sarabun,sans-serif;font-size:16px;font-weight:700;background:white;color:var(--amber)">
+        </div>
+        <div style="background:var(--pink-bg);border:1px solid var(--pink-bd);border-radius:12px;padding:10px;text-align:center">
+          <div style="font-size:11px;font-weight:700;color:var(--pink);margin-bottom:4px">🔥 ยาก</div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:6px">ต่างกัน 16+ ชิ้น</div>
+          <input type="number" id="bm_r_hard" value="3" min="1" oninput="updateBuddyPreview()" style="width:100%;text-align:center;padding:6px;border-radius:8px;border:1.5px solid var(--pink-bd);font-family:Sarabun,sans-serif;font-size:16px;font-weight:700;background:white;color:var(--pink)">
+        </div>
+      </div>
+    </div>
+    <div style="margin-bottom:1rem">
+      <label style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:6px;display:block">จับคู่แบบ</label>
+      <div style="display:flex;gap:8px">
+        <button id="bm_auto_btn" onclick="setBuddyMode('auto')" style="flex:1;padding:10px;border-radius:10px;border:2px solid var(--green);background:var(--green-bg);color:var(--green);font-family:Sarabun,sans-serif;font-size:13px;font-weight:700;cursor:pointer">⚡ อัตโนมัติ<br><span style="font-size:11px;font-weight:400">เยอะ↔น้อย</span></button>
+        <button id="bm_manual_btn" onclick="setBuddyMode('manual')" style="flex:1;padding:10px;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--muted);font-family:Sarabun,sans-serif;font-size:13px;font-weight:700;cursor:pointer">✋ เลือกเอง</button>
+      </div>
+    </div>
+    <div id="bm_manual_section" style="display:none;margin-bottom:1rem">
+      <label style="font-size:12px;color:var(--muted);margin-bottom:6px;display:block">เลือกคู่ (เลือก 2 คน หรือหลายคู่ พร้อมกัน)</label>
+      <div id="bm_student_list" style="max-height:220px;overflow-y:auto;border:1.5px solid var(--border);border-radius:12px;padding:6px"></div>
+    </div>
+    <div id="bm_preview" style="display:none;margin-bottom:1rem;background:var(--green-bg);border:1px solid var(--green-bd);border-radius:12px;padding:.875rem">
+      <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:6px">👀 ตัวอย่างการจับคู่</div>
+      <div id="bm_preview_pairs"></div>
+    </div>
+    <button onclick="saveBuddyMission()" style="width:100%;padding:13px;border-radius:12px;border:none;background:linear-gradient(135deg,#0B7A6B,#17C1A8);color:white;font-family:Sarabun,sans-serif;font-size:15px;font-weight:700;cursor:pointer">💾 สร้าง Buddy Mission</button>
+  </div>
+</div>
+
+<script>
+// ===== BUDDY MISSION SYSTEM =====
+let _buddyMode = 'auto';
+let _buddySelectedIds = [];
+
+function setBuddyMode(mode){
+  _buddyMode = mode;
+  const autoBtn = document.getElementById('bm_auto_btn');
+  const manualBtn = document.getElementById('bm_manual_btn');
+  const manualSection = document.getElementById('bm_manual_section');
+  const preview = document.getElementById('bm_preview');
+  if(mode === 'auto'){
+    autoBtn.style.border='2px solid var(--green)';autoBtn.style.background='var(--green-bg)';autoBtn.style.color='var(--green)';
+    manualBtn.style.border='2px solid var(--border)';manualBtn.style.background='var(--bg)';manualBtn.style.color='var(--muted)';
+    manualSection.style.display='none';
+    updateBuddyPreview();
+    preview.style.display='block';
+  } else {
+    manualBtn.style.border='2px solid var(--blue)';manualBtn.style.background='var(--blue-bg)';manualBtn.style.color='var(--blue)';
+    autoBtn.style.border='2px solid var(--border)';autoBtn.style.background='var(--bg)';autoBtn.style.color='var(--muted)';
+    manualSection.style.display='block';
+    preview.style.display='none';
+    renderBuddyStudentList();
+  }
+}
+
+function renderBuddyStudentList(){
+  const list = document.getElementById('bm_student_list');
+  if(!list) return;
+  const students = Object.entries(DB.students).sort((a,b)=>(b[1].taskDone||0)-(a[1].taskDone||0));
+  list.innerHTML = students.map(([sid,s])=>{
+    const checked = _buddySelectedIds.includes(sid);
+    return `<label style="display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;cursor:pointer;background:${checked?'var(--blue-bg)':'transparent'};border:1px solid ${checked?'var(--blue)':'transparent'};margin-bottom:3px">
+      <input type="checkbox" ${checked?'checked':''} onchange="toggleBuddyStudent('${sid}')" style="width:15px;height:15px">
+      <span style="font-size:13px;flex:1">${shortName(s.name)}</span>
+      <span style="font-size:11px;color:var(--muted)">📋 ${s.taskDone||0}/${s.taskTotal||0}</span>
+    </label>`;
+  }).join('');
+}
+
+function toggleBuddyStudent(sid){
+  const idx = _buddySelectedIds.indexOf(sid);
+  if(idx>=0) _buddySelectedIds.splice(idx,1); else _buddySelectedIds.push(sid);
+  renderBuddyStudentList();
+}
+
+// คำนวณรางวัลจาก gap และ tier config ที่ครูกำหนด
+function calcBuddyReward(doneA, doneB, tiers){
+  const gap = Math.abs(doneA - doneB);
+  const t = tiers || {easy:1, mid:2, hard:3};
+  if(gap >= 16) return t.hard;
+  if(gap >= 6)  return t.mid;
+  return t.easy;
+}
+
+function computeAutoPairs(tiers){
+  const students = Object.entries(DB.students)
+    .map(([sid,s])=>({sid,done:(s.taskDone||0)}))
+    .sort((a,b)=>b.done-a.done);
+  const pairs = [];
+  const n = students.length;
+  const half = Math.floor(n/2);
+  for(let i=0;i<half;i++){
+    const a = students[i];
+    const b = students[n-1-i];
+    pairs.push({sids:[a.sid, b.sid], reward: calcBuddyReward(a.done, b.done, tiers)});
+  }
+  return pairs;
+}
+
+function readTiers(){
+  return {
+    easy: parseInt(document.getElementById('bm_r_easy')?.value)||1,
+    mid:  parseInt(document.getElementById('bm_r_mid')?.value)||2,
+    hard: parseInt(document.getElementById('bm_r_hard')?.value)||3,
+  };
+}
+
+function updateBuddyPreview(){
+  const tiers = readTiers();
+  const pairs = computeAutoPairs(tiers);
+  const previewEl = document.getElementById('bm_preview_pairs');
+  if(!previewEl) return;
+  previewEl.innerHTML = pairs.map(({sids:[a,b], reward})=>{
+    const sA = DB.students[a]; const sB = DB.students[b];
+    const gap = Math.abs((sA?.taskDone||0)-(sB?.taskDone||0));
+    const tier = gap>=16?'🔥 ยาก':gap>=6?'💪 กลาง':'😊 ง่าย';
+    const col = gap>=16?'var(--pink)':gap>=6?'var(--amber)':'var(--green)';
+    return `<div style="display:flex;align-items:center;gap:6px;font-size:12px;padding:5px 0;border-bottom:1px solid var(--border-soft)">
+      <span style="font-weight:600">${shortName(sA?.name||'')} (${sA?.taskDone||0})</span>
+      <span>🤝</span>
+      <span style="font-weight:600">${shortName(sB?.name||'')} (${sB?.taskDone||0})</span>
+      <span style="margin-left:auto;color:${col};font-weight:700;font-size:11px">${tier} · +${reward}⭐</span>
+    </div>`;
+  }).join('') || '<div style="font-size:12px;color:var(--muted)">ไม่มีนักเรียน</div>';
+}
+
+function openBuddyModal(){
+  _buddyMode = 'auto';
+  _buddySelectedIds = [];
+  document.getElementById('bm_name').value = '';
+  document.getElementById('bm_target').value = '';
+  document.getElementById('bm_r_easy').value = '1';
+  document.getElementById('bm_r_mid').value = '2';
+  document.getElementById('bm_r_hard').value = '3';
+  document.getElementById('bm_manual_section').style.display = 'none';
+  document.getElementById('bm_preview').style.display = 'block';
+  updateBuddyPreview();
+  const autoBtn = document.getElementById('bm_auto_btn');
+  const manualBtn = document.getElementById('bm_manual_btn');
+  if(autoBtn){autoBtn.style.border='2px solid var(--green)';autoBtn.style.background='var(--green-bg)';autoBtn.style.color='var(--green)';}
+  if(manualBtn){manualBtn.style.border='2px solid var(--border)';manualBtn.style.background='var(--bg)';manualBtn.style.color='var(--muted)';}
+  document.getElementById('buddyMissionModal').style.display = 'flex';
+}
+
+function closeBuddyModal(){
+  document.getElementById('buddyMissionModal').style.display = 'none';
+}
+
+async function saveBuddyMission(){
+  const name = document.getElementById('bm_name').value.trim();
+  const target = parseInt(document.getElementById('bm_target').value);
+  if(!name || isNaN(target) || target<1){
+    alert('กรุณากรอกชื่อภารกิจและเป้าหมาย'); return;
+  }
+  const tiers = readTiers();
+  if(tiers.easy<1||tiers.mid<1||tiers.hard<1){ alert('คะแนนแต่ละ tier ต้องมากกว่า 0'); return; }
+  let pairs = [];
+  if(_buddyMode === 'auto'){
+    pairs = computeAutoPairs(tiers);
+  } else {
+    if(_buddySelectedIds.length < 2){ alert('กรุณาเลือกนักเรียนอย่างน้อย 2 คน'); return; }
+    for(let i=0;i+1<_buddySelectedIds.length;i+=2){
+      const a = _buddySelectedIds[i], b = _buddySelectedIds[i+1];
+      const sA = DB.students[a], sB = DB.students[b];
+      pairs.push({sids:[a,b], reward: calcBuddyReward(sA?.taskDone||0, sB?.taskDone||0, tiers)});
+    }
+  }
+  if(!DB.buddyMissions) DB.buddyMissions = [];
+  const mission = {
+    id: 'bm'+Date.now(),
+    name, target, tiers,
+    pairs,
+    active: true,
+    createdAt: today(),
+    completed: {}
+  };
+  DB.buddyMissions.push(mission);
+  closeBuddyModal();
+  try{ await api('PATCH', '/settings/buddyMissions', {buddyMissions: DB.buddyMissions}); }catch(e){}
+  render(true);
+  const popup = document.createElement('div');
+  popup.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#0B7A6B,#17C1A8);color:white;padding:12px 24px;border-radius:999px;font-size:14px;font-weight:700;z-index:99999;box-shadow:0 4px 20px rgba(0,0,0,.3)';
+  popup.textContent = `🤝 สร้าง Buddy Mission สำเร็จ! ${pairs.length} คู่`;
+  document.body.appendChild(popup);
+  setTimeout(()=>popup.remove(), 3000);
+}
+
+async function doDeleteBuddyMission(idx){
+  if(!confirm('ลบ Buddy Mission นี้?')) return;
+  DB.buddyMissions.splice(idx, 1);
+  try{ await api('PATCH', '/settings/buddyMissions', {buddyMissions: DB.buddyMissions}); }catch(e){}
+  render(true);
+}
+
+async function toggleBuddyMissionActive(idx){
+  if(!DB.buddyMissions || !DB.buddyMissions[idx]) return;
+  DB.buddyMissions[idx].active = !DB.buddyMissions[idx].active;
+  try{ await api('PATCH', '/settings/buddyMissions', {buddyMissions: DB.buddyMissions}); }catch(e){}
+  render(true);
+}
+
+// ตรวจสอบและให้รางวัล Buddy Mission เมื่อนักเรียนส่งงาน
+async function checkBuddyMissions(sid){
+  if(!DB.buddyMissions || DB.buddyMissions.length === 0) return;
+  const s = DB.students[sid];
+  if(!s) return;
+  let anyChanged = false;
+  for(const mission of DB.buddyMissions){
+    if(!mission.active) continue;
+    for(const pairObj of (mission.pairs||[])){
+      // รองรับทั้ง format เก่า [sidA,sidB] และใหม่ {sids:[sidA,sidB], reward}
+      const sids = Array.isArray(pairObj) ? pairObj : (pairObj.sids||[]);
+      const pairReward = Array.isArray(pairObj) ? (mission.reward||1) : (pairObj.reward||1);
+      const [sidA, sidB] = sids;
+      if(sidA !== sid && sidB !== sid) continue;
+      const pairKey = [sidA, sidB].sort().join('_');
+      if((mission.completed||{})[pairKey]) continue;
+      const sA = DB.students[sidA];
+      const sB = DB.students[sidB];
+      if(!sA || !sB) continue;
+      if((sA.taskDone||0) >= mission.target && (sB.taskDone||0) >= mission.target){
+        if(!mission.completed) mission.completed = {};
+        mission.completed[pairKey] = true;
+        for(const [csid, cs] of [[sidA, sA],[sidB, sB]]){
+          cs.score = (cs.score||0) + pairReward;
+          cs.logs = cs.logs||[];
+          cs.logs.unshift({desc:`🤝 Buddy Mission: ${mission.name} (+${pairReward} คะแนน)`, score:pairReward, date:today()});
+          anyChanged = true;
+          await api('PATCH', `/students/${csid}`, {score:cs.score, logs:cs.logs});
+        }
+        setTimeout(()=>{
+          const popup = document.createElement('div');
+          popup.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#0B7A6B,#17C1A8);color:white;padding:12px 24px;border-radius:999px;font-size:14px;font-weight:700;z-index:99999;box-shadow:0 4px 20px rgba(0,0,0,.3)';
+          popup.textContent = `🤝 Buddy Mission สำเร็จ! +${pairReward} คะแนน`;
+          document.body.appendChild(popup);
+          setTimeout(()=>popup.remove(), 3500);
+        }, 800);
+      }
+    }
+  }
+  if(anyChanged){
+    try{ await api('PATCH', '/settings/buddyMissions', {buddyMissions: DB.buddyMissions}); }catch(e){}
+  }
+}
+
+// Panel แสดงใน teacher list
+function vBuddyMgrPanel(){
+  const missions = DB.buddyMissions||[];
+  return `<div style="background:var(--surface);border-radius:16px;padding:1rem;margin-bottom:.75rem;border:1px solid rgba(11,122,107,.3)">
+    <button onclick="openBuddyModal()" style="width:100%;padding:10px;border-radius:12px;border:2px dashed #17C1A8;background:rgba(23,193,168,.08);color:#0B7A6B;font-family:Sarabun,sans-serif;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:.75rem">
+      <i class="ti ti-plus"></i> สร้าง Buddy Mission ใหม่
+    </button>
+    ${missions.length===0?'<div style="text-align:center;color:var(--muted);font-size:13px;padding:.5rem">ยังไม่มี Buddy Mission<br>กดสร้างเพื่อจับคู่นักเรียน</div>':''}
+    ${missions.map((m,mi)=>`<div style="border-radius:12px;background:${m.active?'rgba(23,193,168,.08)':'var(--bg)'};border:1px solid ${m.active?'rgba(23,193,168,.35)':'var(--border)'};padding:10px 12px;margin-bottom:6px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <span style="font-size:16px">${m.active?'🤝':'⏸'}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.name}</div>
+          <div style="font-size:11px;color:var(--muted)">เป้า ${m.target} ชิ้น · รางวัลตามความยาก (+1/+2/+3) · ${(m.pairs||[]).length} คู่ · ${Object.keys(m.completed||{}).length} คู่สำเร็จ</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+        <button onclick="toggleBuddyMissionActive(${mi})" style="background:${m.active?'var(--amber-bg)':'var(--green-bg)'};border:1px solid ${m.active?'var(--amber-bd)':'var(--green-bd)'};color:${m.active?'var(--amber)':'var(--green)'};border-radius:8px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:Sarabun,sans-serif">${m.active?'⏸ หยุด':'▶ เปิดใช้'}</button>
+        <button onclick="doDeleteBuddyMission(${mi})" style="background:var(--pink-bg);border:1px solid var(--red);color:var(--red);border-radius:8px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:Sarabun,sans-serif">🗑 ลบ</button>
+      </div>
+    </div>`).join('')}
+  </div>`;
+}
+
+// แสดง Buddy Mission สำหรับนักเรียนคนนั้น (ใช้ในทั้ง teacher และ parent view)
+function vBuddyTabForStudent(sid){
+  const s = DB.students[sid];
+  if(!s) return '';
+  const missions = DB.buddyMissions||[];
+  // หา missions ที่ sid นี้อยู่
+  const myMissions = missions.filter(m=> (m.pairs||[]).some(p=>{
+    const sids = Array.isArray(p) ? p : (p.sids||[]);
+    return sids.includes(sid);
+  }));
+  if(myMissions.length === 0){
+    return `<div style="text-align:center;padding:2rem;color:var(--muted)">
+      <div style="font-size:36px;margin-bottom:1rem">🤝</div>
+      <div style="font-size:14px">ยังไม่มี Buddy Mission<br>ครูจะจับคู่ให้เร็วๆ นี้!</div>
+    </div>`;
+  }
+  const cards = myMissions.map(m=>{
+    // หาคู่ของ sid (รองรับ format เก่าและใหม่)
+    const pairObj = (m.pairs||[]).find(p=>{
+      const sids = Array.isArray(p) ? p : (p.sids||[]);
+      return sids.includes(sid);
+    });
+    if(!pairObj) return '';
+    const sids = Array.isArray(pairObj) ? pairObj : (pairObj.sids||[]);
+    const pairReward = Array.isArray(pairObj) ? (m.reward||1) : (pairObj.reward||1);
+    const buddySid = sids.find(x=>x!==sid)||sids[0];
+    const buddy = DB.students[buddySid];
+    const pairKey = [...sids].sort().join('_');
+    const isDone = !!(m.completed||{})[pairKey];
+    const myDone = s.taskDone||0;
+    const buddyDone = buddy ? (buddy.taskDone||0) : 0;
+    const myPct = Math.min(100, Math.round(myDone/m.target*100));
+    const buddyPct = Math.min(100, Math.round(buddyDone/m.target*100));
+    return `<div style="background:var(--surface);border-radius:16px;padding:1rem;border:2px solid ${isDone?'var(--green)':m.active?'rgba(23,193,168,.4)':'var(--border)'};margin-bottom:.75rem;${isDone?'box-shadow:0 0 12px rgba(46,160,67,.2)':''}">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:.875rem">
+        <span style="font-size:22px">${isDone?'🏆':m.active?'🤝':'⏸'}</span>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:700">${m.name}</div>
+          <div style="font-size:11px;color:var(--muted)">เป้า ${m.target} ชิ้น · รางวัลคู่นี้ +${pairReward} คะแนน/คน</div>
+        </div>
+        ${isDone?`<div style="background:var(--green);color:white;border-radius:999px;padding:3px 12px;font-size:12px;font-weight:700">✅ สำเร็จ</div>`:''}
+      </div>
+      <!-- คู่ของฉัน -->
+      <div style="display:flex;gap:10px;margin-bottom:.875rem">
+        <div style="flex:1;background:${isGirl(s.name)?'var(--pink-bg)':'var(--blue-bg)'};border-radius:12px;padding:.75rem;text-align:center">
+          <div style="font-size:12px;font-weight:600;color:${isGirl(s.name)?'var(--pink)':'var(--blue)'};margin-bottom:4px">⭐ ฉัน</div>
+          <div style="font-size:13px;font-weight:700">${shortName(s.name)}</div>
+          <div style="font-size:20px;font-weight:800;margin:4px 0">${myDone}<span style="font-size:13px;font-weight:400;color:var(--muted)">/${m.target}</span></div>
+          <div style="height:6px;background:rgba(0,0,0,.08);border-radius:999px;overflow:hidden">
+            <div style="height:100%;width:${myPct}%;background:${isGirl(s.name)?'var(--pink)':'var(--blue)'};border-radius:999px"></div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;font-size:20px">🤝</div>
+        <div style="flex:1;background:${buddy&&isGirl(buddy.name)?'var(--pink-bg)':'var(--green-bg)'};border-radius:12px;padding:.75rem;text-align:center">
+          <div style="font-size:12px;font-weight:600;color:${buddy&&isGirl(buddy.name)?'var(--pink)':'var(--green)'};margin-bottom:4px">👥 บัดดี้</div>
+          <div style="font-size:13px;font-weight:700">${shortName(buddy?.name||'?')}</div>
+          <div style="font-size:20px;font-weight:800;margin:4px 0">${buddyDone}<span style="font-size:13px;font-weight:400;color:var(--muted)">/${m.target}</span></div>
+          <div style="height:6px;background:rgba(0,0,0,.08);border-radius:999px;overflow:hidden">
+            <div style="height:100%;width:${buddyPct}%;background:${buddy&&isGirl(buddy.name)?'var(--pink)':'var(--green)'};border-radius:999px"></div>
+          </div>
+        </div>
+      </div>
+      ${!isDone&&m.active?`<div style="background:var(--amber-bg);border:1px solid var(--amber-bd);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--amber);text-align:center">
+        ${myDone>=m.target&&buddyDone<m.target?`⏳ รอบัดดี้ส่งงานอีก ${m.target-buddyDone} ชิ้น!`:
+          buddyDone>=m.target&&myDone<m.target?`📚 ส่งงานอีก ${m.target-myDone} ชิ้น เพื่อรับรางวัล!`:
+          `📚 ส่งงานให้ครบ ${m.target} ชิ้น ทั้งสองคน รับ +${pairReward} คะแนน!`}
+      </div>`:''}
+    </div>`;
+  }).join('');
+  return `<div>
+    <div style="font-size:16px;font-weight:700;margin-bottom:1rem">🤝 Buddy Mission</div>
+    ${cards}
+  </div>`;
+}
+
+// โหลด buddyMissions จาก settings
+const _origLoadDB = loadDB;
+</script>
 </body>
 </html>
