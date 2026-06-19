@@ -664,6 +664,17 @@ function today(){
   const months=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
   return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()+543}`;
 }
+// คืนค่า "ปี-เลขสัปดาห์" เช่น "2026-W25" ใช้เช็คว่าผู้ปกครองรับทราบในสัปดาห์นี้ไปแล้วหรือยัง
+function getWeekKey(d=new Date()){
+  const date = new Date(d.getTime());
+  date.setHours(0,0,0,0);
+  // ISO week: วันจันทร์เป็นวันแรกของสัปดาห์
+  const dayNum = (date.getDay()+6)%7; // จันทร์=0 ... อาทิตย์=6
+  date.setDate(date.getDate()-dayNum+3); // เลื่อนไปวันพฤหัสของสัปดาห์นั้น (ISO trick)
+  const firstThursday = new Date(date.getFullYear(),0,4);
+  const weekNum = 1 + Math.round(((date.getTime()-firstThursday.getTime())/86400000 - 3 + ((firstThursday.getDay()+6)%7))/7);
+  return `${date.getFullYear()}-W${String(weekNum).padStart(2,'0')}`;
+}
 let DB={students:{},requests:{}};
 const DEFAULT_REWARDS=[
   {id:'r1',name:'ขอย้ายที่นั่งภาวร',cost:20},
@@ -1046,6 +1057,7 @@ function vTList(){
     return`<div onclick="selStu('${sid}')" style="display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;padding:1rem .5rem .85rem;border-radius:18px;background:${hbg};border:2px solid ${hc};box-shadow:var(--shadow-sm);transition:all .2s;position:relative;${(()=>{const _at=getAvatarTier(s.chosenAnimal||'');return s.chosenAnimal&&_at.tier==='legendary'?'animation:cardLegendaryBorder 2s linear infinite,cardLegendaryGlow 1.8s ease-in-out infinite;border-width:2.5px;':'';})()} " onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
       ${pend>0||unread>0?`<div style="position:absolute;top:6px;right:6px;width:10px;height:10px;background:#E24B4A;border-radius:50%;border:2px solid white"></div>`:''}
       <div style="position:absolute;top:6px;left:8px;font-size:10px;font-weight:700;color:var(--muted);line-height:1">${s.no||''}</div>
+      ${(()=>{const _acked=(s.parentAcks||[]).some(a=>a.week===getWeekKey());return _acked?`<div title="ผู้ปกครองรับทราบสัปดาห์นี้แล้ว" style="position:absolute;bottom:6px;left:6px;font-size:12px;line-height:1;z-index:2">✅</div>`:'';})()}
       ${s.chosenAnimal?`<div style="position:absolute;top:4px;right:${pend>0||unread>0?'18':'4'}px;z-index:2">
         ${(()=>{const _at=getAvatarTier(s.chosenAnimal);const _r=_at.tier==='legendary'?'conic-gradient(from 0deg,#FFD700,#FF4500,#FF00CC,#00FFFF,#FFD700)':_at.tier==='rare'?'conic-gradient(from 0deg,#00C8FF,#7B2FBE,#FF00AA,#00C8FF)':_at.tier==='uncommon'?'conic-gradient(from 0deg,#2ECC40,#00FF88,#00C8FF,#2ECC40)':null;const _b=_at.tier==='legendary'?'#FFD700':_at.tier==='rare'?'#00C8FF':_at.tier==='uncommon'?'#2ECC40':g?'#F4BFDA':'#B5D1F5';const _a=_at.tier==='legendary'?'legendaryFloat 2s ease-in-out infinite,legendaryGlow 1.5s ease-in-out infinite':_at.tier==='rare'?'rareFloat 2.5s ease-in-out infinite,rareGlow 2s ease-in-out infinite':'none';return`<div style="position:relative;width:28px;height:28px;display:flex;align-items:center;justify-content:center">${_r?`<div style="position:absolute;inset:-3px;border-radius:50%;background:${_r};animation:legendaryRing 2s linear infinite;z-index:0;filter:blur(0.5px)"></div>`:''}<div style="position:relative;z-index:1;width:26px;height:26px;border-radius:50%;overflow:hidden;border:1.5px solid ${_b};animation:${_a}">${drawAnimalSVG(s.chosenAnimal,g,26)}</div></div>`;})()}
       </div>`:''}
@@ -1411,8 +1423,26 @@ function vTList(){
       <div class="sc"><div class="sl">ยังไม่ส่ง ❌</div><div class="sv" style="color:${(s.taskTotal||0)-(s.taskDone||0)>0?'var(--red)':'var(--green)'}">${(s.taskTotal||0)-(s.taskDone||0)}</div></div>
       <div class="sc"><div class="sl">แลกแล้ว</div><div class="sv" style="color:var(--blue)">${rl.length}</div></div>
     </div>
+    ${vTeacherAckStatus(s)}
     <div class="tabs-grid">${TABS.map(tb=>`<button class="tab ${S.tab===tb.k?'on':''}" onclick="setTab('${tb.k}')"><i class="ti ${tb.i}"></i> ${tb.l}${tb.dot?'<span class="ndot"></span>':''}</button>`).join('')}</div>
     ${content}`;}
+
+// แสดงสถานะรับทราบของผู้ปกครอง ให้ครูดูในหน้านักเรียน
+function vTeacherAckStatus(s){
+  const acks = s.parentAcks || [];
+  const curWeek = getWeekKey();
+  const ackedThisWeek = acks.find(a=>a.week===curWeek);
+  if(ackedThisWeek){
+    const d = new Date(ackedThisWeek.ts);
+    const timeStr = `${d.getDate()}/${d.getMonth()+1} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    return `<div style="display:flex;align-items:center;gap:8px;background:var(--green-bg);border:1px solid var(--green-bd);border-radius:12px;padding:.6rem 1rem;margin-bottom:1rem;font-size:12px;color:var(--green)">
+      <span style="font-size:16px">✅</span> ผู้ปกครองรับทราบสัปดาห์นี้แล้ว <span style="color:var(--muted)">(${timeStr})</span>
+    </div>`;
+  }
+  return `<div style="display:flex;align-items:center;gap:8px;background:var(--pink-bg);border:1px solid var(--red-bd);border-radius:12px;padding:.6rem 1rem;margin-bottom:1rem;font-size:12px;color:var(--red)">
+    <span style="font-size:16px">⚠️</span> ผู้ปกครองยังไม่รับทราบสัปดาห์นี้
+  </div>`;
+}
 
 function vAddLog(){
   const s=DB.students[S.sid];const isP=S.addMode==='plus';
@@ -1710,8 +1740,52 @@ function vPView(){
       <div class="sc"><div class="sl">ยังไม่ส่ง</div><div class="sv" style="color:${(s.taskTotal||0)-(s.taskDone||0)>0?'var(--red)':'var(--green)'}">${(s.taskTotal||0)-(s.taskDone||0)}</div></div>
       <div class="sc"><div class="sl">แลกแล้ว</div><div class="sv" style="color:var(--blue)">${rl.length}</div></div>
     </div>
+    ${vParentAckBanner(s)}
     <div class="tabs-grid">${TABS.map(tb=>`<button class="tab ${S.tab===tb.k?'on':''}" onclick="setTab('${tb.k}')"><i class="ti ${tb.i}"></i> ${tb.l}${tb.dot?'<span class="ndot"></span>':''}</button>`).join('')}</div>
     ${content}`;}
+
+// แสดงปุ่ม/สถานะ "รับทราบแล้ว" ของผู้ปกครอง (1 ครั้งต่อสัปดาห์)
+function vParentAckBanner(s){
+  const acks = s.parentAcks || []; // array of {week:'2026-W25', ts: 169...}
+  const curWeek = getWeekKey();
+  const ackedThisWeek = acks.find(a=>a.week===curWeek);
+  if(ackedThisWeek){
+    const d = new Date(ackedThisWeek.ts);
+    const timeStr = `${d.getDate()}/${d.getMonth()+1} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    return `<div style="display:flex;align-items:center;gap:8px;background:var(--green-bg);border:1px solid var(--green-bd);border-radius:12px;padding:.7rem 1rem;margin-bottom:1rem">
+      <span style="font-size:18px">✅</span>
+      <div style="flex:1;font-size:12px;color:var(--green)">
+        <b>รับทราบข้อมูลสัปดาห์นี้แล้ว</b><br>
+        <span style="color:var(--muted)">เมื่อ ${timeStr}</span>
+      </div>
+    </div>`;
+  }
+  return `<div style="display:flex;align-items:center;gap:10px;background:var(--amber-bg);border:1px solid var(--amber-bd);border-radius:12px;padding:.7rem 1rem;margin-bottom:1rem">
+    <span style="font-size:18px">📋</span>
+    <div style="flex:1;font-size:12px;color:var(--amber)">
+      ผู้ปกครองได้ดูคะแนน/การส่งงานของน้องแล้วหรือยัง?
+    </div>
+    <button onclick="doParentAck('${S.sid}')" style="background:linear-gradient(135deg,#0B7A6B,#17C1A8);color:white;border:none;border-radius:999px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:Sarabun,sans-serif">✅ รับทราบแล้ว</button>
+  </div>`;
+}
+
+async function doParentAck(sid){
+  const s = DB.students[sid];
+  if(!s) return;
+  const curWeek = getWeekKey();
+  s.parentAcks = s.parentAcks || [];
+  if(s.parentAcks.find(a=>a.week===curWeek)) return; // กันกดซ้ำ
+  s.parentAcks.push({week:curWeek, ts:Date.now()});
+  // เก็บแค่ 12 สัปดาห์ล่าสุด กัน array บวมเกิน
+  if(s.parentAcks.length>12) s.parentAcks = s.parentAcks.slice(-12);
+  render();
+  try{ await api('PATCH', `/students/${sid}`, {parentAcks: s.parentAcks}); }catch(e){}
+  const popup = document.createElement('div');
+  popup.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#0B7A6B,#17C1A8);color:white;padding:12px 24px;border-radius:999px;font-size:14px;font-weight:700;z-index:99999;box-shadow:0 4px 20px rgba(0,0,0,.3)';
+  popup.textContent = '✅ บันทึกการรับทราบเรียบร้อยแล้วครับ/ค่ะ';
+  document.body.appendChild(popup);
+  setTimeout(()=>popup.remove(), 3000);
+}
 
 function go(v){
   S.view=v;S.msg='';S.tab='score';S.search='';S.newName='';S.newId='';
