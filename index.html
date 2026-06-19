@@ -702,6 +702,8 @@ async function loadDB(){
     if(DB.settings.quests) DB.quests=[...DB.settings.quests];
     if(DB.settings.buddyMissions) DB.buddyMissions=[...DB.settings.buddyMissions];
   }
+  // ตรวจ Buddy Mission ที่หมดเขตแล้ว แจก partial credit (เฉพาะฝั่งครู เพื่อไม่ให้แข่งกันเขียนพร้อมกัน)
+  if(S.role === 'teacher') checkAllExpiredBuddyMissions();
   // Don't re-render if user is typing in chat box
   const active = document.activeElement;
   if(active && (active.id==='chat_input'||active.id==='chat_input_p')){
@@ -3205,7 +3207,7 @@ async function checkBuddyMissions(sid){
   let anyChanged = false;
   for(const mission of DB.buddyMissions){
     if(!mission.active) continue;
-    if(mission.deadline && new Date() > new Date(mission.deadline+'T23:59:59')) continue; // ตัด mission ที่หมดเขตแล้ว
+    const isExpired = mission.deadline && new Date() > new Date(mission.deadline+'T23:59:59');
     for(const pairObj of (mission.pairs||[])){
       // รองรับทั้ง format เก่า [sidA,sidB] และใหม่ {sids:[sidA,sidB], reward}
       const sids = Array.isArray(pairObj) ? pairObj : (pairObj.sids||[]);
@@ -3214,11 +3216,15 @@ async function checkBuddyMissions(sid){
       const [sidA, sidB] = sids;
       if(sidA !== sid && sidB !== sid) continue;
       const pairKey = [sidA, sidB].sort().join('_');
-      if((mission.completed||{})[pairKey]) continue;
+      if((mission.completed||{})[pairKey]) continue; // ได้รับไปแล้ว (เต็มหรือ partial) ไม่ให้ซ้ำ
       const sA = DB.students[sidA];
       const sB = DB.students[sidB];
-      if(!sA || !sB) continue;
-      if((sA.taskDone||0) >= pairTarget && (sB.taskDone||0) >= pairTarget){
+      if(!sA || !sB || pairTarget<=0) continue;
+      const doneA = sA.taskDone||0;
+      const doneB = sB.taskDone||0;
+
+      if(doneA >= pairTarget && doneB >= pairTarget){
+        // ครบเป้าทั้งคู่ → ได้รางวัลเต็ม ทันที ไม่ต้องรอหมดเขต
         if(!mission.completed) mission.completed = {};
         mission.completed[pairKey] = true;
         for(const [csid, cs] of [[sidA, sA],[sidB, sB]]){
@@ -3235,12 +3241,85 @@ async function checkBuddyMissions(sid){
           document.body.appendChild(popup);
           setTimeout(()=>popup.remove(), 3500);
         }, 800);
+      } else if(isExpired){
+        // หมดเขตแล้ว แต่ยังไม่ครบเป้า → ให้ partial credit ตามสัดส่วนเฉลี่ยของทั้งคู่ (ครั้งเดียว)
+        const pctA = Math.min(1, doneA/pairTarget);
+        const pctB = Math.min(1, doneB/pairTarget);
+        const avgPct = (pctA+pctB)/2;
+        const partialReward = Math.round(pairReward * avgPct);
+        if(!mission.completed) mission.completed = {};
+        mission.completed[pairKey] = true; // mark ว่าจัดการแล้ว กันคิดซ้ำ
+        if(partialReward > 0){
+          for(const [csid, cs] of [[sidA, sA],[sidB, sB]]){
+            cs.score = (cs.score||0) + partialReward;
+            cs.logs = cs.logs||[];
+            cs.logs.unshift({desc:`🤝 Buddy Mission: ${mission.name} (สำเร็จ ${Math.round(avgPct*100)}% +${partialReward} คะแนน)`, score:partialReward, date:today()});
+            anyChanged = true;
+            await api('PATCH', `/students/${csid}`, {score:cs.score, logs:cs.logs});
+          }
+          setTimeout(()=>{
+            const popup = document.createElement('div');
+            popup.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#5B8DEF,#7B9EFF);color:white;padding:12px 24px;border-radius:999px;font-size:14px;font-weight:700;z-index:99999;box-shadow:0 4px 20px rgba(0,0,0,.3)';
+            popup.textContent = `🤝 Buddy Mission หมดเขต — ได้ ${Math.round(avgPct*100)}% (+${partialReward} คะแนน)`;
+            document.body.appendChild(popup);
+            setTimeout(()=>popup.remove(), 3500);
+          }, 800);
+        }
       }
     }
   }
   if(anyChanged){
     try{ await api('PATCH', '/settings/buddyMissions', {buddyMissions: DB.buddyMissions}); }catch(e){}
   }
+}
+
+// ตรวจ Buddy Mission ที่หมดเขตแล้วทั้งหมด (รันตอนโหลดข้อมูล ไม่ต้องรอใครแก้ taskDone)
+// แจก partial credit ให้คู่ที่ยังไม่ครบเป้าตอนหมดเขต
+let _buddyExpiryCheckDone = false;
+async function checkAllExpiredBuddyMissions(){
+  if(!DB.buddyMissions || DB.buddyMissions.length === 0) return;
+  if(_buddyExpiryCheckDone) return; // กันรันซ้ำในรอบ session เดียวกัน (เบาๆ ไม่ต้องเช็คทุก poll)
+  let anyChanged = false;
+  for(const mission of DB.buddyMissions){
+    if(!mission.active) continue;
+    const isExpired = mission.deadline && new Date() > new Date(mission.deadline+'T23:59:59');
+    if(!isExpired) continue;
+    for(const pairObj of (mission.pairs||[])){
+      const sids = Array.isArray(pairObj) ? pairObj : (pairObj.sids||[]);
+      const pairReward = Array.isArray(pairObj) ? (mission.reward||1) : (pairObj.reward||1);
+      const pairTarget = Array.isArray(pairObj) ? (mission.target||0) : (pairObj.target||mission.target||0);
+      const [sidA, sidB] = sids;
+      const pairKey = [sidA, sidB].sort().join('_');
+      if((mission.completed||{})[pairKey]) continue; // จัดการไปแล้ว (เต็มหรือ partial)
+      const sA = DB.students[sidA];
+      const sB = DB.students[sidB];
+      if(!sA || !sB || pairTarget<=0) continue;
+      const doneA = sA.taskDone||0;
+      const doneB = sB.taskDone||0;
+      const pctA = Math.min(1, doneA/pairTarget);
+      const pctB = Math.min(1, doneB/pairTarget);
+      const avgPct = (pctA+pctB)/2;
+      const partialReward = Math.round(pairReward * avgPct);
+      if(!mission.completed) mission.completed = {};
+      mission.completed[pairKey] = true;
+      if(partialReward > 0){
+        for(const [csid, cs] of [[sidA, sA],[sidB, sB]]){
+          cs.score = (cs.score||0) + partialReward;
+          cs.logs = cs.logs||[];
+          cs.logs.unshift({desc:`🤝 Buddy Mission: ${mission.name} (สำเร็จ ${Math.round(avgPct*100)}% +${partialReward} คะแนน)`, score:partialReward, date:today()});
+          anyChanged = true;
+          await api('PATCH', `/students/${csid}`, {score:cs.score, logs:cs.logs});
+        }
+      } else {
+        anyChanged = true; // mark completed ไว้แม้ partialReward=0 กันเช็คซ้ำ
+      }
+    }
+  }
+  if(anyChanged){
+    try{ await api('PATCH', '/settings/buddyMissions', {buddyMissions: DB.buddyMissions}); }catch(e){}
+    render();
+  }
+  _buddyExpiryCheckDone = true;
 }
 
 // Panel แสดงใน teacher list
@@ -3300,19 +3379,23 @@ function vBuddyTabForStudent(sid){
     const buddySid = sids.find(x=>x!==sid)||sids[0];
     const buddy = DB.students[buddySid];
     const pairKey = [...sids].sort().join('_');
-    const isDone = !!(m.completed||{})[pairKey];
+    const isCompleted = !!(m.completed||{})[pairKey];
     const myDone = s.taskDone||0;
     const buddyDone = buddy ? (buddy.taskDone||0) : 0;
+    const isExpired = m.deadline && new Date() > new Date(m.deadline+'T23:59:59');
+    const isFullSuccess = isCompleted && myDone>=pairTarget && buddyDone>=pairTarget;
+    const isPartialDone = isCompleted && !isFullSuccess; // ได้ partial credit ตอนหมดเขต
     const myPct = Math.min(100, Math.round(myDone/pairTarget*100));
     const buddyPct = Math.min(100, Math.round(buddyDone/pairTarget*100));
-    return `<div style="background:var(--surface);border-radius:16px;padding:1rem;border:2px solid ${isDone?'var(--green)':m.active?'rgba(23,193,168,.4)':'var(--border)'};margin-bottom:.75rem;${isDone?'box-shadow:0 0 12px rgba(46,160,67,.2)':''}">
+    const avgPctNum = Math.round(((Math.min(1,myDone/pairTarget)+Math.min(1,buddyDone/pairTarget))/2)*100);
+    return `<div style="background:var(--surface);border-radius:16px;padding:1rem;border:2px solid ${isFullSuccess?'var(--green)':isPartialDone?'var(--blue)':m.active?'rgba(23,193,168,.4)':'var(--border)'};margin-bottom:.75rem;${isFullSuccess?'box-shadow:0 0 12px rgba(46,160,67,.2)':''}">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:.875rem">
-        <span style="font-size:22px">${isDone?'🏆':m.active?'🤝':'⏸'}</span>
+        <span style="font-size:22px">${isFullSuccess?'🏆':isPartialDone?'⏰':m.active?'🤝':'⏸'}</span>
         <div style="flex:1">
           <div style="font-size:14px;font-weight:700">${m.name}</div>
-          <div style="font-size:11px;color:var(--muted)">เป้าคู่นี้ ${pairTarget} ชิ้น · รางวัลคู่นี้ +${pairReward} คะแนน/คน${m.deadline?` · <span style="color:${new Date()>new Date(m.deadline+'T23:59:59')?'var(--red)':'var(--muted)'}">📅 ${m.deadline}</span>`:''}</div>
+          <div style="font-size:11px;color:var(--muted)">เป้าคู่นี้ ${pairTarget} ชิ้น · รางวัลคู่นี้ +${pairReward} คะแนน/คน${m.deadline?` · <span style="color:${isExpired?'var(--red)':'var(--muted)'}">📅 ${m.deadline}</span>`:''}</div>
         </div>
-        ${isDone?`<div style="background:var(--green);color:white;border-radius:999px;padding:3px 12px;font-size:12px;font-weight:700">✅ สำเร็จ</div>`:''}
+        ${isFullSuccess?`<div style="background:var(--green);color:white;border-radius:999px;padding:3px 12px;font-size:12px;font-weight:700">✅ สำเร็จ</div>`:isPartialDone?`<div style="background:var(--blue);color:white;border-radius:999px;padding:3px 12px;font-size:12px;font-weight:700">⏰ หมดเขต ${avgPctNum}%</div>`:''}
       </div>
       <!-- คู่ของฉัน -->
       <div style="display:flex;gap:10px;margin-bottom:.875rem">
@@ -3334,7 +3417,10 @@ function vBuddyTabForStudent(sid){
           </div>
         </div>
       </div>
-      ${!isDone&&m.active?`<div style="background:var(--amber-bg);border:1px solid var(--amber-bd);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--amber);text-align:center">
+      ${isPartialDone?`<div style="background:var(--blue-bg);border:1px solid var(--blue-bd);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--blue);text-align:center">
+        ⏰ ภารกิจหมดเขตแล้ว — ได้รับคะแนนตามความพยายามเฉลี่ย ${avgPctNum}%
+      </div>`:''}
+      ${!isCompleted&&m.active?`<div style="background:var(--amber-bg);border:1px solid var(--amber-bd);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--amber);text-align:center">
         ${myDone>=pairTarget&&buddyDone<pairTarget?`⏳ รอบัดดี้ส่งงานอีก ${pairTarget-buddyDone} ชิ้น!`:
           buddyDone>=pairTarget&&myDone<pairTarget?`📚 ส่งงานอีก ${pairTarget-myDone} ชิ้น เพื่อรับรางวัล!`:
           `📚 ส่งงานให้ครบ ${pairTarget} ชิ้น ทั้งสองคน รับ +${pairReward} คะแนน!`}
