@@ -682,6 +682,7 @@ async function api(method,path,body){
 async function loadDB(){
   const data=await api('GET','/data');
   DB=data||{students:{},requests:{}};
+  applyLocalReadMarks(); // กัน race condition กับ doMarkRead
   // เช็คและ reset อวตาร์ที่ไม่มีสิทธิ์แล้ว
   let needSave=false;
   Object.entries(DB.students||{}).forEach(([sid,s])=>{
@@ -2420,13 +2421,31 @@ async function doSendMsg(studentId, from){
   },50);
 }
 
+// เก็บไว้ว่า (studentId,from) ไหนที่เพิ่งอ่านไปแล้วในเครื่องนี้ กัน poll เขียนทับกลับเป็น unread
+const _localReadMarks = {}; // key: `${studentId}_${from}` -> timestamp ที่ mark
+
 async function doMarkRead(studentId, from){
   let changed=false;
   Object.values(DB.messages||{}).forEach(m=>{if(m.studentId===studentId&&m.from===from&&!m.read){m.read=true;changed=true;}});
   if(changed){
+    _localReadMarks[`${studentId}_${from}`] = Date.now();
     render(); // อัปเดต UI ทันที ให้จุดแดงหายไป
     try{ await api('PATCH',`/markread/${studentId}`,{from,ts:Date.now()}); }catch(e){}
   }
+}
+
+// ใช้ตอนโหลดข้อมูลใหม่จาก server — บังคับให้ข้อความที่ mark ว่าอ่านแล้วในเครื่องนี้ ยังเป็น read=true เสมอ
+// (กัน race condition: poll ดึงข้อมูลมาก่อนที่ server จะประมวลผล markread เสร็จ)
+function applyLocalReadMarks(){
+  const now = Date.now();
+  Object.keys(_localReadMarks).forEach(key=>{
+    const markedAt = _localReadMarks[key];
+    if(now - markedAt > 15000){ delete _localReadMarks[key]; return; } // หมดอายุหลัง 15 วิ (พอให้ server sync)
+    const [studentId, from] = key.split('_');
+    Object.values(DB.messages||{}).forEach(m=>{
+      if(m.studentId===studentId && m.from===from) m.read=true;
+    });
+  });
 }
 
 async function doDeleteMsg(studentId, msgId){
