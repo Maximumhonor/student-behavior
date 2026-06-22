@@ -3020,34 +3020,44 @@ async function checkQuestProgress(sid){
     if(isQuestExpired(q)) continue; // ตัดภารกิจที่หมดเขตแล้ว ไม่ตรวจ/บวกคะแนนอีก
     const prog = q.type==='hw' ? (s.taskDone||0) : tot(s);
     const earned = s.questProgress || {};
-    if(!earned[q.id]) earned[q.id] = [];
-    // หา milestone ที่สูงสุดที่ถึงแล้ว และยังไม่เคยได้รับ
-    let bestIdx = -1;
-    for(let mi=0; mi < (q.milestones||[]).length; mi++){
-      const m = q.milestones[mi];
-      if(prog >= m.at && !earned[q.id].includes(mi)){
-        if(bestIdx===-1 || m.at > q.milestones[bestIdx].at) bestIdx = mi;
+    // เก็บเป็นรายการ "เป้าหมาย (at) ที่ได้รับไปแล้ว" แทน index — กันปัญหา index เลื่อนตอนครูแก้ไข milestone ทีหลัง
+    let earnedAtList = earned[q.id] || [];
+    // รองรับข้อมูลเก่าที่เคยเก็บเป็น index (ตัวเลขเล็กกว่าจำนวน milestone และไม่ตรงกับ at ใดๆ เลย) — แปลงเป็น at ครั้งเดียว
+    const looksLikeOldIndexFormat = earnedAtList.length>0 && earnedAtList.every(v => !(q.milestones||[]).some(m=>m.at===v));
+    if(looksLikeOldIndexFormat){
+      earnedAtList = earnedAtList.map(idx => (q.milestones||[])[idx]?.at).filter(v=>v!==undefined);
+    }
+    // หา milestone ที่สูงสุดที่ถึงแล้ว และยังไม่เคยได้รับ (เทียบด้วยค่า at ตรงๆ)
+    let best = null;
+    for(const m of (q.milestones||[])){
+      if(prog >= m.at && !earnedAtList.includes(m.at)){
+        if(!best || m.at > best.at) best = m;
       }
     }
-    if(bestIdx !== -1){
-      const m = q.milestones[bestIdx];
+    if(best){
       // mark ทุกขั้นที่ <= ขั้นนี้ ว่าได้รับแล้ว กันบวกซ้ำตอนขั้นล่างถูกแซงทีหลัง
-      for(let mi=0; mi < (q.milestones||[]).length; mi++){
-        if(q.milestones[mi].at <= m.at && !earned[q.id].includes(mi)) earned[q.id].push(mi);
+      for(const m of (q.milestones||[])){
+        if(m.at <= best.at && !earnedAtList.includes(m.at)) earnedAtList.push(m.at);
       }
-      s.score = (s.score||0) + m.reward;
+      earned[q.id] = earnedAtList;
+      s.score = (s.score||0) + best.reward;
       s.logs = s.logs||[];
-      s.logs.unshift({desc:`🎯 Quest: ${q.name} (ถึง ${m.at})`, score:m.reward, date:today()});
+      s.logs.unshift({desc:`🎯 Quest: ${q.name} (ถึง ${best.at})`, score:best.reward, date:today()});
       changed = true;
       s.questProgress = earned;
       // แสดง popup
       setTimeout(()=>{
         const popup = document.createElement('div');
         popup.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#7B2FBE,#C44569);color:white;padding:12px 24px;border-radius:999px;font-size:14px;font-weight:700;z-index:99999;box-shadow:0 4px 20px rgba(0,0,0,.3);animation:fadeIn .3s';
-        popup.textContent = `🎯 Quest สำเร็จ! +${m.reward} คะแนน`;
+        popup.textContent = `🎯 Quest สำเร็จ! +${best.reward} คะแนน`;
         document.body.appendChild(popup);
         setTimeout(()=>popup.remove(), 3000);
       }, 500);
+    } else if(looksLikeOldIndexFormat){
+      // ไม่มี milestone ใหม่ แต่ format เปลี่ยนไปแล้ว บันทึกกลับเพื่อความถูกต้องในรอบถัดไป
+      earned[q.id] = earnedAtList;
+      s.questProgress = earned;
+      changed = true;
     }
   }
   if(changed){
