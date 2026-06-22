@@ -1418,8 +1418,10 @@ function vTList(){
     <div class="stats">
       <div class="sc"><div class="sl">คะแนนพฤติกรรม</div><div class="sv" style="color:${t>=0?'var(--green)':'var(--red)'}">${t>=0?'+':''}${t}</div></div>
       <div class="sc"><div class="sl">งานทั้งหมด</div><div class="sv" style="color:var(--muted)">${s.taskTotal||0}</div></div>
-      <div class="sc" style="cursor:pointer" onclick="doEditTaskDone()"><div class="sl">ส่งแล้ว ✅</div><div class="sv" style="color:${taskColor(s)}">${s.taskDone||0}</div></div>
-      <div class="sc"><div class="sl">ยังไม่ส่ง ❌</div><div class="sv" style="color:${(s.taskTotal||0)-(s.taskDone||0)>0?'var(--red)':'var(--green)'}">${(s.taskTotal||0)-(s.taskDone||0)}</div></div>
+      <div class="sc" style="cursor:pointer" onclick="doEditTaskDone()"><div class="sl">เสร็จแล้ว ✅</div><div class="sv" style="color:${taskColor(s)}">${s.taskDone||0}</div></div>
+      <div class="sc"><div class="sl">ยังไม่เสร็จ ❌</div><div class="sv" style="color:${(s.taskTotal||0)-(s.taskDone||0)>0?'var(--red)':'var(--green)'}">${(s.taskTotal||0)-(s.taskDone||0)}</div></div>
+      <div class="sc" style="cursor:pointer" onclick="doEditSigned()"><div class="sl">มีลายเซ็น ✍️</div><div class="sv" style="color:var(--green)">${s.sig||0}</div></div>
+      <div class="sc"><div class="sl">รอลายเซ็น ⏳</div><div class="sv" style="color:${(s.taskDone||0)-(s.sig||0)>0?'var(--amber)':'var(--green)'}">${(s.taskDone||0)-(s.sig||0)}</div></div>
       <div class="sc"><div class="sl">แลกแล้ว</div><div class="sv" style="color:var(--blue)">${rl.length}</div></div>
     </div>
     ${vTeacherAckStatus(s)}
@@ -1735,8 +1737,10 @@ function vPView(){
     <div class="stats">
       <div class="sc"><div class="sl">คะแนนพฤติกรรม</div><div class="sv" style="color:${t>=0?'var(--green)':'var(--red)'}">${t>=0?'+':''}${t}</div></div>
       <div class="sc"><div class="sl">งานทั้งหมด</div><div class="sv" style="color:var(--muted)">${s.taskTotal||0}</div></div>
-      <div class="sc"><div class="sl">ส่งแล้ว</div><div class="sv" style="color:${taskColor(s)}">${s.taskDone||0}</div></div>
-      <div class="sc"><div class="sl">ยังไม่ส่ง</div><div class="sv" style="color:${(s.taskTotal||0)-(s.taskDone||0)>0?'var(--red)':'var(--green)'}">${(s.taskTotal||0)-(s.taskDone||0)}</div></div>
+      <div class="sc"><div class="sl">เสร็จแล้ว</div><div class="sv" style="color:${taskColor(s)}">${s.taskDone||0}</div></div>
+      <div class="sc"><div class="sl">ยังไม่เสร็จ</div><div class="sv" style="color:${(s.taskTotal||0)-(s.taskDone||0)>0?'var(--red)':'var(--green)'}">${(s.taskTotal||0)-(s.taskDone||0)}</div></div>
+      <div class="sc"><div class="sl">มีลายเซ็น ✍️</div><div class="sv" style="color:var(--green)">${s.sig||0}</div></div>
+      <div class="sc"><div class="sl">รอลายเซ็น ⏳</div><div class="sv" style="color:${(s.taskDone||0)-(s.sig||0)>0?'var(--amber)':'var(--green)'}">${(s.taskDone||0)-(s.sig||0)}</div></div>
       <div class="sc"><div class="sl">แลกแล้ว</div><div class="sv" style="color:var(--blue)">${rl.length}</div></div>
     </div>
     ${vParentAckBanner(s)}
@@ -1938,8 +1942,10 @@ function vMStudent(){
     <div class="stats" style="grid-template-columns:repeat(4,1fr);margin-bottom:1rem">
       <div class="sc"><div class="sl">คะแนน</div><div class="sv" style="color:${tot(s)>=0?'var(--green)':'var(--red)'}">${tot(s)>=0?'+':''}${tot(s)}</div></div>
       <div class="sc"><div class="sl">งานทั้งหมด</div><div class="sv" style="color:var(--muted)">${s.taskTotal||0}</div></div>
-      <div class="sc" style="cursor:pointer" onclick="doMEditTaskDone()"><div class="sl">ส่งแล้ว ✅</div><div class="sv" style="color:${mColor}">${s.taskDone||0}</div></div>
-      <div class="sc"><div class="sl">ยังไม่ส่ง ❌</div><div class="sv" style="color:${(s.taskTotal||0)-(s.taskDone||0)>0?'var(--red)':'var(--green)'}">${(s.taskTotal||0)-(s.taskDone||0)}</div></div>
+      <div class="sc" style="cursor:pointer" onclick="doMEditTaskDone()"><div class="sl">เสร็จแล้ว ✅</div><div class="sv" style="color:${mColor}">${s.taskDone||0}</div></div>
+      <div class="sc"><div class="sl">ยังไม่เสร็จ ❌</div><div class="sv" style="color:${(s.taskTotal||0)-(s.taskDone||0)>0?'var(--red)':'var(--green)'}">${(s.taskTotal||0)-(s.taskDone||0)}</div></div>
+      <div class="sc" style="cursor:pointer" onclick="doMEditSigned()"><div class="sl">มีลายเซ็น ✍️</div><div class="sv" style="color:var(--green)">${s.sig||0}</div></div>
+      <div class="sc"><div class="sl">รอลายเซ็น ⏳</div><div class="sv" style="color:${(s.taskDone||0)-(s.sig||0)>0?'var(--amber)':'var(--green)'}">${(s.taskDone||0)-(s.sig||0)}</div></div>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
       
@@ -2061,14 +2067,28 @@ async function doEditTaskDone(){
   const total=s.taskTotal||0;
   const cur=s.taskDone||0;
   if(total===0){alert('กรุณาตั้งจำนวนงานทั้งหมดก่อน');return;}
-  const val=prompt(`แก้ไขจำนวนส่งแล้ว (0-${total})`,cur);
+  const val=prompt(`แก้ไขจำนวนเสร็จแล้ว (0-${total})`,cur);
   if(val===null)return;
   const n=parseInt(val);
   if(isNaN(n)||n<0||n>total){alert(`กรอกตัวเลข 0-${total}`);return;}
   s.taskDone=n;
-  await api('PATCH',`/students/${S.sid}`,{taskDone:n});
+  if((s.sig||0)>n) s.sig=n; // ตัดมีลายเซ็นไม่ให้เกินจำนวนที่ส่งแล้ว
+  await api('PATCH',`/students/${S.sid}`,{taskDone:n,sig:s.sig||0});
   await checkQuestProgress(S.sid);
   await checkBuddyMissions(S.sid);
+  render();
+}
+async function doEditSigned(){
+  const s=DB.students[S.sid];if(!s)return;
+  const done=s.taskDone||0;
+  const cur=s.sig||0;
+  if(done===0){alert('ยังไม่มีงานที่ส่งแล้ว');return;}
+  const val=prompt(`แก้ไขจำนวนที่มีลายเซ็นแล้ว (0-${done})`,cur);
+  if(val===null)return;
+  const n=parseInt(val);
+  if(isNaN(n)||n<0||n>done){alert(`กรอกตัวเลข 0-${done}`);return;}
+  s.sig=n;
+  await api('PATCH',`/students/${S.sid}`,{sig:n});
   render();
 }
 async function doMEditTaskDone(){
@@ -2076,14 +2096,28 @@ async function doMEditTaskDone(){
   const total=s.taskTotal||0;
   const cur=s.taskDone||0;
   if(total===0){alert('ครูยังไม่ได้ตั้งจำนวนงานทั้งหมด');return;}
-  const val=prompt(`แก้ไขจำนวนส่งแล้ว (0-${total})`,cur);
+  const val=prompt(`แก้ไขจำนวนเสร็จแล้ว (0-${total})`,cur);
   if(val===null)return;
   const n=parseInt(val);
   if(isNaN(n)||n<0||n>total){alert(`กรอกตัวเลข 0-${total}`);return;}
   s.taskDone=n;
-  await api('PATCH',`/students/${S.sid}`,{taskDone:n});
+  if((s.sig||0)>n) s.sig=n; // ตัดมีลายเซ็นไม่ให้เกินจำนวนที่ส่งแล้ว
+  await api('PATCH',`/students/${S.sid}`,{taskDone:n,sig:s.sig||0});
   await checkQuestProgress(S.sid);
   await checkBuddyMissions(S.sid);
+  render();
+}
+async function doMEditSigned(){
+  const s=DB.students[S.sid];if(!s)return;
+  const done=s.taskDone||0;
+  const cur=s.sig||0;
+  if(done===0){alert('ยังไม่มีงานที่ส่งแล้ว');return;}
+  const val=prompt(`แก้ไขจำนวนที่มีลายเซ็นแล้ว (0-${done})`,cur);
+  if(val===null)return;
+  const n=parseInt(val);
+  if(isNaN(n)||n<0||n>done){alert(`กรอกตัวเลข 0-${done}`);return;}
+  s.sig=n;
+  await api('PATCH',`/students/${S.sid}`,{sig:n});
   render();
 }
 async function doEditHwCount(type){
@@ -2100,7 +2134,7 @@ async function doEditHwCount(type){
     SUBJECTS.forEach((subj,i)=>{s.hw[subj]=s.hw[subj]||{done:false,date:today()};s.hw[subj].done=i<n;if(i<n)s.hw[subj].date=today();});
   } else {
     const notDone=total-curDone;
-    const val=prompt('แก้ไขจำนวนยังไม่ส่ง (0-'+total+')',notDone);
+    const val=prompt('แก้ไขจำนวนยังไม่เสร็จ (0-'+total+')',notDone);
     if(val===null)return;
     const n=parseInt(val);
     if(isNaN(n)||n<0||n>total){alert('กรอกตัวเลข 0-'+total);return;}
