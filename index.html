@@ -2082,6 +2082,7 @@ async function doMEditTaskDone(){
   if(isNaN(n)||n<0||n>total){alert(`กรอกตัวเลข 0-${total}`);return;}
   s.taskDone=n;
   await api('PATCH',`/students/${S.sid}`,{taskDone:n});
+  await checkQuestProgress(S.sid);
   await checkBuddyMissions(S.sid);
   render();
 }
@@ -2127,6 +2128,15 @@ async function doDelete(sid){
   const s=DB.students[sid];if(!s)return;
   if(!confirm(`ลบ "${s.name}" ออกจากระบบ?\nข้อมูลคะแนนและการส่งงานจะหายทั้งหมด`))return;
   delete DB.students[sid];
+  // ลบ Buddy Mission pairs ที่มีนักเรียนคนนี้อยู่ด้วย กันบัดดี้ค้างรอคู่ที่ไม่มีอยู่แล้ว
+  if(DB.buddyMissions && DB.buddyMissions.length>0){
+    DB.buddyMissions.forEach(m=>{
+      m.pairs = (m.pairs||[]).filter(p=>{
+        const sids = Array.isArray(p) ? p : (p.sids||[]);
+        return !sids.includes(sid);
+      });
+    });
+  }
   await api('POST','/data',DB);
   await loadDB();
 }
@@ -2157,6 +2167,7 @@ async function doDeleteRedeemLog(sid, idx){
   s.logs = s.logs||[];
   s.logs.unshift({desc:`คืนคะแนน: ${log.name}`, score:log.cost||0, date:today()});
   await api('PATCH', `/students/${sid}`, {redeemLogs:s.redeemLogs, score:s.score, logs:s.logs});
+  await checkQuestProgress(sid);
   render(true);
 }
 
@@ -2234,6 +2245,7 @@ async function doAddCustom(){
   S.view='tstudent';S.tab='score';render(true);
   try{
     await api('PATCH',`/students/${S.sid}`,{logs:s.logs,score:s.score});
+    await checkQuestProgress(S.sid);
   }catch(e){console.log('custom error:',e);}
   startPoll();
 }
@@ -2301,6 +2313,7 @@ async function doApprove(rid){
     s.logs.unshift({desc:`ความดี: ${req.desc}`,score:req.score,date:today(),id:Date.now().toString()});
     s.score=(s.score||0)+req.score;
     await api('PATCH',`/students/${req.studentId}`,{logs:s.logs,score:s.score});
+    await checkQuestProgress(req.studentId);
   }
   await api('PATCH',`/requests/${rid}`,{status:'approved'});
   await loadDB();
@@ -3306,6 +3319,7 @@ async function checkBuddyMissions(sid){
           cs.logs.unshift({desc:`🤝 Buddy Mission: ${mission.name} (+${pairReward} คะแนน)`, score:pairReward, date:today()});
           anyChanged = true;
           await api('PATCH', `/students/${csid}`, {score:cs.score, logs:cs.logs});
+          await checkQuestProgress(csid);
         }
         setTimeout(()=>{
           const popup = document.createElement('div');
@@ -3329,6 +3343,7 @@ async function checkBuddyMissions(sid){
             cs.logs.unshift({desc:`🤝 Buddy Mission: ${mission.name} (สำเร็จ ${Math.round(avgPct*100)}% +${partialReward} คะแนน)`, score:partialReward, date:today()});
             anyChanged = true;
             await api('PATCH', `/students/${csid}`, {score:cs.score, logs:cs.logs});
+            await checkQuestProgress(csid);
           }
           setTimeout(()=>{
             const popup = document.createElement('div');
@@ -3382,6 +3397,7 @@ async function checkAllExpiredBuddyMissions(){
           cs.logs.unshift({desc:`🤝 Buddy Mission: ${mission.name} (สำเร็จ ${Math.round(avgPct*100)}% +${partialReward} คะแนน)`, score:partialReward, date:today()});
           anyChanged = true;
           await api('PATCH', `/students/${csid}`, {score:cs.score, logs:cs.logs});
+          await checkQuestProgress(csid);
         }
       } else {
         anyChanged = true; // mark completed ไว้แม้ partialReward=0 กันเช็คซ้ำ
