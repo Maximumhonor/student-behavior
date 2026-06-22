@@ -2964,12 +2964,17 @@ async function doDistributeAllQuests(){
   if(activeQuests.length===0){ alert('ภารกิจทั้งหมดหมดเขตแล้ว ไม่มีภารกิจที่ใช้งานได้'); return; }
   const expiredNote = expiredCount>0 ? `\n(มี ${expiredCount} ภารกิจที่หมดเขตแล้ว จะไม่ถูกตรวจ)` : '';
   if(!confirm(`แจกคะแนน Quest ให้ทุกคนที่ถึงเกณฑ์ตอนนี้เลยไหม?${expiredNote}`)) return;
+  stopPoll(); // กัน poll แทรกกลางลูป เขียนทับ DB ระหว่างประมวลผลทุกคน
   let totalGiven = 0;
   let totalStudents = 0;
-  for(const sid of Object.keys(DB.students)){
-    const before = totalGiven;
-    await checkQuestProgress(sid);
-    // นับว่าให้ใครไปบ้างจาก logs ที่เพิ่งเพิ่ม (checkQuestProgress จัดการแล้ว)
+  try{
+    for(const sid of Object.keys(DB.students)){
+      const before = totalGiven;
+      await checkQuestProgress(sid);
+      // นับว่าให้ใครไปบ้างจาก logs ที่เพิ่งเพิ่ม (checkQuestProgress จัดการแล้ว)
+    }
+  } finally {
+    startPoll();
   }
   // นับรวมจาก logs ที่มี Quest ในวันนี้
   const td = today();
