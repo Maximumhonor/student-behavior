@@ -3300,7 +3300,7 @@ async function checkQuestProgress(sid){
 <div id="buddyMissionModal" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.6);align-items:center;justify-content:center;padding:1rem;overflow-y:auto">
   <div style="background:var(--surface);border-radius:20px;padding:1.5rem;width:100%;max-width:440px;margin:auto">
     <div style="font-size:16px;font-weight:700;margin-bottom:1.25rem;display:flex;justify-content:space-between;align-items:center">
-      <span>🤝 สร้าง Buddy Mission</span>
+      <span id="bm_modal_title">🤝 สร้าง Buddy Mission</span>
       <button onclick="closeBuddyModal()" style="background:var(--bg);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:18px;color:var(--text)">✕</button>
     </div>
     <div class="frow"><label>ชื่อภารกิจ Buddy</label><input type="text" id="bm_name" placeholder="เช่น คู่หูส่งงาน สัปดาห์ที่ 1"></div>
@@ -3348,10 +3348,36 @@ async function checkQuestProgress(sid){
       <div style="font-size:11px;color:var(--muted);margin-top:6px">จับคู่แล้วปรับเป้าหมาย/คะแนนของแต่ละคู่ได้อิสระด้านล่าง</div>
     </div>
     <div id="bm_pairs_editor" style="display:none;margin-bottom:1rem">
-      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px">👀 รายการคู่ (แก้ไขได้ทีละคู่)</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:12px;font-weight:700;color:var(--text)">👀 รายการคู่ (แก้ไขได้ทีละคู่)</div>
+        <button onclick="openAddBuddyPairPicker()" style="background:var(--blue-bg);border:1px solid var(--blue);color:var(--blue);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:Sarabun,sans-serif">+ เพิ่มคู่</button>
+      </div>
       <div id="bm_pairs_list" style="max-height:340px;overflow-y:auto"></div>
     </div>
-    <button onclick="saveBuddyMission()" style="width:100%;padding:13px;border-radius:12px;border:none;background:linear-gradient(135deg,#0B7A6B,#17C1A8);color:white;font-family:Sarabun,sans-serif;font-size:15px;font-weight:700;cursor:pointer">💾 สร้าง Buddy Mission</button>
+    <button id="bm_save_btn" onclick="saveBuddyMission()" style="width:100%;padding:13px;border-radius:12px;border:none;background:linear-gradient(135deg,#0B7A6B,#17C1A8);color:white;font-family:Sarabun,sans-serif;font-size:15px;font-weight:700;cursor:pointer">💾 สร้าง Buddy Mission</button>
+  </div>
+</div>
+<div id="bmAddPairModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.65);align-items:center;justify-content:center;padding:1rem" onclick="if(event.target===this)closeAddBuddyPairPicker()">
+  <div style="background:var(--surface);border-radius:18px;padding:1.25rem;width:100%;max-width:380px;margin:auto">
+    <div style="font-size:15px;font-weight:700;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center">
+      <span>➕ เพิ่มคู่ใหม่</span>
+      <button onclick="closeAddBuddyPairPicker()" style="background:var(--bg);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px">✕</button>
+    </div>
+    <div class="frow"><label>นักเรียนคนที่ 1</label>
+      <select id="bm_add_s1" style="width:100%;padding:9px;border-radius:10px;border:1.5px solid var(--border);font-family:Sarabun,sans-serif;font-size:13px;background:var(--bg);color:var(--text)"></select>
+    </div>
+    <div class="frow"><label>นักเรียนคนที่ 2</label>
+      <select id="bm_add_s2" style="width:100%;padding:9px;border-radius:10px;border:1.5px solid var(--border);font-family:Sarabun,sans-serif;font-size:13px;background:var(--bg);color:var(--text)"></select>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:1rem">
+      <div style="flex:1"><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px">เป้าหมาย</label>
+        <input type="number" id="bm_add_target" value="50" min="1" style="width:100%;padding:9px;border-radius:10px;border:1.5px solid var(--border);font-family:Sarabun,sans-serif;font-size:14px;text-align:center">
+      </div>
+      <div style="flex:1"><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px">คะแนนรางวัล</label>
+        <input type="number" id="bm_add_reward" value="1" min="1" style="width:100%;padding:9px;border-radius:10px;border:1.5px solid var(--border);font-family:Sarabun,sans-serif;font-size:14px;text-align:center">
+      </div>
+    </div>
+    <button onclick="confirmAddBuddyPair()" style="width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#0B7A6B,#17C1A8);color:white;font-family:Sarabun,sans-serif;font-size:14px;font-weight:700;cursor:pointer">เพิ่มคู่นี้</button>
   </div>
 </div>
 
@@ -3386,6 +3412,7 @@ function renderBuddyPairsEditor(){
         <span style="font-weight:700;color:${tm.color}">${tm.label}</span>
         <span style="color:var(--muted)">(ต่างกัน ${gap})</span>
         <span style="flex:1;font-weight:600">${shortName(sA?.name||'')} (${sA?.taskDone||0}) 🤝 ${shortName(sB?.name||'')} (${sB?.taskDone||0})</span>
+        <button onclick="removeBuddyPair(${idx})" title="ลบคู่นี้" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:0 2px">✕</button>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <div style="flex:1">
@@ -3401,10 +3428,47 @@ function renderBuddyPairsEditor(){
   }).join('') || '<div style="font-size:12px;color:var(--muted);text-align:center;padding:1rem">ไม่มีนักเรียน</div>';
 }
 
+function removeBuddyPair(idx){
+  if(!confirm('ลบคู่นี้ออกจากภารกิจ?')) return;
+  _buddyEditablePairs.splice(idx, 1);
+  renderBuddyPairsEditor();
+}
+
 function updateBuddyPairField(idx, field, value){
   const n = parseInt(value);
   if(!_buddyEditablePairs[idx]) return;
   _buddyEditablePairs[idx][field] = isNaN(n) ? 1 : n;
+}
+
+// เปิด picker เพิ่มคู่เอง (เลือกนักเรียน 2 คน + เป้าหมาย + คะแนน)
+function openAddBuddyPairPicker(){
+  const s1 = document.getElementById('bm_add_s1');
+  const s2 = document.getElementById('bm_add_s2');
+  const options = Object.entries(DB.students)
+    .sort((a,b)=>(a[1].no||0)-(b[1].no||0))
+    .map(([sid,s])=>`<option value="${sid}">${s.no?.toString().padStart(2,'0')||''} ${s.name}</option>`).join('');
+  s1.innerHTML = options;
+  s2.innerHTML = options;
+  document.getElementById('bm_add_target').value = '50';
+  document.getElementById('bm_add_reward').value = '1';
+  document.getElementById('bmAddPairModal').style.display = 'flex';
+}
+function closeAddBuddyPairPicker(){
+  document.getElementById('bmAddPairModal').style.display = 'none';
+}
+function confirmAddBuddyPair(){
+  const sid1 = document.getElementById('bm_add_s1').value;
+  const sid2 = document.getElementById('bm_add_s2').value;
+  if(!sid1 || !sid2 || sid1===sid2){ alert('กรุณาเลือกนักเรียน 2 คนที่ไม่ใช่คนเดียวกัน'); return; }
+  const target = parseInt(document.getElementById('bm_add_target').value) || 1;
+  const reward = parseInt(document.getElementById('bm_add_reward').value) || 1;
+  // กันเพิ่มซ้ำ ถ้ามีคู่นี้อยู่แล้ว
+  const exists = _buddyEditablePairs.some(p => p.sids.includes(sid1) && p.sids.includes(sid2));
+  if(exists){ alert('คู่นี้มีอยู่ในภารกิจแล้ว'); return; }
+  _buddyEditablePairs.push({sids:[sid1, sid2], target, reward});
+  renderBuddyPairsEditor();
+  document.getElementById('bm_pairs_editor').style.display = 'block';
+  closeAddBuddyPairPicker();
 }
 
 // คำนวณรางวัลจาก gap และ tier config ที่ครูกำหนด
@@ -3462,51 +3526,85 @@ function readTargets(){
   };
 }
 
-function openBuddyModal(){
-  _buddyEditablePairs = [];
-  document.getElementById('bm_name').value = '';
-  document.getElementById('bm_deadline').value = '';
+let _editingBuddyMissionIdx = null; // null = สร้างใหม่, number = กำลังแก้ไข mission อันนี้อยู่
+
+function openBuddyModal(editIdx){
+  _editingBuddyMissionIdx = (typeof editIdx === 'number') ? editIdx : null;
+  const mission = (_editingBuddyMissionIdx !== null) ? DB.buddyMissions[_editingBuddyMissionIdx] : null;
+
+  document.getElementById('bm_modal_title').textContent = mission ? '✏️ แก้ไข Buddy Mission' : '🤝 สร้าง Buddy Mission';
+  document.getElementById('bm_save_btn').textContent = mission ? '💾 บันทึกการแก้ไข' : '💾 สร้าง Buddy Mission';
+
+  document.getElementById('bm_name').value = mission ? mission.name : '';
+  document.getElementById('bm_deadline').value = mission ? (mission.deadline||'') : '';
   document.getElementById('bm_t_easy').value = '';
   document.getElementById('bm_t_mid').value = '';
   document.getElementById('bm_t_hard').value = '';
   document.getElementById('bm_r_easy').value = '1';
   document.getElementById('bm_r_mid').value = '3';
   document.getElementById('bm_r_hard').value = '5';
-  document.getElementById('bm_pairs_editor').style.display = 'none';
-  document.getElementById('bm_pairs_list').innerHTML = '';
+
+  if(mission){
+    // โหลดคู่เดิมเข้า editor ให้แก้ไขต่อได้ทันที
+    _buddyEditablePairs = (mission.pairs||[]).map(p=>{
+      const sids = Array.isArray(p) ? p : (p.sids||[]);
+      const reward = Array.isArray(p) ? (mission.reward||1) : (p.reward||1);
+      const target = Array.isArray(p) ? (mission.target||1) : (p.target||mission.target||1);
+      return {sids, target, reward};
+    });
+    renderBuddyPairsEditor();
+    document.getElementById('bm_pairs_editor').style.display = 'block';
+  } else {
+    _buddyEditablePairs = [];
+    document.getElementById('bm_pairs_editor').style.display = 'none';
+    document.getElementById('bm_pairs_list').innerHTML = '';
+  }
   document.getElementById('buddyMissionModal').style.display = 'flex';
 }
 
 function closeBuddyModal(){
   document.getElementById('buddyMissionModal').style.display = 'none';
+  _editingBuddyMissionIdx = null;
 }
 
 async function saveBuddyMission(){
   const name = document.getElementById('bm_name').value.trim();
   const deadline = document.getElementById('bm_deadline').value || '';
   if(!name){ alert('กรุณากรอกชื่อภารกิจ'); return; }
-  if(_buddyEditablePairs.length === 0){ alert('กรุณากดจับคู่อัตโนมัติก่อน'); return; }
+  if(_buddyEditablePairs.length === 0){ alert('กรุณากดจับคู่อัตโนมัติ หรือเพิ่มคู่เองอย่างน้อย 1 คู่'); return; }
   const pairs = _buddyEditablePairs.map(p=>({
     sids: p.sids,
     target: p.target || 1,
     reward: p.reward || 1
   }));
   if(!DB.buddyMissions) DB.buddyMissions = [];
-  const mission = {
-    id: 'bm'+Date.now(),
-    name, deadline,
-    pairs,
-    active: true,
-    createdAt: today(),
-    completed: {}
-  };
-  DB.buddyMissions.push(mission);
+
+  if(_editingBuddyMissionIdx !== null && DB.buddyMissions[_editingBuddyMissionIdx]){
+    // แก้ไข mission เดิม — คงค่า id, active, createdAt, completed ไว้ตามเดิม
+    const old = DB.buddyMissions[_editingBuddyMissionIdx];
+    DB.buddyMissions[_editingBuddyMissionIdx] = {
+      ...old,
+      name, deadline, pairs
+    };
+  } else {
+    // สร้างใหม่
+    DB.buddyMissions.push({
+      id: 'bm'+Date.now(),
+      name, deadline,
+      pairs,
+      active: true,
+      createdAt: today(),
+      completed: {}
+    });
+  }
+
+  const isEdit = _editingBuddyMissionIdx !== null;
   closeBuddyModal();
   try{ await api('PATCH', '/settings/buddyMissions', {buddyMissions: DB.buddyMissions}); }catch(e){}
   render(true);
   const popup = document.createElement('div');
   popup.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#0B7A6B,#17C1A8);color:white;padding:12px 24px;border-radius:999px;font-size:14px;font-weight:700;z-index:99999;box-shadow:0 4px 20px rgba(0,0,0,.3)';
-  popup.textContent = `🤝 สร้าง Buddy Mission สำเร็จ! ${pairs.length} คู่`;
+  popup.textContent = isEdit ? `✏️ บันทึกการแก้ไขสำเร็จ! ${pairs.length} คู่` : `🤝 สร้าง Buddy Mission สำเร็จ! ${pairs.length} คู่`;
   document.body.appendChild(popup);
   setTimeout(()=>popup.remove(), 3000);
 }
@@ -3671,6 +3769,7 @@ function vBuddyMgrPanel(){
         </div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+        <button onclick="openBuddyModal(${mi})" style="background:var(--blue-bg);border:1px solid var(--blue);color:var(--blue);border-radius:8px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:Sarabun,sans-serif">✏️ แก้ไข</button>
         <button onclick="toggleBuddyMissionActive(${mi})" style="background:${m.active?'var(--amber-bg)':'var(--green-bg)'};border:1px solid ${m.active?'var(--amber-bd)':'var(--green-bd)'};color:${m.active?'var(--amber)':'var(--green)'};border-radius:8px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:Sarabun,sans-serif">${m.active?'⏸ หยุด':'▶ เปิดใช้'}</button>
         <button onclick="doDeleteBuddyMission(${mi})" style="background:var(--pink-bg);border:1px solid var(--red);color:var(--red);border-radius:8px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:Sarabun,sans-serif">🗑 ลบ</button>
       </div>
