@@ -34,7 +34,7 @@ initializeApp({
 });
 
 const db = getFirestore();
-const DOC_REF = db.collection('data').doc('p63');
+const DOC_REF = db.collection('data').doc('main');
 
 // cache ใน memory
 let memDB = null;
