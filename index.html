@@ -1383,7 +1383,7 @@ function vTList(){
         </div>
         ${confirmed
           ? `<div style="background:var(--green-bg);border:1px solid var(--green-bd);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--green);text-align:center">✅ ยืนยันแล้ว — ได้รับ +${reward} คะแนน</div>`
-          : `<div style="background:var(--amber-bg);border:1px solid var(--amber-bd);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--amber);text-align:center">⏳ รอครูยืนยันหลักฐานจากการส่งรูปของผู้ปกครอง<br><span style="font-size:11px;color:var(--muted)">กดยืนยันได้ที่แท็บ "✅ รับทราบ" ในหน้ารวมนักเรียน</span></div>`}
+          : `<div style="background:var(--amber-bg);border:1px solid var(--amber-bd);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--amber);text-align:center">⏳ ผู้ปกครองต้องส่งหลักฐานการยืนยันในไลน์ส่วนตัวครู<br>จึงจะสามารถรับคะแนนได้<br><span style="font-size:11px;color:var(--muted)">กดยืนยันได้ที่แท็บ "✅ รับทราบ" ในหน้ารวมนักเรียน</span></div>`}
       </div>`;
       }
       const prog=q.type==='hw'?(s.taskDone||0):q.type==='sig'?(s.sig||0):q.type==='score'?tot(s):0;
@@ -1729,7 +1729,7 @@ function vPView(){
           </div>
         </div>
         <div style="background:${confirmed?'var(--green-bg)':'var(--amber-bg)'};border:1px solid ${confirmed?'var(--green-bd)':'var(--amber-bd)'};border-radius:10px;padding:8px 12px;font-size:12px;color:${confirmed?'var(--green)':'var(--amber)'};text-align:center">
-          ${confirmed ? `✅ ครูยืนยันแล้ว — ได้รับ +${reward} คะแนน` : '⏳ รอครูยืนยันหลังเห็นหลักฐานในไลน์'}
+          ${confirmed ? `✅ ครูยืนยันแล้ว — ได้รับ +${reward} คะแนน` : '⏳ ต้องส่งหลักฐานการยืนยันในไลน์ส่วนตัวครู จึงจะได้รับคะแนน'}
         </div>
       </div>`;
       }
@@ -3463,6 +3463,10 @@ async function confirmAckQuest(sid, questId){
   const earned = s.questProgress || {};
   const list = earned[questId] || [];
   if(list.includes('confirmed')) return; // กันกดซ้ำ
+  // เช็คเสริม: ผู้ปกครองต้องกด "รับทราบ" ของรอบปัจจุบันไปแล้วก่อน ครูถึงจะยืนยันได้ (ป้องกันยืนยันทั้งที่ยังไม่มีหลักฐาน)
+  const curKey = getCurrentAckKey();
+  const acked = (s.parentAcks||[]).some(a=>a.roundKey===curKey);
+  if(!acked){ alert('นักเรียนคนนี้ผู้ปกครองยังไม่ได้กด "รับทราบ" ของรอบนี้ ยืนยันไม่ได้'); return; }
   if(!confirm(`ยืนยันว่าเห็นหลักฐานการรับทราบของผู้ปกครองในไลน์แล้ว?\\n(จะให้ +${(q.milestones&&q.milestones[0])?q.milestones[0].reward:0} คะแนนทันที ไม่สามารถยกเลิกได้)`)) return;
   const reward = (q.milestones&&q.milestones[0])?q.milestones[0].reward:0;
   list.push('confirmed');
@@ -4156,7 +4160,9 @@ function vAckStatusContent(){
           ${ackQuest ? (
             confirmed
               ? `<span style="font-size:10px;font-weight:700;color:var(--green);background:white;border:1px solid var(--green-bd);border-radius:999px;padding:3px 8px;white-space:nowrap">✅ ยืนยันแล้ว</span>`
-              : `<button onclick="confirmAckQuest('${s.id}','${ackQuest.id}')" style="font-size:10px;font-weight:700;color:white;background:linear-gradient(135deg,#0B7A6B,#17C1A8);border:none;border-radius:999px;padding:4px 10px;cursor:pointer;white-space:nowrap;font-family:Sarabun,sans-serif">✅ ยืนยันรับหลักฐาน</button>`
+              : acked
+                ? `<button onclick="confirmAckQuest('${s.id}','${ackQuest.id}')" style="font-size:10px;font-weight:700;color:white;background:linear-gradient(135deg,#0B7A6B,#17C1A8);border:none;border-radius:999px;padding:4px 10px;cursor:pointer;white-space:nowrap;font-family:Sarabun,sans-serif">✅ ยืนยันรับหลักฐาน</button>`
+                : `<span style="font-size:10px;color:var(--muted);white-space:nowrap">รอผู้ปกครองรับทราบก่อน</span>`
           ) : ''}
         </div>`;
       }).join('')}
