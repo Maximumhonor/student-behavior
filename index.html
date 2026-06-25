@@ -748,6 +748,8 @@ async function loadDB(){
   }
   // ตรวจ Buddy Mission ที่หมดเขตแล้ว แจก partial credit (เฉพาะฝั่งครู เพื่อไม่ให้แข่งกันเขียนพร้อมกัน)
   if(S.role === 'teacher') checkAllExpiredBuddyMissions();
+  // Don't re-render if user is scrolling the activity log box (กันเด้งกลับขึ้นบนสุดตอน poll)
+  if(S._isScrollingActivity) return;
   // Don't re-render if user is typing in chat box
   const active = document.activeElement;
   if(active && (active.id==='chat_input'||active.id==='chat_input_p')){
@@ -3819,6 +3821,14 @@ function thaiDateStr(d){
 
 // แผงประวัติให้/ลบคะแนนของวันนี้ — รวมทุกคนในห้อง เรียงตามเวลาล้วนๆ (ไม่แยกกลุ่มตามชื่อ)
 // แผงรวม "ประวัติให้คะแนน" + "ประวัติเข้าชมเว็บไซต์" — มี 2 แท็บย่อยให้สลับดู ไม่แสดงปนกัน
+// ตั้ง flag ว่ากำลังเลื่อนดูกล่องประวัติอยู่ — ใช้กันไม่ให้ poll (loadDB) สั่ง render ใหม่จนเด้งกลับขึ้นบนสุด
+let _activityScrollTimer = null;
+function markActivityScrolling(){
+  S._isScrollingActivity = true;
+  if(_activityScrollTimer) clearTimeout(_activityScrollTimer);
+  _activityScrollTimer = setTimeout(()=>{ S._isScrollingActivity = false; }, 1000); // หยุดนิ่ง 1 วิ ถึงจะถือว่าเลื่อนเสร็จแล้ว
+}
+
 function vActivityLogPanel(){
   const subTab = S.activityLogTab || 'score'; // 'score' หรือ 'visit'
   return `<div style="margin-bottom:.75rem">
@@ -3871,7 +3881,7 @@ function vScoreHistoryContent(){
     </div>`;
   }
 
-  return `<div id="activity-score-scroll" style="background:var(--surface);border-radius:16px;padding:1rem;border:1px solid var(--border);max-height:480px;overflow-y:auto;overscroll-behavior:contain" onscroll="S._activityScoreScroll=this.scrollTop">
+  return `<div id="activity-score-scroll" style="background:var(--surface);border-radius:16px;padding:1rem;border:1px solid var(--border);max-height:480px;overflow-y:auto;overscroll-behavior:contain" onscroll="S._activityScoreScroll=this.scrollTop;markActivityScrolling();">
     ${events.map(e=>{
       const timeStr = e.ts ? new Date(e.ts).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}) : '-';
       const isDelete = e.type==='delete';
@@ -3906,7 +3916,7 @@ function vVisitHistoryContent(){
     </div>`;
   }
 
-  return `<div id="activity-visit-scroll" style="background:var(--surface);border-radius:16px;padding:1rem;border:1px solid var(--border);max-height:480px;overflow-y:auto;overscroll-behavior:contain" onscroll="S._activityVisitScroll=this.scrollTop">
+  return `<div id="activity-visit-scroll" style="background:var(--surface);border-radius:16px;padding:1rem;border:1px solid var(--border);max-height:480px;overflow-y:auto;overscroll-behavior:contain" onscroll="S._activityVisitScroll=this.scrollTop;markActivityScrolling();">
     ${recent.map(v=>{
       const d = v.ts ? new Date(v.ts) : null;
       const dateStr = d ? thaiDateStr(d) : '-';
