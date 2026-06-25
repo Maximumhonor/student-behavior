@@ -1383,7 +1383,7 @@ function vTList(){
         </div>
         ${confirmed
           ? `<div style="background:var(--green-bg);border:1px solid var(--green-bd);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--green);text-align:center">✅ ยืนยันแล้ว — ได้รับ +${reward} คะแนน</div>`
-          : `<div style="background:var(--amber-bg);border:1px solid var(--amber-bd);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--amber);text-align:center">⏳ ผู้ปกครองต้องส่งหลักฐานการยืนยันในไลน์ส่วนตัวครู<br>จึงจะสามารถรับคะแนนได้<br><span style="font-size:11px;color:var(--muted)">กดยืนยันได้ที่แท็บ "✅ รับทราบ" ในหน้ารวมนักเรียน</span></div>`}
+          : `<div style="background:var(--amber-bg);border:1px solid var(--amber-bd);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--amber);text-align:center">⏳ ผู้ปกครองต้องส่งหลักฐานการยืนยันมาที่ไลน์ส่วนตัวของครู<br>จึงจะได้รับคะแนน<br><span style="font-size:11px;color:var(--muted)">กดยืนยันได้ที่แท็บ "✅ รับทราบ" ในหน้ารวมนักเรียน</span></div>`}
       </div>`;
       }
       const prog=q.type==='hw'?(s.taskDone||0):q.type==='sig'?(s.sig||0):q.type==='score'?tot(s):0;
@@ -1729,7 +1729,7 @@ function vPView(){
           </div>
         </div>
         <div style="background:${confirmed?'var(--green-bg)':'var(--amber-bg)'};border:1px solid ${confirmed?'var(--green-bd)':'var(--amber-bd)'};border-radius:10px;padding:8px 12px;font-size:12px;color:${confirmed?'var(--green)':'var(--amber)'};text-align:center">
-          ${confirmed ? `✅ ครูยืนยันแล้ว — ได้รับ +${reward} คะแนน` : '⏳ ต้องส่งหลักฐานการยืนยันในไลน์ส่วนตัวครู จึงจะได้รับคะแนน'}
+          ${confirmed ? `✅ ครูยืนยันแล้ว — ได้รับ +${reward} คะแนน` : '⏳ ผู้ปกครองต้องส่งหลักฐานการยืนยันมาที่ไลน์ส่วนตัวของครู จึงจะได้รับคะแนน'}
         </div>
       </div>`;
       }
@@ -3484,6 +3484,44 @@ async function confirmAckQuest(sid, questId){
   setTimeout(()=>popup.remove(), 3000);
 }
 
+// ครูกด "ยืนยันรับหลักฐานทั้งหมด" — ยืนยันให้เฉพาะคนที่ผู้ปกครองรับทราบแล้ว (สีเขียว) และยังไม่เคยถูกยืนยัน
+async function confirmAckQuestAll(questId){
+  const q = (DB.quests||[]).find(qq=>qq.id===questId);
+  if(!q) return;
+  const curKey = getCurrentAckKey();
+  const reward = (q.milestones&&q.milestones[0])?q.milestones[0].reward:0;
+  const targets = Object.values(DB.students||{}).filter(s=>{
+    const acked = (s.parentAcks||[]).some(a=>a.roundKey===curKey);
+    const ackedQuestList = (s.questProgress||{})[questId]||[];
+    return acked && !ackedQuestList.includes('confirmed');
+  });
+  if(targets.length===0){ alert('ไม่มีใครที่พร้อมให้ยืนยัน'); return; }
+  if(!confirm(`ยืนยันรับหลักฐานให้ทั้งหมด ${targets.length} คนที่รับทราบแล้ว?\n(จะให้ +${reward} คะแนนต่อคนทันที ไม่สามารถยกเลิกได้)`)) return;
+  stopPoll(); // กัน poll แทรกกลางลูป เขียนทับ DB ระหว่างประมวลผลทุกคน
+  try{
+    for(const s of targets){
+      const earned = s.questProgress || {};
+      const list = earned[questId] || [];
+      if(list.includes('confirmed')) continue; // กันซ้ำเผื่อข้อมูลเปลี่ยนกลางทาง
+      list.push('confirmed');
+      earned[questId] = list;
+      s.questProgress = earned;
+      s.score = (s.score||0) + reward;
+      s.logs = s.logs||[];
+      s.logs.unshift({desc:`✅ Quest: ${q.name} (ครูยืนยันรับทราบ)`, score:reward, date:today(), ts:Date.now()});
+      await api('PATCH', `/students/${s.id}`, {score:s.score, logs:s.logs, questProgress:s.questProgress});
+    }
+  } finally {
+    startPoll();
+  }
+  render(true);
+  const popup = document.createElement('div');
+  popup.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#0B7A6B,#17C1A8);color:white;padding:12px 24px;border-radius:999px;font-size:14px;font-weight:700;z-index:99999;box-shadow:0 4px 20px rgba(0,0,0,.3)';
+  popup.textContent = `✅ ยืนยันสำเร็จ ${targets.length} คน! รวม +${reward*targets.length} คะแนน`;
+  document.body.appendChild(popup);
+  setTimeout(()=>popup.remove(), 3500);
+}
+
 async function checkQuestProgress(sid){
   const s = DB.students[sid];
   if(!s || !DB.quests || DB.quests.length === 0) return;
@@ -4149,6 +4187,16 @@ function vAckStatusContent(){
       </div>
       ${ackQuest?`<div style="font-size:11px;color:var(--muted);margin-top:6px">🎯 ภารกิจ "${ackQuest.name}" · +${ackReward} คะแนน เมื่อครูยืนยันหลักฐาน</div>`:''}
     </div>
+    ${(()=>{
+      if(!ackQuest) return '';
+      const pendingConfirm = students.filter(s=>{
+        const acked = (s.parentAcks||[]).some(a=>a.roundKey===curKey);
+        const ackedQuestList = (s.questProgress||{})[ackQuest.id]||[];
+        return acked && !ackedQuestList.includes('confirmed');
+      });
+      if(pendingConfirm.length===0) return '';
+      return `<button onclick="confirmAckQuestAll('${ackQuest.id}')" style="width:100%;padding:10px;border-radius:10px;border:2px solid #0B7A6B;background:var(--green-bg);color:#0B7A6B;font-family:Sarabun,sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:.875rem">✅ ยืนยันรับหลักฐานทั้งหมด (${pendingConfirm.length} คนที่รับทราบแล้ว)</button>`;
+    })()}
     <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:.875rem">
       ${students.map(s=>{
         const acked = (s.parentAcks||[]).some(a=>a.roundKey===curKey);
