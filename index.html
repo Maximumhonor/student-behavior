@@ -693,6 +693,20 @@ function getCurrentAckKey(){
   const label = (DB.taskInfo && DB.taskInfo.label) ? DB.taskInfo.label.trim() : '';
   return label || getWeekKey(); // ถ้าครูยังไม่ตั้งรอบงานเลย ใช้สัปดาห์ปฏิทินเป็น fallback
 }
+
+// บันทึก log ทุกครั้งที่ผู้ปกครอง/นักเรียนเข้าเว็บ (กันบันทึกซ้ำถ้าเข้าใหม่ในเวลาใกล้กันมาก เช่น refresh ถี่ๆ)
+async function logParentVisit(sid){
+  const s = DB.students[sid];
+  if(!s) return;
+  const now = Date.now();
+  s.visitLogs = s.visitLogs || [];
+  const lastVisit = s.visitLogs[0];
+  // กันบันทึกซ้ำถ้าเพิ่งบันทึกไปไม่ถึง 2 นาที (เช่น กด refresh ถี่ๆ หรือ poll ทำให้ re-trigger)
+  if(lastVisit && (now - lastVisit.ts) < 2*60*1000) return;
+  s.visitLogs.unshift({ts: now});
+  if(s.visitLogs.length > 50) s.visitLogs = s.visitLogs.slice(0, 50); // เก็บแค่ 50 ครั้งล่าสุด กัน array บวม
+  try{ await api('PATCH', `/students/${sid}`, {visitLogs: s.visitLogs}); }catch(e){}
+}
 let DB={students:{},requests:{}};
 const DEFAULT_REWARDS=[
   {id:'r1',name:'ขอย้ายที่นั่งภาวร',cost:20},
@@ -730,6 +744,7 @@ async function loadDB(){
     if(DB.settings.pm && DB.settings.pm.length>0) PM=[...DB.settings.pm];
     if(DB.settings.quests) DB.quests=[...DB.settings.quests];
     if(DB.settings.buddyMissions) DB.buddyMissions=[...DB.settings.buddyMissions];
+    if(DB.settings.deletionLogs) DB.deletionLogs=[...DB.settings.deletionLogs];
   }
   // ตรวจ Buddy Mission ที่หมดเขตแล้ว แจก partial credit (เฉพาะฝั่งครู เพื่อไม่ให้แข่งกันเขียนพร้อมกัน)
   if(S.role === 'teacher') checkAllExpiredBuddyMissions();
@@ -1214,6 +1229,18 @@ function vTList(){
       <i class="ti ti-chevron-${S.showBuddyMgr?'up':'down'}" style="color:white;font-size:18px"></i>
     </div>
     ${S.showBuddyMgr?vBuddyMgrPanel():''}
+    <!-- Activity Log (ประวัติให้/ลบคะแนนวันนี้) Button -->
+    <div onclick="S.showActivityLog=!S.showActivityLog;render(true)" style="cursor:pointer;background:linear-gradient(135deg,#1A6BC4,#4DA0F0);border-radius:16px;padding:12px 18px;margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 4px 16px rgba(26,107,196,.3)">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:22px">📋</span>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:white">ประวัติให้คะแนนวันนี้</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.8)">${todayActivityCount()} รายการ · กดดูสรุปทั้งหมด</div>
+        </div>
+      </div>
+      <i class="ti ti-chevron-${S.showActivityLog?'up':'down'}" style="color:white;font-size:18px"></i>
+    </div>
+    ${S.showActivityLog?vActivityLogPanel():''}
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;width:100%" class="av-grid">${cards}</div>
       </div>`;
 }function vTStudent(){
@@ -1965,7 +1992,7 @@ function go(v){
     const savedPwd=localStorage.getItem('parent_pwd')||'';
     if(DB&&DB.students){
       const entry=Object.entries(DB.students).find(([,st])=>st.sid===savedSid&&st.idcard===savedPwd);
-      if(entry){S.sid=entry[0];S.view='pview';S.tab='score';S.role='parent';startPoll();}
+      if(entry){S.sid=entry[0];S.view='pview';S.tab='score';S.role='parent';startPoll();logParentVisit(entry[0]);}
     }
   }
   render();
@@ -2349,7 +2376,7 @@ function openLog(mode){S.addMode=mode;S.view='taddlog';render();}
 async function doPreset(score,desc){
   const s=DB.students[S.sid];if(!s)return;
   stopPoll();
-  s.logs=[{desc,score,date:today()},...(s.logs||[])];
+  s.logs=[{desc,score,date:today(),ts:Date.now()},...(s.logs||[])];
   s.score=(s.score||0)+score;
   S.view='tstudent';S.tab='score';render(true);
   try{
@@ -2369,7 +2396,7 @@ async function doDeleteRedeemLog(sid, idx){
   s.score = (s.score||0) + (log.cost||0);
   // คืน log คะแนนด้วย
   s.logs = s.logs||[];
-  s.logs.unshift({desc:`คืนคะแนน: ${log.name}`, score:log.cost||0, date:today()});
+  s.logs.unshift({desc:`คืนคะแนน: ${log.name}`, score:log.cost||0, date:today(), ts:Date.now()});
   await api('PATCH', `/students/${sid}`, {redeemLogs:s.redeemLogs, score:s.score, logs:s.logs});
   await checkQuestProgress(sid);
   render(true);
@@ -2384,8 +2411,23 @@ async function doDeleteLog(sid, idx){
   s.logs.splice(idx, 1);
   // อัปเดต score
   s.score = (s.score||0) - (log.score||0);
+  // บันทึกประวัติการลบ ไว้ดูใน "ประวัติให้คะแนนวันนี้" ของครู
+  recordDeletionLog(sid, s.name, log);
   await api('PATCH', `/students/${sid}`, {logs: s.logs, score: s.score});
   render(true);
+}
+
+// บันทึกว่ามีการลบ log คะแนนของใคร เท่าไหร่ ตอนไหน — เก็บไว้ระดับห้อง (DB.deletionLogs) เพื่อแสดงในภาพรวม
+async function recordDeletionLog(sid, studentName, deletedLog){
+  if(!DB.deletionLogs) DB.deletionLogs = [];
+  DB.deletionLogs.unshift({
+    sid, studentName,
+    desc: deletedLog?.desc || '-',
+    score: deletedLog?.score || 0,
+    ts: Date.now()
+  });
+  if(DB.deletionLogs.length > 200) DB.deletionLogs = DB.deletionLogs.slice(0, 200); // กัน array บวม
+  try{ await api('PATCH', '/settings/deletionLogs', {deletionLogs: DB.deletionLogs}); }catch(e){}
 }
 
 let _editPresetIdx=-1;
@@ -2444,7 +2486,7 @@ async function doAddCustom(){
   if(!desc||isNaN(score)){alert('กรุณากรอกข้อมูลให้ครบ');return;}
   const s=DB.students[S.sid];if(!s)return;
   stopPoll();
-  s.logs=[{desc,score,date:today()},...(s.logs||[])];
+  s.logs=[{desc,score,date:today(),ts:Date.now()},...(s.logs||[])];
   s.score=(s.score||0)+score;
   S.view='tstudent';S.tab='score';render(true);
   try{
@@ -2496,7 +2538,7 @@ async function doDeleteExamplePhoto(){
 }
 async function doRedeem(name,cost){
   const s=DB.students[S.sid];if(!s||tot(s)<cost){alert('คะแนนไม่พอ');return;}
-  s.logs=[{desc:`แลก: ${name}`,score:-cost,date:today()},...(s.logs||[])];
+  s.logs=[{desc:`แลก: ${name}`,score:-cost,date:today(),ts:Date.now()},...(s.logs||[])];
   s.redeemLogs=[{name,cost,date:today()},...(s.redeemLogs||[])];
   await api('PATCH',`/students/${S.sid}`,{logs:s.logs,redeemLogs:s.redeemLogs});render();
 }
@@ -2514,7 +2556,7 @@ async function doApprove(rid){
   const s=DB.students[req.studentId];
   if(s){
     s.logs=s.logs||[];
-    s.logs.unshift({desc:`ความดี: ${req.desc}`,score:req.score,date:today(),id:Date.now().toString()});
+    s.logs.unshift({desc:`ความดี: ${req.desc}`,score:req.score,date:today(),id:Date.now().toString(),ts:Date.now()});
     s.score=(s.score||0)+req.score;
     await api('PATCH',`/students/${req.studentId}`,{logs:s.logs,score:s.score});
     await checkQuestProgress(req.studentId);
@@ -2562,7 +2604,7 @@ function doPLogin(){
     localStorage.removeItem('parent_saved');
     localStorage.removeItem('parent_pwd');
   }
-  S.sid=entry[0];S.view='pview';S.tab='score';S.msg='';S.role='parent';startPoll();render();
+  S.sid=entry[0];S.view='pview';S.tab='score';S.msg='';S.role='parent';startPoll();logParentVisit(entry[0]);render();
 }
 function doPLogout(){stopPoll();S.sid=null;S.role=null;S.view='menu';render();}
 
@@ -2637,7 +2679,7 @@ async function doApproveRedeem(rid){
   const s=DB.students[req.studentId];
   if(!s||tot(s)<req.cost){alert('คะแนนนักเรียนไม่พอ');return;}
   req.status='approved';
-  s.logs=[{desc:`แลก (อนุมัติ): ${req.name}`,score:-req.cost,date:today()},...(s.logs||[])];
+  s.logs=[{desc:`แลก (อนุมัติ): ${req.name}`,score:-req.cost,date:today(),ts:Date.now()},...(s.logs||[])];
   s.redeemLogs=[{name:req.name,cost:req.cost,date:today()},...(s.redeemLogs||[])];
   await api('PATCH',`/students/${req.studentId}`,{logs:s.logs,redeemLogs:s.redeemLogs});
   await api('PATCH',`/redeemRequests/${rid}`,{status:'approved'});
@@ -3272,7 +3314,7 @@ async function checkQuestProgress(sid){
       earned[q.id] = earnedAtList;
       s.score = (s.score||0) + best.reward;
       s.logs = s.logs||[];
-      s.logs.unshift({desc:`🎯 Quest: ${q.name} (ถึง ${best.at})`, score:best.reward, date:today()});
+      s.logs.unshift({desc:`🎯 Quest: ${q.name} (ถึง ${best.at})`, score:best.reward, date:today(), ts:Date.now()});
       changed = true;
       s.questProgress = earned;
       // แสดง popup
@@ -3654,7 +3696,7 @@ async function checkBuddyMissions(sid){
         for(const [csid, cs] of [[sidA, sA],[sidB, sB]]){
           cs.score = (cs.score||0) + pairReward;
           cs.logs = cs.logs||[];
-          cs.logs.unshift({desc:`🤝 Buddy Mission: ${mission.name} (+${pairReward} คะแนน)`, score:pairReward, date:today()});
+          cs.logs.unshift({desc:`🤝 Buddy Mission: ${mission.name} (+${pairReward} คะแนน)`, score:pairReward, date:today(), ts:Date.now()});
           anyChanged = true;
           await api('PATCH', `/students/${csid}`, {score:cs.score, logs:cs.logs});
           await checkQuestProgress(csid);
@@ -3678,7 +3720,7 @@ async function checkBuddyMissions(sid){
           for(const [csid, cs] of [[sidA, sA],[sidB, sB]]){
             cs.score = (cs.score||0) + partialReward;
             cs.logs = cs.logs||[];
-            cs.logs.unshift({desc:`🤝 Buddy Mission: ${mission.name} (สำเร็จ ${Math.round(avgPct*100)}% +${partialReward} คะแนน)`, score:partialReward, date:today()});
+            cs.logs.unshift({desc:`🤝 Buddy Mission: ${mission.name} (สำเร็จ ${Math.round(avgPct*100)}% +${partialReward} คะแนน)`, score:partialReward, date:today(), ts:Date.now()});
             anyChanged = true;
             await api('PATCH', `/students/${csid}`, {score:cs.score, logs:cs.logs});
             await checkQuestProgress(csid);
@@ -3732,7 +3774,7 @@ async function checkAllExpiredBuddyMissions(){
         for(const [csid, cs] of [[sidA, sA],[sidB, sB]]){
           cs.score = (cs.score||0) + partialReward;
           cs.logs = cs.logs||[];
-          cs.logs.unshift({desc:`🤝 Buddy Mission: ${mission.name} (สำเร็จ ${Math.round(avgPct*100)}% +${partialReward} คะแนน)`, score:partialReward, date:today()});
+          cs.logs.unshift({desc:`🤝 Buddy Mission: ${mission.name} (สำเร็จ ${Math.round(avgPct*100)}% +${partialReward} คะแนน)`, score:partialReward, date:today(), ts:Date.now()});
           anyChanged = true;
           await api('PATCH', `/students/${csid}`, {score:cs.score, logs:cs.logs});
           await checkQuestProgress(csid);
@@ -3750,6 +3792,85 @@ async function checkAllExpiredBuddyMissions(){
 }
 
 // Panel แสดงใน teacher list
+// นับว่าวันนี้มีรายการให้/ลบคะแนนกี่รายการ (สำหรับ badge บนปุ่ม)
+function todayActivityCount(){
+  const todayStr = today();
+  let count = 0;
+  Object.values(DB.students||{}).forEach(s=>{
+    (s.logs||[]).forEach(l=>{ if(l.date===todayStr) count++; });
+  });
+  (DB.deletionLogs||[]).forEach(d=>{
+    const d2 = new Date(d.ts);
+    if(thaiDateStr(d2)===todayStr) count++;
+  });
+  return count;
+}
+
+// แปลง Date เป็น string รูปแบบเดียวกับ today() เพื่อเทียบวันได้ตรงกัน
+function thaiDateStr(d){
+  const months=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()+543}`;
+}
+
+// แผงประวัติให้/ลบคะแนนของวันนี้ — รวมทุกคนในห้อง เรียงตามเวลาล้วนๆ (ไม่แยกกลุ่มตามชื่อ)
+function vActivityLogPanel(){
+  const todayStr = today();
+  const events = [];
+
+  // รวบรวมการ "ให้คะแนน" จากทุกคน (เฉพาะวันนี้)
+  Object.entries(DB.students||{}).forEach(([sid, s])=>{
+    (s.logs||[]).forEach(l=>{
+      if(l.date===todayStr){
+        events.push({
+          type: 'add',
+          sid, studentName: s.name,
+          desc: l.desc, score: l.score,
+          ts: l.ts || 0 // log เก่าก่อนเพิ่มฟีเจอร์นี้ จะไม่มี ts เลยไปอยู่ท้ายสุด
+        });
+      }
+    });
+  });
+
+  // รวบรวมการ "ลบคะแนน" (เฉพาะวันนี้)
+  (DB.deletionLogs||[]).forEach(d=>{
+    const d2 = new Date(d.ts);
+    if(thaiDateStr(d2)===todayStr){
+      events.push({
+        type: 'delete',
+        sid: d.sid, studentName: d.studentName,
+        desc: d.desc, score: d.score,
+        ts: d.ts || 0
+      });
+    }
+  });
+
+  // เรียงตามเวลาล้วนๆ ล่าสุดอยู่บนสุด
+  events.sort((a,b)=>(b.ts||0)-(a.ts||0));
+
+  if(events.length===0){
+    return `<div style="background:var(--surface);border-radius:16px;padding:1.5rem;margin-bottom:.75rem;border:1px solid var(--border);text-align:center;color:var(--muted);font-size:13px">
+      ยังไม่มีการให้/ลบคะแนนวันนี้
+    </div>`;
+  }
+
+  return `<div style="background:var(--surface);border-radius:16px;padding:1rem;margin-bottom:.75rem;border:1px solid var(--border);max-height:480px;overflow-y:auto">
+    ${events.map(e=>{
+      const timeStr = e.ts ? new Date(e.ts).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}) : '-';
+      const isDelete = e.type==='delete';
+      const scoreColor = isDelete ? 'var(--red)' : (e.score>=0 ? 'var(--green)' : 'var(--red)');
+      const scoreSign = isDelete ? '🗑 ลบ' : (e.score>=0?'+':'');
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px solid var(--border-soft)">
+        <div style="font-size:11px;color:var(--muted);width:48px;flex-shrink:0">${timeStr}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${shortName(e.studentName||'-')}</div>
+          <div style="font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.desc||'-'}</div>
+        </div>
+        <div style="font-size:13px;font-weight:700;color:${scoreColor};flex-shrink:0;white-space:nowrap">${scoreSign}${Math.abs(e.score||0)}</div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
 function vBuddyMgrPanel(){
   const missions = DB.buddyMissions||[];
   return `<div style="background:var(--surface);border-radius:16px;padding:1rem;margin-bottom:.75rem;border:1px solid rgba(11,122,107,.3)">
