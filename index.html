@@ -3394,7 +3394,7 @@ async function checkQuestProgress(sid){
         <div style="font-size:12px;font-weight:700;color:var(--text)">👀 รายการคู่ (แก้ไขได้ทีละคู่)</div>
         <button onclick="openAddBuddyPairPicker()" style="background:var(--blue-bg);border:1px solid var(--blue);color:var(--blue);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:Sarabun,sans-serif">+ เพิ่มคู่</button>
       </div>
-      <div id="bm_pairs_list" style="max-height:340px;overflow-y:auto"></div>
+      <div id="bm_pairs_list" style="max-height:340px;overflow-y:auto;overscroll-behavior:contain"></div>
     </div>
     <button id="bm_save_btn" onclick="saveBuddyMission()" style="width:100%;padding:13px;border-radius:12px;border:none;background:linear-gradient(135deg,#0B7A6B,#17C1A8);color:white;font-family:Sarabun,sans-serif;font-size:15px;font-weight:700;cursor:pointer">💾 สร้าง Buddy Mission</button>
   </div>
@@ -3853,7 +3853,7 @@ function vActivityLogPanel(){
     </div>`;
   }
 
-  return `<div style="background:var(--surface);border-radius:16px;padding:1rem;margin-bottom:.75rem;border:1px solid var(--border);max-height:480px;overflow-y:auto">
+  return `<div style="background:var(--surface);border-radius:16px;padding:1rem;margin-bottom:.75rem;border:1px solid var(--border);max-height:480px;overflow-y:auto;overscroll-behavior:contain">
     ${events.map(e=>{
       const timeStr = e.ts ? new Date(e.ts).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}) : '-';
       const isDelete = e.type==='delete';
