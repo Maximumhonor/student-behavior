@@ -834,6 +834,11 @@ function render(force=false){
   // Restore lb-scroll position
   const lbEl=document.getElementById('lb-scroll');
   if(lbEl && S._lbScroll) lbEl.scrollLeft=S._lbScroll;
+  // Restore activity log scroll positions (กันเด้งกลับขึ้นบนสุดตอน render ใหม่ เช่นจาก poll)
+  const scoreScrollEl=document.getElementById('activity-score-scroll');
+  if(scoreScrollEl && S._activityScoreScroll) scoreScrollEl.scrollTop=S._activityScoreScroll;
+  const visitScrollEl=document.getElementById('activity-visit-scroll');
+  if(visitScrollEl && S._activityVisitScroll) visitScrollEl.scrollTop=S._activityVisitScroll;
   // เลื่อน tab bar ให้ tab ที่ active อยู่ในมุมมองเสมอ (กันเด้งกลับไปซ้ายสุด)
   const activeTabBtn = document.querySelector('.tabs .tab.on');
   if(activeTabBtn){
@@ -3866,7 +3871,7 @@ function vScoreHistoryContent(){
     </div>`;
   }
 
-  return `<div style="background:var(--surface);border-radius:16px;padding:1rem;border:1px solid var(--border);max-height:480px;overflow-y:auto;overscroll-behavior:contain">
+  return `<div id="activity-score-scroll" style="background:var(--surface);border-radius:16px;padding:1rem;border:1px solid var(--border);max-height:480px;overflow-y:auto;overscroll-behavior:contain" onscroll="S._activityScoreScroll=this.scrollTop">
     ${events.map(e=>{
       const timeStr = e.ts ? new Date(e.ts).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}) : '-';
       const isDelete = e.type==='delete';
@@ -3901,7 +3906,7 @@ function vVisitHistoryContent(){
     </div>`;
   }
 
-  return `<div style="background:var(--surface);border-radius:16px;padding:1rem;border:1px solid var(--border);max-height:480px;overflow-y:auto;overscroll-behavior:contain">
+  return `<div id="activity-visit-scroll" style="background:var(--surface);border-radius:16px;padding:1rem;border:1px solid var(--border);max-height:480px;overflow-y:auto;overscroll-behavior:contain" onscroll="S._activityVisitScroll=this.scrollTop">
     ${recent.map(v=>{
       const d = v.ts ? new Date(v.ts) : null;
       const dateStr = d ? thaiDateStr(d) : '-';
