@@ -3830,13 +3830,14 @@ function markActivityScrolling(){
 }
 
 function vActivityLogPanel(){
-  const subTab = S.activityLogTab || 'score'; // 'score' หรือ 'visit'
+  const subTab = S.activityLogTab || 'score'; // 'score', 'visit', หรือ 'ack'
   return `<div style="margin-bottom:.75rem">
     <div style="display:flex;gap:6px;margin-bottom:.5rem">
-      <button onclick="S.activityLogTab='score';render(true)" style="flex:1;padding:8px;border-radius:10px;border:1.5px solid ${subTab==='score'?'var(--blue)':'var(--border)'};background:${subTab==='score'?'var(--blue-bg)':'var(--surface)'};color:${subTab==='score'?'var(--blue)':'var(--muted)'};font-family:Sarabun,sans-serif;font-size:12px;font-weight:700;cursor:pointer">📋 ประวัติให้คะแนน</button>
-      <button onclick="S.activityLogTab='visit';render(true)" style="flex:1;padding:8px;border-radius:10px;border:1.5px solid ${subTab==='visit'?'var(--blue)':'var(--border)'};background:${subTab==='visit'?'var(--blue-bg)':'var(--surface)'};color:${subTab==='visit'?'var(--blue)':'var(--muted)'};font-family:Sarabun,sans-serif;font-size:12px;font-weight:700;cursor:pointer">👀 ประวัติเข้าชมเว็บ</button>
+      <button onclick="S.activityLogTab='score';render(true)" style="flex:1;padding:8px 4px;border-radius:10px;border:1.5px solid ${subTab==='score'?'var(--blue)':'var(--border)'};background:${subTab==='score'?'var(--blue-bg)':'var(--surface)'};color:${subTab==='score'?'var(--blue)':'var(--muted)'};font-family:Sarabun,sans-serif;font-size:11px;font-weight:700;cursor:pointer">📋 ให้คะแนน</button>
+      <button onclick="S.activityLogTab='visit';render(true)" style="flex:1;padding:8px 4px;border-radius:10px;border:1.5px solid ${subTab==='visit'?'var(--blue)':'var(--border)'};background:${subTab==='visit'?'var(--blue-bg)':'var(--surface)'};color:${subTab==='visit'?'var(--blue)':'var(--muted)'};font-family:Sarabun,sans-serif;font-size:11px;font-weight:700;cursor:pointer">👀 เข้าชมเว็บ</button>
+      <button onclick="S.activityLogTab='ack';render(true)" style="flex:1;padding:8px 4px;border-radius:10px;border:1.5px solid ${subTab==='ack'?'var(--blue)':'var(--border)'};background:${subTab==='ack'?'var(--blue-bg)':'var(--surface)'};color:${subTab==='ack'?'var(--blue)':'var(--muted)'};font-family:Sarabun,sans-serif;font-size:11px;font-weight:700;cursor:pointer">✅ รับทราบ</button>
     </div>
-    ${subTab==='score' ? vScoreHistoryContent() : vVisitHistoryContent()}
+    ${subTab==='score' ? vScoreHistoryContent() : subTab==='visit' ? vVisitHistoryContent() : vAckStatusContent()}
   </div>`;
 }
 
@@ -3930,6 +3931,35 @@ function vVisitHistoryContent(){
         <div style="font-size:12px;font-weight:700;color:var(--blue);flex-shrink:0;white-space:nowrap">${timeStr}</div>
       </div>`;
     }).join('')}
+  </div>`;
+}
+
+// เนื้อหาแท็บ "✅ รับทราบ" — สรุปว่าใครรับทราบ/ยังไม่รับทราบรอบงานปัจจุบัน เรียงตามเลขที่ ออกแบบให้แคปจอส่งไลน์กลุ่มได้
+function vAckStatusContent(){
+  const curKey = getCurrentAckKey();
+  const roundLabel = (DB.taskInfo && DB.taskInfo.label) ? DB.taskInfo.label : '-';
+  const students = Object.values(DB.students||{}).sort((a,b)=>(a.no||0)-(b.no||0));
+  const ackedList = students.filter(s=>(s.parentAcks||[]).some(a=>a.roundKey===curKey));
+  const notAckedList = students.filter(s=>!(s.parentAcks||[]).some(a=>a.roundKey===curKey));
+
+  return `<div style="background:var(--surface);border-radius:16px;padding:1rem;border:1px solid var(--border)">
+    <div style="text-align:center;margin-bottom:.875rem;padding-bottom:.75rem;border-bottom:2px solid var(--border-soft)">
+      <div style="font-size:15px;font-weight:800;font-family:Prompt,sans-serif">📋 สถานะรับทราบข้อมูล</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px">รอบ: ${roundLabel}</div>
+      <div style="display:flex;justify-content:center;gap:16px;margin-top:.5rem">
+        <div style="font-size:13px;font-weight:700;color:var(--green)">✅ รับทราบแล้ว ${ackedList.length} คน</div>
+        <div style="font-size:13px;font-weight:700;color:var(--red)">⚠️ ยังไม่รับทราบ ${notAckedList.length} คน</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+      ${students.map(s=>{
+        const acked = (s.parentAcks||[]).some(a=>a.roundKey===curKey);
+        return `<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:8px;background:${acked?'var(--green-bg)':'var(--pink-bg)'};border:1px solid ${acked?'var(--green-bd)':'var(--red-bd)'}">
+          <span style="font-size:13px">${acked?'✅':'⚠️'}</span>
+          <span style="font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${s.no||''}. ${shortName(s.name||'-')}</span>
+        </div>`;
+      }).join('')}
+    </div>
   </div>`;
 }
 
