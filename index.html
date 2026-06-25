@@ -1191,10 +1191,10 @@ function vTList(){
         const dlLabel = dl ? (expired ? '⛔ หมดเขตแล้ว' : daysLeft<=3 ? `⚠️ เหลือ ${daysLeft} วัน` : `📅 ถึง ${q.deadline}`) : '';
         return`<div style="border-radius:12px;background:${expired?'#FEF0EE':q.deadline?'var(--bg)':'var(--bg)'};border:1px solid ${expired?'var(--red-bd)':'var(--border)'};padding:10px 12px;margin-bottom:6px">
           <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:18px">${expired?'🔒':q.type==='hw'?'📚':'⭐'}</span>
+            <span style="font-size:18px">${expired?'🔒':questTypeIcon(q.type)}</span>
             <div style="flex:1;min-width:0">
               <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${q.name}</div>
-              <div style="font-size:11px;color:var(--muted)">${q.type==='hw'?'ส่งงาน':'คะแนน'} ${q.target} | ${(q.milestones||[]).length} ขั้นรางวัล${dlLabel?' · <span style="color:'+(expired?'var(--red)':daysLeft<=3?'var(--amber)':'var(--muted)')+'">'+dlLabel+'</span>':''}</div>
+              <div style="font-size:11px;color:var(--muted)">${questTypeLabel(q.type)} ${q.target} | ${(q.milestones||[]).length} ขั้นรางวัล${dlLabel?' · <span style="color:'+(expired?'var(--red)':daysLeft<=3?'var(--amber)':'var(--muted)')+'">'+dlLabel+'</span>':''}</div>
             </div>
             <button onclick="openQuestModal(${qi})" style="background:var(--blue-bg);border:1px solid var(--blue);color:var(--blue);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer">แก้ไข</button>
             <button onclick="doDeleteQuest(${qi})" style="background:var(--pink-bg);border:1px solid var(--red);color:var(--red);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer">ลบ</button>
@@ -1334,7 +1334,7 @@ function vTList(){
   } else if(S.tab==='quest'){
     const quests=DB.quests||[];
     const questCards=quests.map((q,qi)=>{
-      const prog=q.type==='hw'?(s.taskDone||0):q.type==='score'?tot(s):0;
+      const prog=q.type==='hw'?(s.taskDone||0):q.type==='sig'?(s.sig||0):q.type==='score'?tot(s):0;
       const total=q.target;
       const pct=Math.min(100,Math.round(prog/total*100));
       const done=prog>=total;
@@ -1346,7 +1346,7 @@ function vTList(){
         return`<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:10px;background:${earned?'rgba(46,160,67,.12)':reached?'rgba(26,107,196,.08)':'var(--bg)'};border:1px solid ${earned?'var(--green)':reached?'var(--blue)':'var(--border)'}">
           <span style="font-size:16px">${earned?'✅':reached?'🎯':'⬜'}</span>
           <div style="flex:1">
-            <div style="font-size:12px;color:var(--muted)">${q.type==='hw'?'ส่งงาน':'คะแนน'} ${m.at} ${q.type==='hw'?'ชิ้น':'คะแนน'}</div>
+            <div style="font-size:12px;color:var(--muted)">${questTypeLabel(q.type)} ${m.at} ${questTypeUnit(q.type)}</div>
             <div style="font-size:11px;color:${earned?'var(--green)':'var(--muted)'}">+${m.reward} คะแนน ${earned?'(รับแล้ว)':''}</div>
           </div>
           ${reached&&!earned?`<span style="font-size:10px;background:var(--blue);color:white;padding:2px 8px;border-radius:999px;font-weight:700">รับได้!</span>`:''}
@@ -1354,10 +1354,10 @@ function vTList(){
       }).join('');
       return`<div style="background:var(--surface);border-radius:16px;padding:1rem;border:2px solid ${done?'var(--green)':'var(--border)'};margin-bottom:.75rem;${done?'box-shadow:0 0 12px rgba(46,160,67,.2)':''}">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:.75rem">
-          <span style="font-size:20px">${done?'🏆':q.type==='hw'?'📚':'⭐'}</span>
+          <span style="font-size:20px">${done?'🏆':questTypeIcon(q.type)}</span>
           <div style="flex:1">
             <div style="font-size:14px;font-weight:700">${q.name}</div>
-            <div style="font-size:12px;color:var(--muted)">${q.type==='hw'?'ส่งงานให้ครบ':'สะสมคะแนน'} ${q.target} ${q.type==='hw'?'ชิ้น':'คะแนน'}${q.deadline?questDeadlineBadge(q):''}</div>
+            <div style="font-size:12px;color:var(--muted)">${questTypeLabelFull(q.type)} ${q.target} ${questTypeUnit(q.type)}${q.deadline?questDeadlineBadge(q):''}</div>
           </div>
           <div style="text-align:right">
             <div style="font-size:16px;font-weight:800;color:${done?'var(--green)':'var(--text)'}">${prog}/${total}</div>
@@ -1663,7 +1663,7 @@ function vPView(){
     } else if(S.tab==='quest'){
     const quests=DB.quests||[];
     const questCards=quests.map((q,qi)=>{
-      const prog=q.type==='hw'?(s.taskDone||0):tot(s);
+      const prog=q.type==='hw'?(s.taskDone||0):q.type==='sig'?(s.sig||0):tot(s);
       const pct=Math.min(100,Math.round(prog/(q.target||1)*100));
       const done=prog>=q.target;
       const earnedIds=(s.questProgress||{})[q.id]||[];
@@ -1673,7 +1673,7 @@ function vPView(){
         return`<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:10px;background:${earned?'rgba(46,160,67,.12)':reached?'rgba(26,107,196,.08)':'var(--bg)'};border:1px solid ${earned?'var(--green)':reached?'var(--blue)':'var(--border)'}">
           <span style="font-size:16px">${earned?'✅':reached?'🎯':'⬜'}</span>
           <div style="flex:1">
-            <div style="font-size:12px;color:var(--muted)">${q.type==='hw'?'ส่งงาน':'คะแนน'} ${m.at} ${q.type==='hw'?'ชิ้น':'คะแนน'}</div>
+            <div style="font-size:12px;color:var(--muted)">${questTypeLabel(q.type)} ${m.at} ${questTypeUnit(q.type)}</div>
             <div style="font-size:11px;color:${earned?'var(--green)':'var(--muted)'}">+${m.reward} คะแนน ${earned?'✓ รับแล้ว':''}</div>
           </div>
           ${reached&&!earned?'<span style="font-size:10px;background:var(--blue);color:white;padding:2px 8px;border-radius:999px;font-weight:700">รับได้!</span>':''}
@@ -1681,10 +1681,10 @@ function vPView(){
       }).join('');
       return`<div style="background:var(--surface);border-radius:16px;padding:1rem;border:2px solid ${done?'var(--green)':'var(--border)'};margin-bottom:.75rem;${done?'box-shadow:0 0 12px rgba(46,160,67,.2)':''}">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:.75rem">
-          <span style="font-size:20px">${done?'🏆':q.type==='hw'?'📚':'⭐'}</span>
+          <span style="font-size:20px">${done?'🏆':questTypeIcon(q.type)}</span>
           <div style="flex:1">
             <div style="font-size:14px;font-weight:700">${q.name}</div>
-            <div style="font-size:12px;color:var(--muted)">${q.type==='hw'?'ส่งงานให้ครบ':'สะสมคะแนน'} ${q.target} ${q.type==='hw'?'ชิ้น':'คะแนน'}${q.deadline?questDeadlineBadge(q):''}</div>
+            <div style="font-size:12px;color:var(--muted)">${questTypeLabelFull(q.type)} ${q.target} ${questTypeUnit(q.type)}${q.deadline?questDeadlineBadge(q):''}</div>
           </div>
           <div style="text-align:right">
             <div style="font-size:16px;font-weight:800;color:${done?'var(--green)':'var(--text)'}">${prog}/${q.target}</div>
@@ -3079,6 +3079,7 @@ if('serviceWorker' in navigator){
       <label>ประเภท</label>
       <select id="q_type" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--border);font-family:Sarabun,sans-serif;font-size:14px;background:var(--bg);color:var(--text)">
         <option value="hw">📚 จำนวนงานที่ส่ง</option>
+        <option value="sig">✍️ จำนวนลายเซ็น</option>
         <option value="score">⭐ คะแนนพฤติกรรม</option>
       </select>
     </div>
@@ -3196,6 +3197,26 @@ async function doDistributeAllQuests(){
 }
 
 // helper ตรวจว่า Quest หมดเขตแล้วไหม
+function questTypeIcon(type){
+  if(type==='hw') return '📚';
+  if(type==='sig') return '✍️';
+  return '⭐';
+}
+function questTypeLabel(type){
+  if(type==='hw') return 'ส่งงาน';
+  if(type==='sig') return 'ลายเซ็น';
+  return 'คะแนน';
+}
+function questTypeLabelFull(type){
+  if(type==='hw') return 'ส่งงานให้ครบ';
+  if(type==='sig') return 'มีลายเซ็นให้ครบ';
+  return 'สะสมคะแนน';
+}
+function questTypeUnit(type){
+  if(type==='hw') return 'ชิ้น';
+  if(type==='sig') return 'ใบ';
+  return 'คะแนน';
+}
 function isQuestExpired(q){
   if(!q.deadline) return false;
   return new Date() > new Date(q.deadline+'T23:59:59');
@@ -3227,7 +3248,7 @@ async function checkQuestProgress(sid){
   let changed = false;
   for(const q of DB.quests){
     if(isQuestExpired(q)) continue; // ตัดภารกิจที่หมดเขตแล้ว ไม่ตรวจ/บวกคะแนนอีก
-    const prog = q.type==='hw' ? (s.taskDone||0) : tot(s);
+    const prog = q.type==='hw' ? (s.taskDone||0) : q.type==='sig' ? (s.sig||0) : tot(s);
     const earned = s.questProgress || {};
     // เก็บเป็นรายการ "เป้าหมาย (at) ที่ได้รับไปแล้ว" แทน index — กันปัญหา index เลื่อนตอนครูแก้ไข milestone ทีหลัง
     let earnedAtList = earned[q.id] || [];
