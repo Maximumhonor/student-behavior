@@ -1987,6 +1987,97 @@ function roundRectPath(ctx, x, y, w, h, r){
   ctx.closePath();
 }
 
+// วาดภาพสรุป "สถานะรับทราบข้อมูล" ทั้งห้อง แล้วดาวน์โหลดทันที — ใช้ส่งเข้ากลุ่มไลน์
+function downloadAckSummaryImage(){
+  const curKey = getCurrentAckKey();
+  const roundLabel = (DB.taskInfo && DB.taskInfo.label) ? DB.taskInfo.label : '-';
+  const students = Object.values(DB.students||{}).sort((a,b)=>(a.no||0)-(b.no||0));
+  const ackedCount = students.filter(s=>(s.parentAcks||[]).some(a=>a.roundKey===curKey)).length;
+  const notAckedCount = students.length - ackedCount;
+
+  const COLS = 3;
+  const rows = Math.ceil(students.length / COLS);
+  const cellW = 220, cellH = 56, padX = 30, padY = 30;
+  const headerH = 130;
+  const W = padX*2 + cellW*COLS;
+  const H = headerH + padY + rows*cellH + padY;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  // พื้นหลัง
+  const bg = ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#EAF2FB'); bg.addColorStop(1,'#FFFFFF');
+  ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
+
+  // หัวข้อ
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#1A6BC4';
+  ctx.font = '700 26px Prompt, Sarabun, Arial, sans-serif';
+  ctx.fillText('📋 สถานะรับทราบข้อมูล', W/2, 42);
+
+  ctx.fillStyle = '#666';
+  ctx.font = '500 16px Sarabun, Arial, sans-serif';
+  ctx.fillText(`รอบ: ${roundLabel}`, W/2, 68);
+
+  // สรุปจำนวน
+  ctx.font = '700 17px Sarabun, Arial, sans-serif';
+  ctx.fillStyle = '#0B7A6B';
+  ctx.fillText(`✅ รับทราบแล้ว ${ackedCount} คน`, W/2 - 110, 96);
+  ctx.fillStyle = '#D9304E';
+  ctx.fillText(`⚠️ ยังไม่รับทราบ ${notAckedCount} คน`, W/2 + 110, 96);
+
+  // กริดรายชื่อ
+  students.forEach((s, idx)=>{
+    const col = idx % COLS;
+    const row = Math.floor(idx / COLS);
+    const x = padX + col*cellW;
+    const y = headerH + row*cellH;
+    const acked = (s.parentAcks||[]).some(a=>a.roundKey===curKey);
+
+    ctx.fillStyle = acked ? '#E8F6F3' : '#FDEDEF';
+    roundRectPath(ctx, x+4, y+4, cellW-8, cellH-8, 10);
+    ctx.fill();
+    ctx.strokeStyle = acked ? '#17C1A8' : '#E2786A';
+    ctx.lineWidth = 1.5;
+    roundRectPath(ctx, x+4, y+4, cellW-8, cellH-8, 10);
+    ctx.stroke();
+
+    ctx.textAlign = 'left';
+    ctx.font = '700 15px Sarabun, Arial, sans-serif';
+    ctx.fillStyle = '#222';
+    const label = `${s.no||''}. ${shortName(s.name||'-')}`;
+    ctx.fillText(truncateCanvasText(ctx, label, cellW-50), x+16, y+cellH/2+5);
+
+    ctx.font = '700 18px Sarabun, Arial, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(acked?'✅':'⚠️', x+cellW-16, y+cellH/2+6);
+  });
+
+  // ท้ายภาพ
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#999';
+  ctx.font = '400 13px Sarabun, Arial, sans-serif';
+  ctx.fillText('ระบบคะแนนพฤติกรรมและการส่งงานของนักเรียน', W/2, H-14);
+
+  const dataUrl = canvas.toDataURL('image/png');
+  const a = document.createElement('a');
+  a.href = dataUrl;
+  a.download = `สถานะรับทราบ_${roundLabel}.png`;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+// ตัดข้อความให้พอดีกับความกว้างที่กำหนด ใส่ ... ถ้ายาวเกิน (สำหรับวาดบน Canvas)
+function truncateCanvasText(ctx, text, maxWidth){
+  if(ctx.measureText(text).width <= maxWidth) return text;
+  let t = text;
+  while(t.length > 1 && ctx.measureText(t+'…').width > maxWidth){
+    t = t.slice(0, -1);
+  }
+  return t + '…';
+}
+
 function go(v){
   S.view=v;S.msg='';S.tab='score';S.search='';S.newName='';S.newId='';
   // Auto-login teacher if saved
@@ -3951,7 +4042,7 @@ function vAckStatusContent(){
         <div style="font-size:13px;font-weight:700;color:var(--red)">⚠️ ยังไม่รับทราบ ${notAckedList.length} คน</div>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:.875rem">
       ${students.map(s=>{
         const acked = (s.parentAcks||[]).some(a=>a.roundKey===curKey);
         return `<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:8px;background:${acked?'var(--green-bg)':'var(--pink-bg)'};border:1px solid ${acked?'var(--green-bd)':'var(--red-bd)'}">
@@ -3960,6 +4051,7 @@ function vAckStatusContent(){
         </div>`;
       }).join('')}
     </div>
+    <button onclick="downloadAckSummaryImage()" style="width:100%;padding:11px;border-radius:12px;border:none;background:linear-gradient(135deg,#1A6BC4,#4DA0F0);color:white;font-family:Sarabun,sans-serif;font-size:14px;font-weight:700;cursor:pointer">💾 บันทึกรูปภาพ (ส่งไลน์กลุ่ม)</button>
   </div>`;
 }
 
