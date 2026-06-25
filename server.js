@@ -1,7 +1,5 @@
 const express = require('express');
 const path = require('path');
-const https = require('https');
-const http = require('http');
 const { initializeApp, cert } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
 
@@ -36,7 +34,7 @@ initializeApp({
 });
 
 const db = getFirestore();
-const DOC_REF = db.collection('data').doc('main');
+const DOC_REF = db.collection('data').doc('p63');
 
 // cache ใน memory
 let memDB = null;
@@ -153,15 +151,10 @@ const listener = app.listen(process.env.PORT || 3000, async () => {
   await readDB();
   console.log('Ready! Students:', Object.keys(memDB.students || {}).length);
 
-  // Ping ตัวเองทุก 14 นาที
-  const SELF_URL = process.env.RENDER_EXTERNAL_URL || 'http://localhost:' + (process.env.PORT || 3000);
-  setInterval(() => {
-    try {
-      const url = new URL(SELF_URL + '/api/ping');
-      const lib = url.protocol === 'https:' ? https : http;
-      lib.get(url.toString(), r => console.log('Ping:', r.statusCode)).on('error', e => console.log('Ping err:', e.message));
-    } catch(e) {}
-  }, 14 * 60 * 1000);
+  // หมายเหตุ: ลบ self-ping (outbound) ออกแล้ว เพื่อลดแบนด์วิดท์
+  // Render เปลี่ยนนโยบายให้นับ "Service-Initiated" traffic เข้าแบนด์วิดท์ด้วย (ตั้งแต่ ต.ค. 2025)
+  // ใช้บริการภายนอกอย่าง UptimeRobot/cron-job.org ส่ง ping เข้ามาแทน (นับเป็น HTTP Responses ซึ่งเล็กกว่ามาก)
+  // ตั้งค่าให้ ping มาที่ /api/ping ทุก 10-14 นาที เพื่อกัน service sleep (free tier sleep หลังไม่มี traffic 15 นาที)
 });
 
 // เพิ่ม routes สำหรับ messages, redeemRequests, settings
