@@ -695,6 +695,9 @@ function getCurrentAckKey(){
 }
 
 // บันทึก log ทุกครั้งที่ผู้ปกครอง/นักเรียนเข้าเว็บ (กันบันทึกซ้ำถ้าเข้าใหม่ในเวลาใกล้กันมาก เช่น refresh ถี่ๆ)
+// เก็บการเข้าชมที่เพิ่งบันทึกในเครื่องนี้ไว้ชั่วคราว กัน poll (loadDB) ดึงข้อมูลเก่ามาทับก่อน server เขียนเสร็จ
+const _localVisitMarks = {}; // key: sid -> {ts, markedAt}
+
 async function logParentVisit(sid){
   const s = DB.students[sid];
   if(!s) return;
@@ -705,7 +708,26 @@ async function logParentVisit(sid){
   if(lastVisit && (now - lastVisit.ts) < 2*60*1000) return;
   s.visitLogs.unshift({ts: now});
   if(s.visitLogs.length > 50) s.visitLogs = s.visitLogs.slice(0, 50); // เก็บแค่ 50 ครั้งล่าสุด กัน array บวม
+  _localVisitMarks[sid] = {ts: now, markedAt: now}; // จำไว้กันถูกทับ
   try{ await api('PATCH', `/students/${sid}`, {visitLogs: s.visitLogs}); }catch(e){}
+}
+
+// ใช้ตอนโหลดข้อมูลใหม่จาก server — ถ้าการเข้าชมที่เพิ่ง mark ไว้ในเครื่องนี้ ยังไม่อยู่ในข้อมูลที่โหลดมา ให้ยัดกลับเข้าไป
+// (กัน race condition: poll ดึงข้อมูลมาก่อนที่ server จะประมวลผล PATCH เสร็จ ทำให้ visit ล่าสุดหายไปจาก array)
+function applyLocalVisitMarks(){
+  const now = Date.now();
+  Object.keys(_localVisitMarks).forEach(sid=>{
+    const mark = _localVisitMarks[sid];
+    if(now - mark.markedAt > 15000){ delete _localVisitMarks[sid]; return; } // หมดอายุหลัง 15 วิ (พอให้ server sync)
+    const s = DB.students[sid];
+    if(!s) return;
+    s.visitLogs = s.visitLogs || [];
+    const alreadyThere = s.visitLogs.some(v=>v.ts===mark.ts);
+    if(!alreadyThere){
+      s.visitLogs.unshift({ts: mark.ts});
+      if(s.visitLogs.length > 50) s.visitLogs = s.visitLogs.slice(0, 50);
+    }
+  });
 }
 let DB={students:{},requests:{}};
 const DEFAULT_REWARDS=[
@@ -726,6 +748,7 @@ async function loadDB(){
   const data=await api('GET','/data');
   DB=data||{students:{},requests:{}};
   applyLocalReadMarks(); // กัน race condition กับ doMarkRead
+  applyLocalVisitMarks(); // กัน race condition กับ logParentVisit
   // เช็คและ reset อวตาร์ที่ไม่มีสิทธิ์แล้ว
   let needSave=false;
   Object.entries(DB.students||{}).forEach(([sid,s])=>{
