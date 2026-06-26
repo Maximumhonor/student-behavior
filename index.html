@@ -15,6 +15,7 @@
 <link rel="dns-prefetch" href="https://api.jsonbin.io">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Prompt:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
 :root{
   --bg:#F2F4FF;
@@ -277,6 +278,26 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px;font-wei
     <div id="ackCardImgWrap" style="margin-bottom:1rem"></div>
     <div style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:.75rem">บันทึกภาพนี้ แล้วส่งเข้ากลุ่มไลน์ห้องเรียนเพื่อยืนยันการรับทราบ</div>
     <button id="ackCardDownloadBtn" style="width:100%;padding:13px;border-radius:12px;border:none;background:linear-gradient(135deg,#0B7A6B,#17C1A8);color:white;font-family:Sarabun,sans-serif;font-size:15px;font-weight:700;cursor:pointer">💾 บันทึกรูปภาพ</button>
+  </div>
+</div>
+<div id="growthChartModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.65);align-items:center;justify-content:center;padding:1rem;overflow-y:auto" onclick="if(event.target===this)closeGrowthChartModal()">
+  <div style="background:var(--surface);border-radius:20px;padding:1.25rem;width:100%;max-width:640px;margin:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <div style="font-size:16px;font-weight:700;color:#7B2FBE">📈 กราฟพัฒนาการนักเรียน</div>
+      <button onclick="closeGrowthChartModal()" style="background:var(--bg);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:18px;color:var(--text)">✕</button>
+    </div>
+    <div class="frow">
+      <label>เลือกนักเรียน</label>
+      <select id="gc_student_select" onchange="renderGrowthCharts()" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--border);font-family:Sarabun,sans-serif;font-size:14px;background:var(--bg);color:var(--text)"></select>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:1rem">
+      <button onclick="S.gcTab='score';renderGrowthCharts()" id="gc_tab_score" style="flex:1;padding:8px;border-radius:10px;border:1.5px solid var(--blue);background:var(--blue-bg);color:var(--blue);font-family:Sarabun,sans-serif;font-size:12px;font-weight:700;cursor:pointer">⭐ คะแนน (รายวัน)</button>
+      <button onclick="S.gcTab='task';renderGrowthCharts()" id="gc_tab_task" style="flex:1;padding:8px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);color:var(--muted);font-family:Sarabun,sans-serif;font-size:12px;font-weight:700;cursor:pointer">📚 งาน (รายสัปดาห์)</button>
+    </div>
+    <div id="gc_chart_wrap" style="position:relative;height:320px;margin-bottom:.5rem">
+      <canvas id="gc_canvas"></canvas>
+    </div>
+    <div id="gc_empty_msg" style="display:none;text-align:center;color:var(--muted);font-size:13px;padding:2rem">ยังไม่มีข้อมูลเพียงพอสำหรับวาดกราฟ</div>
   </div>
 </div>
 <div class="app" id="app" style="transition:max-width .3s">
@@ -768,6 +789,7 @@ async function loadDB(){
     if(DB.settings.quests) DB.quests=[...DB.settings.quests];
     if(DB.settings.buddyMissions) DB.buddyMissions=[...DB.settings.buddyMissions];
     if(DB.settings.deletionLogs) DB.deletionLogs=[...DB.settings.deletionLogs];
+    if(DB.settings.weeklySnapshots) DB.weeklySnapshots=[...DB.settings.weeklySnapshots];
   }
   // ตรวจ Buddy Mission ที่หมดเขตแล้ว แจก partial credit (เฉพาะฝั่งครู เพื่อไม่ให้แข่งกันเขียนพร้อมกัน)
   if(S.role === 'teacher') checkAllExpiredBuddyMissions();
@@ -1271,6 +1293,17 @@ function vTList(){
       <i class="ti ti-chevron-${S.showActivityLog?'up':'down'}" style="color:white;font-size:18px"></i>
     </div>
     ${S.showActivityLog?vActivityLogPanel():''}
+    <!-- ปุ่มดูกราฟพัฒนาการ -->
+    <div onclick="openGrowthChartModal()" style="cursor:pointer;background:linear-gradient(135deg,#7B2FBE,#C44569);border-radius:16px;padding:12px 18px;margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 4px 16px rgba(123,47,190,.3)">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:22px">📈</span>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:white">กราฟพัฒนาการนักเรียน</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.8)">ดูแนวโน้มคะแนนรายวัน + งานรายสัปดาห์</div>
+        </div>
+      </div>
+      <i class="ti ti-chevron-right" style="color:white;font-size:18px"></i>
+    </div>
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;width:100%" class="av-grid">${cards}</div>
       </div>`;
 }function vTStudent(){
@@ -2353,6 +2386,149 @@ function doSetTaskInfo(){
 function closeTaskModal(){
   document.getElementById('taskModal').classList.remove('show');
 }
+// บันทึก snapshot ของรอบงานปัจจุบัน (ก่อนจะเปลี่ยนเป็นรอบใหม่) — ใช้คำนวณกราฟพัฒนาการรายสัปดาห์ในอนาคต
+// เก็บ taskDone/taskTotal/sig ของทุกคน ณ ตอนจบรอบนั้น พร้อม label ของรอบ และเวลาที่บันทึก
+async function recordWeeklySnapshot(){
+  const prevLabel = (DB.taskInfo && DB.taskInfo.label) ? DB.taskInfo.label : null;
+  if(!prevLabel) return; // ยังไม่มีรอบงานมาก่อนเลย ไม่ต้องเก็บ (เช่นรอบแรกสุดของการใช้งาน)
+  if(!DB.weeklySnapshots) DB.weeklySnapshots = [];
+  // กันเก็บซ้ำถ้า label เดิมถูกบันทึกไปแล้ว (เช่นครูกดบันทึกซ้ำโดยไม่เปลี่ยน label จริง)
+  if(DB.weeklySnapshots.some(sn=>sn.weekLabel===prevLabel)) return;
+  const studentsSnap = {};
+  Object.entries(DB.students||{}).forEach(([sid, st])=>{
+    studentsSnap[sid] = {
+      taskDone: st.taskDone||0,
+      taskTotal: st.taskTotal||0,
+      sig: st.sig||0,
+      score: tot(st) // คะแนนสะสมรวม ณ ตอนนั้น (จาก logs)
+    };
+  });
+  DB.weeklySnapshots.push({weekLabel: prevLabel, ts: Date.now(), students: studentsSnap});
+  if(DB.weeklySnapshots.length > 52) DB.weeklySnapshots = DB.weeklySnapshots.slice(-52); // เก็บแค่ ~1 ปีล่าสุด กัน array บวม
+  try{ await api('PATCH', '/settings/weeklySnapshots', {weeklySnapshots: DB.weeklySnapshots}); }catch(e){}
+}
+
+// ===== GROWTH CHART (กราฟพัฒนาการ) =====
+let _gcChartInstance = null;
+
+function openGrowthChartModal(){
+  const sel = document.getElementById('gc_student_select');
+  const students = Object.entries(DB.students||{}).sort((a,b)=>(a[1].no||0)-(b[1].no||0));
+  sel.innerHTML = students.map(([sid,s])=>`<option value="${sid}" ${sid===S.sid?'selected':''}>${s.no?.toString().padStart(2,'0')||''} ${s.name}</option>`).join('');
+  if(!S.gcTab) S.gcTab = 'score';
+  document.getElementById('growthChartModal').style.display = 'flex';
+  setTimeout(()=>renderGrowthCharts(), 50); // รอ modal แสดงก่อน ให้ canvas มีขนาดจริงตอน Chart.js init
+}
+
+function closeGrowthChartModal(){
+  document.getElementById('growthChartModal').style.display = 'none';
+  if(_gcChartInstance){ _gcChartInstance.destroy(); _gcChartInstance = null; }
+}
+
+// คำนวณข้อมูลคะแนนรายวันของนักเรียนคนหนึ่ง จาก s.logs ที่มี ts — รวมยอดสุทธิต่อวัน ข้ามวันที่ไม่มีการเคลื่อนไหว
+function computeDailyScoreData(sid){
+  const s = DB.students[sid];
+  if(!s) return [];
+  const logsWithTs = (s.logs||[]).filter(l=>l.ts); // เฉพาะ log ที่มี timestamp (ของเก่าก่อนเพิ่มฟีเจอร์นี้จะไม่มี ts เลย ข้ามไป)
+  if(logsWithTs.length===0) return [];
+  const byDay = {}; // key: 'YYYY-MM-DD' (ใช้ค่าวันจริงจาก Date ไม่ใช่ string ไทย กันปัญหาเรียงลำดับผิด)
+  logsWithTs.forEach(l=>{
+    const d = new Date(l.ts);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    if(!byDay[key]) byDay[key] = {date: d, total: 0};
+    byDay[key].total += (l.score||0);
+  });
+  return Object.values(byDay).sort((a,b)=>a.date-b.date);
+}
+
+// คำนวณข้อมูลงานรายสัปดาห์ จาก DB.weeklySnapshots — เทียบสัปดาห์ปัจจุบันกับสัปดาห์ก่อนหน้าเพื่อหา "ที่เพิ่มขึ้นจริง"
+function computeWeeklyTaskData(sid){
+  const snapshots = DB.weeklySnapshots||[];
+  if(snapshots.length===0) return [];
+  const rows = [];
+  let prevTotal = null, prevDone = null, prevSig = null;
+  snapshots.forEach(sn=>{
+    const stu = sn.students && sn.students[sid];
+    if(!stu) return;
+    const taskAdded = prevTotal===null ? 0 : Math.max(0, stu.taskTotal - prevTotal); // งานที่เพิ่มเข้ามาในรอบนี้
+    const taskDoneIncrease = prevDone===null ? 0 : Math.max(0, stu.taskDone - prevDone); // งานที่ทำเสร็จเพิ่มในรอบนี้
+    const sigIncrease = prevSig===null ? 0 : Math.max(0, stu.sig - prevSig); // ลายเซ็นที่เพิ่มในรอบนี้
+    const notDone = Math.max(0, stu.taskTotal - stu.taskDone); // งานค้าง ณ ตอนนั้น
+    rows.push({weekLabel: sn.weekLabel, taskAdded, taskDoneIncrease, sigIncrease, notDone});
+    prevTotal = stu.taskTotal; prevDone = stu.taskDone; prevSig = stu.sig;
+  });
+  return rows;
+}
+
+function renderGrowthCharts(){
+  if(typeof Chart === 'undefined'){ document.getElementById('gc_empty_msg').textContent='ไม่สามารถโหลดไลบรารีกราฟได้ (เช็คอินเทอร์เน็ต)'; document.getElementById('gc_empty_msg').style.display='block'; return; }
+  const sid = document.getElementById('gc_student_select').value;
+  const tab = S.gcTab || 'score';
+  // toggle ปุ่มแท็บ
+  document.getElementById('gc_tab_score').style.background = tab==='score' ? 'var(--blue-bg)' : 'var(--surface)';
+  document.getElementById('gc_tab_score').style.color = tab==='score' ? 'var(--blue)' : 'var(--muted)';
+  document.getElementById('gc_tab_score').style.borderColor = tab==='score' ? 'var(--blue)' : 'var(--border)';
+  document.getElementById('gc_tab_task').style.background = tab==='task' ? 'var(--blue-bg)' : 'var(--surface)';
+  document.getElementById('gc_tab_task').style.color = tab==='task' ? 'var(--blue)' : 'var(--muted)';
+  document.getElementById('gc_tab_task').style.borderColor = tab==='task' ? 'var(--blue)' : 'var(--border)';
+
+  if(_gcChartInstance){ _gcChartInstance.destroy(); _gcChartInstance = null; }
+  const canvas = document.getElementById('gc_canvas');
+  const emptyMsg = document.getElementById('gc_empty_msg');
+
+  if(tab==='score'){
+    const data = computeDailyScoreData(sid);
+    if(data.length===0){
+      canvas.style.display='none'; emptyMsg.style.display='block';
+      emptyMsg.textContent = 'ยังไม่มีข้อมูลคะแนนที่มีเวลาบันทึก (เฉพาะรายการใหม่หลังอัปเดตฟีเจอร์นี้)';
+      return;
+    }
+    canvas.style.display='block'; emptyMsg.style.display='none';
+    const labels = data.map(d=>`${d.date.getDate()}/${d.date.getMonth()+1}`);
+    const values = data.map(d=>d.total);
+    _gcChartInstance = new Chart(canvas, {
+      type: 'line',
+      data: { labels, datasets: [{
+        label: 'คะแนนสุทธิรายวัน',
+        data: values,
+        borderColor: '#1A6BC4',
+        backgroundColor: 'rgba(26,107,196,.12)',
+        fill: true, tension: .25,
+        pointBackgroundColor: values.map(v=>v>=0?'#0B7A6B':'#D9304E'),
+        pointRadius: 4,
+      }]},
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: false, grid: { color: '#eee' } }, x: { grid: { display: false } } }
+      }
+    });
+  } else {
+    const rows = computeWeeklyTaskData(sid);
+    if(rows.length===0){
+      canvas.style.display='none'; emptyMsg.style.display='block';
+      emptyMsg.textContent = 'ยังไม่มีข้อมูล snapshot รายสัปดาห์ — จะเริ่มเก็บข้อมูลทุกครั้งที่ครูตั้งรอบงานใหม่จากนี้ไป (เห็นกราฟได้ตั้งแต่รอบหน้า)';
+      return;
+    }
+    canvas.style.display='block'; emptyMsg.style.display='none';
+    const labels = rows.map(r=>r.weekLabel);
+    _gcChartInstance = new Chart(canvas, {
+      type: 'line',
+      data: { labels, datasets: [
+        { label: '📚 งานที่เพิ่ม', data: rows.map(r=>r.taskAdded), borderColor: '#7B2FBE', backgroundColor: '#7B2FBE', tension: .25 },
+        { label: '✅ งานเสร็จ (เพิ่มขึ้น)', data: rows.map(r=>r.taskDoneIncrease), borderColor: '#0B7A6B', backgroundColor: '#0B7A6B', tension: .25 },
+        { label: '❌ งานไม่เสร็จ (คงเหลือ)', data: rows.map(r=>r.notDone), borderColor: '#D9304E', backgroundColor: '#D9304E', tension: .25 },
+        { label: '✍️ ลายเซ็น (เพิ่มขึ้น)', data: rows.map(r=>r.sigIncrease), borderColor: '#E08E00', backgroundColor: '#E08E00', tension: .25 },
+      ]},
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
+        scales: { y: { beginAtZero: true, grid: { color: '#eee' } }, x: { grid: { display: false } } }
+      }
+    });
+  }
+}
+
 async function doSaveTaskInfo(){
   const label=document.getElementById('ti_label').value.trim();
   const totalVal=document.getElementById('ti_total').value.trim();
@@ -2367,6 +2543,8 @@ async function doSaveTaskInfo(){
   }
   const btn=document.querySelector('#taskModal button:last-child');
   btn.textContent='กำลังบันทึก...';btn.disabled=true;
+  // เก็บ snapshot ของรอบที่กำลังจะปิดไป (ใช้ดูกราฟพัฒนาการรายสัปดาห์ในอนาคต) — เก็บก่อนเปลี่ยนค่า DB.taskInfo
+  recordWeeklySnapshot();
   DB.taskInfo={label,total:n,date};
   Object.values(DB.students).forEach(st=>{
     st.taskTotal=n;
