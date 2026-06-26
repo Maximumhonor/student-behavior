@@ -697,6 +697,22 @@ function today(){
   const months=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
   return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()+543}`;
 }
+// แปลง string วันที่แบบไทย เช่น "19 มิ.ย. 2569" กลับเป็น Date object (ใช้สำหรับ log เก่าที่ไม่มี ts)
+// คืนค่า null ถ้าแปลงไม่สำเร็จ (รูปแบบไม่ตรง หรือค่าผิดปกติ)
+function parseThaiDateStr(str){
+  if(!str || typeof str !== 'string') return null;
+  const months=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const parts = str.trim().split(' ');
+  if(parts.length !== 3) return null;
+  const day = parseInt(parts[0]);
+  const monthIdx = months.indexOf(parts[1]);
+  const yearBE = parseInt(parts[2]);
+  if(isNaN(day) || monthIdx===-1 || isNaN(yearBE)) return null;
+  const yearAD = yearBE - 543;
+  const d = new Date(yearAD, monthIdx, day, 12, 0, 0); // ตั้งเวลาเที่ยงวัน กันปัญหา timezone เลื่อนวันข้ามไป
+  if(isNaN(d.getTime())) return null;
+  return d;
+}
 // คืนค่า "ปี-เลขสัปดาห์" เช่น "2026-W25" ใช้เช็คว่าผู้ปกครองรับทราบในสัปดาห์นี้ไปแล้วหรือยัง
 function getWeekKey(d=new Date()){
   const date = new Date(d.getTime());
@@ -2409,11 +2425,11 @@ function closeGrowthChartModal(){
 function computeDailyScoreData(sid){
   const s = DB.students[sid];
   if(!s) return [];
-  const logsWithTs = (s.logs||[]).filter(l=>l.ts); // เฉพาะ log ที่มี timestamp (ของเก่าก่อนเพิ่มฟีเจอร์นี้จะไม่มี ts เลย ข้ามไป)
-  if(logsWithTs.length===0) return [];
   const byDay = {}; // key: 'YYYY-MM-DD' (ใช้ค่าวันจริงจาก Date ไม่ใช่ string ไทย กันปัญหาเรียงลำดับผิด)
-  logsWithTs.forEach(l=>{
-    const d = new Date(l.ts);
+  (s.logs||[]).forEach(l=>{
+    // log ใหม่มี ts (timestamp แน่นอน) ใช้ก่อน — log เก่าไม่มี ts ให้แปลงจาก date string ไทยแทน (แม่นยำระดับวัน ไม่มีเวลานาทีที่แน่นอน)
+    const d = l.ts ? new Date(l.ts) : parseThaiDateStr(l.date);
+    if(!d) return; // แปลงไม่ได้เลยทั้งสองทาง ข้ามรายการนี้ไป
     const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     if(!byDay[key]) byDay[key] = {date: d, total: 0};
     byDay[key].total += (l.score||0);
@@ -2460,7 +2476,7 @@ function renderGrowthCharts(){
     const data = computeDailyScoreData(sid);
     if(data.length===0){
       canvas.style.display='none'; emptyMsg.style.display='block';
-      emptyMsg.textContent = 'ยังไม่มีข้อมูลคะแนนที่มีเวลาบันทึก (เฉพาะรายการใหม่หลังอัปเดตฟีเจอร์นี้)';
+      emptyMsg.textContent = 'ยังไม่มีประวัติคะแนนของนักเรียนคนนี้';
       return;
     }
     canvas.style.display='block'; emptyMsg.style.display='none';
