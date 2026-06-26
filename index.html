@@ -2489,14 +2489,14 @@ function renderGrowthCharts(){
         data: values,
         borderColor: '#1A6BC4',
         backgroundColor: 'rgba(26,107,196,.12)',
-        fill: true, tension: .25,
+        fill: true, stepped: true,
         pointBackgroundColor: values.map(v=>v>=0?'#0B7A6B':'#D9304E'),
         pointRadius: 4,
       }]},
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: { legend: { display: false } },
-        scales: { y: { beginAtZero: false, grid: { color: '#eee' } }, x: { grid: { display: false } } }
+        scales: { y: { beginAtZero: true, min: 0, max: 100, grid: { color: '#eee' } }, x: { grid: { display: false } } }
       }
     });
   } else {
