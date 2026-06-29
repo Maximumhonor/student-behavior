@@ -2328,11 +2328,20 @@ function vMList(){
     </tr>`;
   }).join('');
 
+  // ถ้าครูคนนี้สอนหลายวิชา แสดงปุ่มสลับวิชาไว้ในหน้าตารางเลย ไม่ต้องออกไป login ใหม่
+  const teacher=SUBJECT_TEACHERS.find(t=>t.pin===pin);
+  const subjectSwitcher=(teacher&&teacher.subjects.length>1)?`
+    <div style="display:flex;gap:8px;padding:.75rem 1rem 0;flex-wrap:wrap">
+      ${teacher.subjects.map(subj=>`
+        <button onclick="S.subjectTeacherSubject='${subj}';render(true)" style="padding:8px 16px;border-radius:10px;border:1.5px solid ${subj===subject?'var(--blue)':'var(--border)'};background:${subj===subject?'var(--blue)':'var(--surface)'};color:${subj===subject?'white':'var(--text)'};font-family:Sarabun,sans-serif;font-size:13px;font-weight:700;cursor:pointer">${subj}</button>`).join('')}
+    </div>`:'';
+
   return`
     <div class="hrow hrow-sticky">
       <div class="ptitle">วิชา${subject} <span style="font-size:13px;font-weight:400;color:var(--muted)">(${cols.length} งาน · ${students.length} คน)</span></div>
       <button class="btn btn-r" style="font-size:13px" onclick="doMLogout()"><i class="ti ti-logout"></i> ออก</button>
     </div>
+    ${subjectSwitcher}
     <div style="padding:0 1rem 1rem">
       <button onclick="doMAddColumn()" style="width:100%;padding:10px;border-radius:12px;border:2px dashed var(--blue);background:var(--blue-bg);color:var(--blue);font-family:Sarabun,sans-serif;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:.75rem">
         <i class="ti ti-plus"></i> เพิ่มงาน
