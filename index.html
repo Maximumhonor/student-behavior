@@ -516,16 +516,6 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px;font-wei
 
 <script>
 const TEACHER_PASS='071636552';
-const MONITOR_GROUPS=[
-  {pin:'28374',noFrom:1,noTo:5},
-  {pin:'91053',noFrom:6,noTo:10},
-  {pin:'46782',noFrom:11,noTo:15},
-  {pin:'73519',noFrom:16,noTo:20},
-  {pin:'30947',noFrom:21,noTo:25},
-  {pin:'85261',noFrom:26,noTo:30},
-  {pin:'62438',noFrom:31,noTo:35},
-  {pin:'17896',noFrom:36,noTo:39},
-];
 const CLOUDINARY_CLOUD='dfakqt3uy';
 const CLOUDINARY_PRESET='rs9_upload';
 
@@ -562,7 +552,7 @@ function compressImage(file, maxW=1200, quality=0.82){
 }
 
 const SUBJECTS=[];
-let S={view:'loading',role:null,sid:null,tab:'score',msg:'',search:'',newName:'',newId:'',monitorGroup:null};
+let S={view:'loading',role:null,sid:null,tab:'score',msg:'',search:'',newName:'',newId:'',subjectTeacher:null};
 let pollTimer=null;
 // ป้องกันกดซ้ำตอนกำลังบันทึกคะแนน/งาน — แสดง toast "กำลังบันทึก..." ให้เห็นชัดว่าต้องรอ ไม่ใช่กรอกซ้ำ
 let _isSaving = false;
@@ -826,6 +816,7 @@ async function loadDB(){
     if(DB.settings.buddyMissions) DB.buddyMissions=[...DB.settings.buddyMissions];
     if(DB.settings.deletionLogs) DB.deletionLogs=[...DB.settings.deletionLogs];
     if(DB.settings.weeklySnapshots) DB.weeklySnapshots=[...DB.settings.weeklySnapshots];
+    if(DB.settings.subjectTeacherData) DB.subjectTeacherData=JSON.parse(JSON.stringify(DB.settings.subjectTeacherData));
   }
   // ตรวจ Buddy Mission ที่หมดเขตแล้ว แจก partial credit (เฉพาะฝั่งครู เพื่อไม่ให้แข่งกันเขียนพร้อมกัน)
   if(S.role === 'teacher') checkAllExpiredBuddyMissions();
@@ -906,8 +897,8 @@ function render(force=false){
   else if(S.view==='taddstudent')el.innerHTML=vAddStudent();
   else if(S.view==='tpending')el.innerHTML=vPendingAll();
   else if(S.view==='mlogin')el.innerHTML=vMLogin();
+  else if(S.view==='msubjectpick')el.innerHTML=vMSubjectPick();
   else if(S.view==='mlist')el.innerHTML=vMList();
-  else if(S.view==='mstudent')el.innerHTML=vMStudent();
   else if(S.view==='plogin')el.innerHTML=vPLogin();
   else if(S.view==='pview')el.innerHTML=vPView();
 
@@ -972,7 +963,7 @@ function vMenu(){
         </div>
         <div class="mcard mcard-m" onclick="go('mlogin')" style="cursor:pointer;padding:1.25rem 2rem;display:flex;align-items:center;justify-content:space-between;border-radius:16px;position:relative">
           <div style="flex:1;text-align:center">
-            <div style="font-weight:700;font-size:clamp(20px,5vw,26px);font-family:Prompt,sans-serif">ฝ่ายการเรียน</div>
+            <div style="font-weight:700;font-size:clamp(20px,5vw,26px);font-family:Prompt,sans-serif">ครูประจำวิชา</div>
             <div style="font-size:13px;color:var(--muted);margin-top:2px">เช็คส่งงานรายวิชา</div>
           </div>
           <div class="la la-m" style="width:62px;height:62px;flex-shrink:0;display:flex;align-items:center;justify-content:center"><i class="ti ti-clipboard-list" style="font-size:34px"></i></div>
@@ -1349,19 +1340,7 @@ function vTList(){
       </div>
       <div class="sec">ประวัติคะแนน</div><div class="card">${lh}</div>`;
   }else if(S.tab==='hw'){
-    const exPhoto=DB.exampleHwPhoto||null;
-    const exPhotoHtml=exPhoto?`<div style="margin-bottom:1rem;border-radius:var(--rs);overflow:hidden;border:2px solid var(--green-bd);position:relative">
-      <div style="background:var(--green-bg);padding:6px 10px;font-size:12px;color:var(--green);font-weight:600"><i class="ti ti-photo-check"></i> ตัวอย่างงานครบ (แสดงให้ผู้ปกครองทุกคนเห็น)</div>
-      <img src="${exPhoto}" style="width:100%;height:auto;object-fit:contain;display:block;cursor:pointer;border-radius:4px" onclick="openLightbox('${exPhoto}')">
-      <button onclick="doDeleteExamplePhoto()" style="position:absolute;top:30px;right:6px;background:rgba(0,0,0,.6);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center"><i class="ti ti-x"></i></button>
-    </div>`:`<div style="margin-bottom:1rem;background:var(--bg);border:2px dashed var(--border);border-radius:var(--rs);padding:1rem;text-align:center;color:var(--muted);font-size:13px"><i class="ti ti-photo-off" style="font-size:24px;display:block;margin-bottom:.5rem"></i>ยังไม่มีรูปตัวอย่างงานครบ</div>`;
-    content=`
-      <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
-        
-        <label class="btn btn-b" style="flex:1;justify-content:center;min-width:140px;cursor:pointer"><i class="ti ti-photo-up"></i> หลักฐานการส่งงานของนักเรียน<input type="file" accept="image/*" style="display:none" onchange="doUploadExamplePhoto(this)"></label>
-      </div>
-      ${exPhotoHtml}
-      </div>`;
+    content=`<div style="font-size:13px;color:var(--muted);margin-bottom:.75rem">📚 สถานะงานแยกตามวิชา (ติ๊กโดยครูประจำวิชาแต่ละท่าน)</div>${renderStudentSubjectWork(S.sid)}`;
   }else if(S.tab==='redeem'){
     const REWARDS=getRewards();
     const rh=REWARDS.map((r,ri)=>{const can=t>=r.cost;return`
@@ -1692,25 +1671,7 @@ function vPView(){
     const lh=logs.map(l=>`<div class="log-item"><div><span class="badge ${l.score>=0?'bp':'bm'}">${l.score>=0?'+':''}${l.score}</span><span style="margin-left:8px">${l.desc}</span></div><div class="ldate">${l.date}</div></div>`).join('')||'<div style="text-align:center;padding:1rem;color:var(--muted);font-size:14px">ยังไม่มีประวัติ</div>';
     content=`${vLeaderboard()}<div class="card">${lh}</div>`;
   }else if(S.tab==='hw'){
-    const exPhotoP=DB.exampleHwPhoto||null;
-    const hwPhotoP=s.hwPhoto||null;
-    let photoSection='';
-    if(exPhotoP||hwPhotoP){
-      photoSection=`<div style="margin-bottom:1rem">
-        <div style="display:grid;grid-template-columns:${exPhotoP&&hwPhotoP?'1fr 1fr':'1fr'};gap:10px">
-          ${exPhotoP?`<div style="border-radius:14px;overflow:hidden;border:2px solid var(--green-bd)">
-            <div style="font-size:11px;font-weight:700;color:var(--green);padding:6px 10px;background:var(--green-bg);display:flex;align-items:center;gap:4px"><i class="ti ti-star"></i> ตัวอย่างงานครบ (ครู)</div>
-            <img src="${exPhotoP}" style="width:100%;height:auto;object-fit:contain;display:block;cursor:pointer" onclick="openLightbox('${exPhotoP}')">
-          </div>`:''}
-          ${hwPhotoP?`<div style="border-radius:14px;overflow:hidden;border:2px solid var(--blue-bd)">
-            <div style="font-size:11px;font-weight:700;color:var(--blue);padding:6px 10px;background:var(--blue-bg);display:flex;align-items:center;gap:4px"><i class="ti ti-notebook"></i> ใบงานของ${s.name.replace('เด็กชาย','').replace('เด็กหญิง','').trim()}</div>
-            <img src="${hwPhotoP}" style="width:100%;height:auto;object-fit:contain;display:block;cursor:pointer" onclick="openLightbox('${hwPhotoP}')">
-          </div>`:''}
-        </div>
-        ${exPhotoP&&hwPhotoP?`<div style="text-align:center;font-size:12px;color:var(--muted);margin-top:6px">กดรูปเพื่อดูขยาย • เปรียบเทียบใบงานได้เลยครับ/ค่ะ</div>`:''}
-      </div>`;
-    }
-    content=`${photoSection}<div class="hw-grid">${SUBJECTS.map(subj=>{const it=(s.hw||{})[subj]||{done:false,date:today()};return`<div class="hwc ${it.done?'hwd':'hwm'}" style="cursor:default"><div style="display:flex;justify-content:space-between"><div class="hn">${subj}</div><i class="ti ${it.done?'ti-circle-check':'ti-circle-x'}" style="font-size:16px"></i></div><div class="hs">${it.done?'ส่งแล้ว':'ยังไม่ส่ง'}</div><div class="hdate">เช็ค: ${it.date}</div></div>`;}).join('')}</div>`;
+    content=`<div style="font-size:13px;color:var(--muted);margin-bottom:.75rem">📚 สถานะงานแยกตามวิชา</div>${renderStudentSubjectWork(S.sid)}`;
   }else if(S.tab==='redeem'){
     const REWARDS=getRewards();
     const rh=REWARDS.map(r=>{const can=t>=r.cost;return`<div class="ritem"><div><div style="font-size:14px;font-weight:500">${r.name}</div><div style="font-size:12px;color:var(--muted);margin-top:2px"><i class="ti ti-star"></i> ${r.cost} คะแนน</div></div><button class="btn btn-b" style="font-size:13px;padding:7px 14px" onclick="doRedeemP('${r.name}',${r.cost})" ${!can?'disabled':''}>แลก</button></div>`;}).join('');
@@ -2217,18 +2178,28 @@ function doTLogin(){
 }
 function doTLogout(){stopPoll();S.role=null;S.view='menu';render();}
 
-// ===== MONITOR (ฝ่ายการเรียน) =====
+// ===== ครูประจำวิชา (เช็คงานแบบตาราง Excel) =====
+const SUBJECT_TEACHERS=[
+  {pin:'Ko0636635356',subjects:['วิทยาศาสตร์','สุขศึกษา']},
+  {pin:'kploy0909763863',subjects:['ภาษาไทย']},
+  {pin:'kaoy0986753198',subjects:['ภาษาอังกฤษพื้นฐาน','ภาษาอังกฤษเพิ่มเติม']},
+  {pin:'ktoi123456',subjects:['สังคมศึกษา','ประวัติศาสตร์']},
+  {pin:'knot0851755712',subjects:['คณิตศาสตร์']},
+];
+// รายชื่อวิชาทั้งหมดในระบบ (รวมทุกรหัสครู) — ใช้แสดงผลในหน้าส่งงานของนักเรียน
+const ALL_SUBJECTS=SUBJECT_TEACHERS.flatMap(t=>t.subjects);
+
 function vMLogin(){
-  const saved=localStorage.getItem('monitor_pin')||'';
+  const saved=localStorage.getItem('subject_pin')||'';
   return`
   <div class="lwrap">
     <button class="btn-back" onclick="go('menu')"><i class="ti ti-arrow-left"></i> กลับ</button>
     <div class="la la-m"><i class="ti ti-clipboard-list" style="font-size:36px"></i></div>
-    <div class="ltitle">ฝ่ายการเรียน</div>
+    <div class="ltitle">ครูประจำวิชา</div>
     ${S.msg?`<div class="merr">${S.msg}</div>`:''}
     <div class="card">
-      <div class="frow"><label>PIN ฝ่ายการเรียน</label>
-        <input type="password" id="mp" placeholder="กรอก PIN 5 หลัก" maxlength="5" inputmode="numeric" value="${saved}" onkeydown="if(event.key==='Enter')doMLogin()">
+      <div class="frow"><label>รหัสครูประจำวิชา</label>
+        <input type="password" id="mp" placeholder="กรอกรหัสของท่าน" value="${saved}" onkeydown="if(event.key==='Enter')doMLogin()">
       </div>
       <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);margin-bottom:.75rem;cursor:pointer">
         <input type="checkbox" id="m_remember" ${saved?'checked':''} style="width:16px;height:16px;accent-color:var(--green)"> จำรหัสในเครื่องนี้
@@ -2240,157 +2211,178 @@ function vMLogin(){
 function doMLogin(){
   const v=document.getElementById('mp')?.value?.trim()||'';
   const remember=document.getElementById('m_remember')?.checked;
-  const grp=MONITOR_GROUPS.find(g=>g.pin===v);
-  if(grp){
-    if(remember) localStorage.setItem('monitor_pin',v);
-    else localStorage.removeItem('monitor_pin');
-    S.view='mlist';S.msg='';S.role='monitor';
-    S.monitorGroup=grp;
+  const teacher=SUBJECT_TEACHERS.find(t=>t.pin===v);
+  if(teacher){
+    if(remember) localStorage.setItem('subject_pin',v);
+    else localStorage.removeItem('subject_pin');
+    S.msg='';S.role='monitor';
+    S.subjectTeacherPin=v;
+    if(teacher.subjects.length===1){
+      // มีวิชาเดียว เข้าตารางเลย ไม่ต้องให้เลือก
+      S.subjectTeacherSubject=teacher.subjects[0];
+      S.view='mlist';
+    } else {
+      // มีหลายวิชา ให้เลือกก่อน
+      S.view='msubjectpick';
+    }
     startPoll();render();
   } else {
-    S.msg='PIN ไม่ถูกต้อง';render();
+    S.msg='รหัสไม่ถูกต้อง';render();
   }
 }
-function doMLogout(){stopPoll();S.role=null;S.monitorGroup=null;S.view='menu';render();}
+function doMLogout(){stopPoll();S.role=null;S.subjectTeacherPin=null;S.subjectTeacherSubject=null;S.view='menu';render();}
+
+// แสดงสถานะงานของนักเรียน 1 คน แยกตามวิชา — ใช้ทั้งหน้าครูและหน้าผู้ปกครอง
+// ดึงข้อมูลจาก DB.subjectTeacherData ที่ครูประจำวิชาติ๊กไว้โดยตรง (real-time)
+function renderStudentSubjectWork(sid){
+  if(ALL_SUBJECTS.length===0){
+    return `<div style="text-align:center;color:var(--muted);font-size:13px;padding:1.5rem">ยังไม่มีวิชาในระบบ</div>`;
+  }
+  const cards = SUBJECT_TEACHERS.flatMap(teacher=>teacher.subjects.map(subject=>{
+    const data = getSubjectData(teacher.pin, subject);
+    const cols = data.columns||[];
+    const checks = (data.checks||{})[sid]||{};
+    const doneItems = cols.filter(c=>checks[c.id]);
+    const notDoneItems = cols.filter(c=>!checks[c.id]);
+    const itemRow = (c, done) => `<div style="display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:8px;background:${done?'var(--green-bg)':'var(--pink-bg)'};margin-bottom:4px">
+      <span style="font-size:13px">${done?'✅':'❌'}</span>
+      <span style="font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name}</span>
+    </div>`;
+    return `<div style="background:var(--surface);border-radius:14px;border:1px solid var(--border);padding:.875rem;margin-bottom:.75rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+        <div style="font-size:14px;font-weight:700">${subject}</div>
+        <div style="font-size:11px;color:var(--muted)"><span style="color:var(--green);font-weight:700">${doneItems.length}</span> เสร็จ / <span style="color:var(--red);font-weight:700">${notDoneItems.length}</span> ไม่เสร็จ</div>
+      </div>
+      ${cols.length===0
+        ? `<div style="text-align:center;color:var(--muted);font-size:12px;padding:.5rem">ยังไม่มีงานในวิชานี้</div>`
+        : cols.map(c=>itemRow(c, !!checks[c.id])).join('')}
+    </div>`;
+  }));
+  return cards.join('');
+}
+
+function vMSubjectPick(){
+  const teacher=SUBJECT_TEACHERS.find(t=>t.pin===S.subjectTeacherPin);
+  if(!teacher)return'';
+  const btns=teacher.subjects.map(subj=>`
+    <button onclick="S.subjectTeacherSubject='${subj}';S.view='mlist';render()" style="width:100%;padding:16px;margin-bottom:10px;border-radius:14px;border:2px solid var(--blue-bd);background:var(--blue-bg);color:var(--blue);font-family:Prompt,sans-serif;font-size:16px;font-weight:700;cursor:pointer">${subj}</button>`).join('');
+  return`
+  <div class="lwrap">
+    <button class="btn-back" onclick="doMLogout()"><i class="ti ti-arrow-left"></i> กลับ</button>
+    <div class="la la-m"><i class="ti ti-books" style="font-size:36px"></i></div>
+    <div class="ltitle">เลือกวิชา</div>
+    <div class="card">
+      ${btns}
+    </div>
+  </div>`;
+}
+
+// อ่าน/เขียนข้อมูลตารางเช็คงานของครูวิชานี้ — เก็บแยกใน DB.subjectTeacherData[pin_วิชา] ไม่ยุ่งกับข้อมูลคะแนนหลัก
+// key แยกตาม "รหัส_ชื่อวิชา" เพื่อไม่ให้ปนกันเมื่อรหัสเดียวมีหลายวิชา
+function subjectDataKey(pin,subject){ return pin+'__'+subject; }
+function getSubjectData(pin,subject){
+  const key=subjectDataKey(pin,subject);
+  if(!DB.subjectTeacherData) DB.subjectTeacherData={};
+  if(!DB.subjectTeacherData[key]) DB.subjectTeacherData[key]={columns:[],checks:{}};
+  return DB.subjectTeacherData[key];
+}
+async function saveSubjectData(){
+  try{ await api('PATCH','/settings/subjectTeacherData',{subjectTeacherData: DB.subjectTeacherData}); }catch(e){}
+}
 
 function vMList(){
-  const grp=S.monitorGroup;
-  if(!grp)return'';
-  const entries=Object.entries(DB.students)
-    .filter(([,s])=>{const no=parseInt(s.no)||0;return no>=grp.noFrom&&no<=grp.noTo;})
-    .sort(([,a],[,b])=>(parseInt(a.no)||999)-(parseInt(b.no)||999));
+  const pin=S.subjectTeacherPin;
+  const subject=S.subjectTeacherSubject;
+  if(!pin||!subject)return'';
+  const data=getSubjectData(pin,subject);
+  const students=Object.entries(DB.students||{}).sort(([,a],[,b])=>(parseInt(a.no)||999)-(parseInt(b.no)||999));
+  const cols=data.columns||[];
 
-  const doneCount=entries.filter(([,s])=>SUBJECTS.every(subj=>s.hw?.[subj]?.done)).length;
+  const headerCols=cols.map(c=>`<th style="padding:8px 10px;font-size:12px;font-weight:700;text-align:center;border-bottom:2px solid var(--border);min-width:90px;white-space:nowrap">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+      <span style="overflow:hidden;text-overflow:ellipsis;max-width:90px">${c.name}</span>
+      <button onclick="doMDeleteColumn('${c.id}')" title="ลบงานนี้" style="background:none;border:none;color:var(--red);font-size:11px;cursor:pointer">✕ ลบ</button>
+    </div>
+  </th>`).join('');
 
-  const cards=entries.map(([sid,s])=>{
-    const hw=s.hw||{};
-    const hwDone=SUBJECTS.filter(subj=>hw[subj]?.done).length;
-    const hwAll=hwDone===SUBJECTS.length;
-    const tPct=taskPct(s);
-    const tColor=taskColor(s);
-    const tBg=taskColorBg(s);
-    const taskComplete=tPct===100;
-    const g=isGirl(s.name);
-    const animal=getStudentAnimal(s);
-    const avatarContent=s.photo
-      ?`<img src="${s.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
-      :drawAnimalSVG(animal,g,60);
-    const shortN=s.name.replace('เด็กชาย','ด.ช.').replace('เด็กหญิง','ด.ญ.');
-    return`<div onclick="S.sid='${sid}';S.view='mstudent';render()" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;padding:1rem .5rem .85rem;border-radius:18px;background:${tBg};border:2px solid ${tColor};box-shadow:var(--shadow-sm);transition:all .2s;position:relative"
-      onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
-      <div style="position:absolute;top:5px;left:7px;font-size:10px;font-weight:700;color:var(--muted)">${s.no||''}</div>
-      <div style="width:60px;height:60px;border-radius:50%;overflow:hidden;border:3px solid ${taskComplete?'#FFD700':g?'#F4BFDA':'#B5D1F5'};box-shadow:${taskComplete?'0 0 8px rgba(255,215,0,.6)':'none'}">${avatarContent}</div>
-      <div style="font-size:11px;font-weight:700;color:${tColor};text-align:center;width:100%;padding:0 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${taskEmoji(s)} ${shortN}</div>
-      <div style="font-size:11px;font-weight:700;color:${tColor};background:white;border:1px solid ${tColor};border-radius:999px;padding:2px 8px">
-        ${taskComplete?'งานครบ ✓':`ส่ง ${s.taskDone||0}/${s.taskTotal||0}`}
-      </div>
-      <div style="font-size:10px;color:var(--muted)">${hwAll?'✓ วิชาครบ':`วิชา ${hwDone}/${SUBJECTS.length}`}</div>
-    </div>`;
+  const rows=students.map(([sid,s])=>{
+    const checks=data.checks[sid]||{};
+    const doneCount=cols.filter(c=>checks[c.id]).length;
+    const notDoneCount=cols.length-doneCount;
+    const cells=cols.map(c=>{
+      const checked=!!checks[c.id];
+      return`<td style="padding:6px;text-align:center;border-bottom:1px solid var(--border-soft);background:${checked?'var(--green-bg)':'var(--pink-bg)'}">
+        <input type="checkbox" ${checked?'checked':''} onchange="doMToggleCheck('${sid}','${c.id}')" style="width:22px;height:22px;accent-color:${checked?'#0B7A6B':'#D9304E'};cursor:pointer">
+      </td>`;
+    }).join('');
+    return`<tr>
+      <td style="padding:8px 10px;font-size:13px;font-weight:600;border-bottom:1px solid var(--border-soft);white-space:nowrap;position:sticky;left:0;background:var(--surface);z-index:1">${s.no||''}. ${s.name}</td>
+      ${cells}
+      <td style="padding:8px 10px;text-align:center;border-bottom:1px solid var(--border-soft);white-space:nowrap;font-size:12px">
+        <span style="color:var(--green);font-weight:700">${doneCount}</span> / <span style="color:var(--red);font-weight:700">${notDoneCount}</span>
+      </td>
+    </tr>`;
   }).join('');
 
   return`
     <div class="hrow hrow-sticky">
-      <div class="ptitle">เลขที่ ${grp.noFrom}–${grp.noTo} <span style="font-size:13px;font-weight:400;color:var(--muted)">(ส่งครบ ${doneCount}/${entries.length} คน)</span></div>
+      <div class="ptitle">วิชา${subject} <span style="font-size:13px;font-weight:400;color:var(--muted)">(${cols.length} งาน · ${students.length} คน)</span></div>
       <button class="btn btn-r" style="font-size:13px" onclick="doMLogout()"><i class="ti ti-logout"></i> ออก</button>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(${Math.min(entries.length,5)},1fr);gap:10px;width:100%;max-width:500px;margin:0 auto">${cards}</div>`;}
-
-function vMStudent(){
-  const s=DB.students[S.sid];if(!s)return'';
-  const grp=S.monitorGroup;
-  const g=isGirl(s.name);
-  const hw=s.hw||{};
-
-  const hwCards=SUBJECTS.map(subj=>{
-    const it=hw[subj]||{done:false,date:today()};
-    return`<div class="hwc ${it.done?'hwd':'hwm'}" onclick="doMToggleHw('${subj}')">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div class="hn">${subj}</div>
-        <i class="ti ${it.done?'ti-circle-check':'ti-circle-x'}" style="font-size:18px"></i>
+    <div style="padding:0 1rem 1rem">
+      <button onclick="doMAddColumn()" style="width:100%;padding:10px;border-radius:12px;border:2px dashed var(--blue);background:var(--blue-bg);color:var(--blue);font-family:Sarabun,sans-serif;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:.75rem">
+        <i class="ti ti-plus"></i> เพิ่มงาน
+      </button>
+      <div style="overflow-x:auto;border-radius:14px;border:1px solid var(--border)">
+        <table style="border-collapse:collapse;width:100%;background:var(--surface)">
+          <thead>
+            <tr>
+              <th style="padding:8px 10px;font-size:12px;font-weight:700;text-align:left;border-bottom:2px solid var(--border);position:sticky;left:0;background:var(--surface);z-index:2;white-space:nowrap">ชื่อนักเรียน</th>
+              ${headerCols}
+              <th style="padding:8px 10px;font-size:12px;font-weight:700;text-align:center;border-bottom:2px solid var(--border);white-space:nowrap">ส่ง/ไม่ส่ง</th>
+            </tr>
+          </thead>
+          <tbody>${rows || `<tr><td colspan="${cols.length+2}" style="padding:2rem;text-align:center;color:var(--muted)">ไม่มีนักเรียน</td></tr>`}</tbody>
+        </table>
       </div>
-      <div class="hs">${it.done?'ส่งแล้ว':'ยังไม่ส่ง'}</div>
-      <div class="hdate">เช็ค: ${it.date}</div>
+      ${cols.length===0?'<div style="text-align:center;color:var(--muted);font-size:13px;padding:1rem">ยังไม่มีงาน — กดปุ่ม "เพิ่มงาน" ด้านบนเพื่อเริ่มสร้างคอลัมน์เช็คงาน</div>':''}
     </div>`;
-  }).join('');
-
-  const doneCount=SUBJECTS.filter(subj=>hw[subj]?.done).length;
-
-  const hwPhotoHtml=s.hwPhoto?`
-    <div style="margin-bottom:1rem;border-radius:14px;overflow:hidden;border:2px solid var(--blue-bd);position:relative">
-      <div style="font-size:12px;font-weight:600;color:var(--blue);padding:6px 10px;background:var(--blue-bg);display:flex;justify-content:space-between;align-items:center">
-        <span><i class="ti ti-photo"></i> ใบจดงานของนักเรียน</span>
-        <button onclick="doMRemoveHwPhoto()" style="background:none;border:none;color:var(--red);font-size:12px;cursor:pointer;font-family:Sarabun,sans-serif">ลบรูป</button>
-      </div>
-      <img src="${s.hwPhoto}" style="width:100%;height:auto;object-fit:contain;display:block;cursor:pointer" onclick="openLightbox('${s.hwPhoto}')">
-    </div>`:'';
-
-  const mTaskPct=taskPct(s);
-  const mColor=taskColor(s);
-  return`
-    <button class="btn-back" onclick="S.view='mlist';render()"><i class="ti ti-arrow-left"></i> กลับ</button>
-    <div style="display:flex;align-items:center;gap:.75rem;padding:.75rem 0 .75rem">
-      <div style="width:56px;height:56px;border-radius:50%;overflow:hidden;border:2px solid ${mTaskPct===100?'#FFD700':g?'#F4BFDA':'#B5D1F5'};flex-shrink:0;box-shadow:${mTaskPct===100?'0 0 10px rgba(255,215,0,.6)':'none'}">
-        ${s.photo?`<img src="${s.photo}" style="width:100%;height:100%;object-fit:cover">`:drawAnimalSVG(getStudentAnimal(s),g,56)}
-      </div>
-      <div style="flex:1">
-        <div style="font-size:17px;font-weight:700">${s.name}</div>
-        <div style="font-size:12px;color:var(--muted)">เลขที่ ${s.no||'-'} · ส่งวิชาแล้ว ${doneCount}/${SUBJECTS.length} วิชา</div>
-      </div>
-    </div>
-    <div class="stats" style="grid-template-columns:repeat(4,1fr);margin-bottom:1rem">
-      <div class="sc"><div class="sl">คะแนน</div><div class="sv" style="color:${tot(s)>=0?'var(--green)':'var(--red)'}">${tot(s)>=0?'+':''}${tot(s)}</div></div>
-      <div class="sc"><div class="sl">งานทั้งหมด</div><div class="sv" style="color:var(--muted)">${s.taskTotal||0}</div></div>
-      <div class="sc" style="cursor:pointer" onclick="doMEditTaskDone()"><div class="sl">เสร็จแล้ว ✅</div><div class="sv" style="color:${mColor}">${s.taskDone||0}</div></div>
-      <div class="sc"><div class="sl">ยังไม่เสร็จ ❌</div><div class="sv" style="color:${(s.taskTotal||0)-(s.taskDone||0)>0?'var(--red)':'var(--green)'}">${(s.taskTotal||0)-(s.taskDone||0)}</div></div>
-      <div class="sc" style="cursor:pointer" onclick="doMEditSigned()"><div class="sl">มีลายเซ็น ✍️</div><div class="sv" style="color:var(--green)">${s.sig||0}</div></div>
-      <div class="sc"><div class="sl">รอลายเซ็น ⏳</div><div class="sv" style="color:${(s.taskDone||0)-(s.sig||0)>0?'var(--amber)':'var(--green)'}">${(s.taskDone||0)-(s.sig||0)}</div></div>
-    </div>
-    <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
-      
-      <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:12px;background:var(--blue-bg);border:1.5px solid var(--blue-bd);color:var(--blue);font-size:14px;font-weight:600;cursor:pointer;font-family:Sarabun,sans-serif">
-        <i class="ti ti-camera-upload"></i> ${s.hwPhoto?'เปลี่ยนรูปใบงาน':'หลักฐานการส่งงานของนักเรียน'}
-        <input type="file" accept="image/*" style="display:none" onchange="doMUploadHwPhoto(this)">
-      </label>
-    </div>
-    ${hwPhotoHtml}
-    
-    `;}
-
-async function doMToggleHw(subj){
-  const s=DB.students[S.sid];if(!s)return;
-  s.hw=s.hw||{};
-  s.hw[subj]=s.hw[subj]||{done:false,date:today()};
-  s.hw[subj].done=!s.hw[subj].done;
-  s.hw[subj].date=today();
-  await api('PATCH',`/students/${S.sid}`,{hw:s.hw});
-  render();}
-
-async function doMMarkAllDone(){
-  const s=DB.students[S.sid];if(!s)return;
-  s.hw=s.hw||{};
-  SUBJECTS.forEach(subj=>{s.hw[subj]={done:true,date:today()};});
-  await api('PATCH',`/students/${S.sid}`,{hw:s.hw});
-  render();}
-
-async function doMUploadHwPhoto(input){
-  const file=input.files[0];if(!file)return;
-  const s=DB.students[S.sid];if(!s)return;
-  try{
-    const url=await uploadToCloudinary(file,'rs9/hwphotos');
-    s.hwPhoto=url;
-    await api('PATCH',`/students/${S.sid}`,{hwPhoto:url});
-    render();
-  }catch(e){
-    alert('อัพโหลดไม่สำเร็จ: '+e.message);
-  }
 }
 
-async function doMRemoveHwPhoto(){
-  if(!confirm('ลบรูปใบจดงานนี้?'))return;
-  const s=DB.students[S.sid];if(!s)return;
-  s.hwPhoto=null;
-  await api('PATCH',`/students/${S.sid}`,{hwPhoto:null});
-  render();}
+async function doMAddColumn(){
+  const pin=S.subjectTeacherPin,subject=S.subjectTeacherSubject;
+  if(!pin||!subject)return;
+  const name=prompt('ตั้งชื่องาน (เช่น ใบงานที่ 1)');
+  if(!name||!name.trim())return;
+  const data=getSubjectData(pin,subject);
+  data.columns=data.columns||[];
+  data.columns.push({id:'col'+Date.now(),name:name.trim()});
+  await saveSubjectData();
+  render(true);
+}
+
+async function doMDeleteColumn(colId){
+  const pin=S.subjectTeacherPin,subject=S.subjectTeacherSubject;
+  if(!pin||!subject)return;
+  if(!confirm('ลบงานนี้? ข้อมูลการเช็คของงานนี้จะหายไปด้วย'))return;
+  const data=getSubjectData(pin,subject);
+  data.columns=(data.columns||[]).filter(c=>c.id!==colId);
+  // ลบข้อมูลเช็คของคอลัมน์นี้ออกจากทุกคนด้วย
+  Object.values(data.checks||{}).forEach(rowChecks=>{ delete rowChecks[colId]; });
+  await saveSubjectData();
+  render(true);
+}
+
+async function doMToggleCheck(sid,colId){
+  const pin=S.subjectTeacherPin,subject=S.subjectTeacherSubject;
+  if(!pin||!subject)return;
+  const data=getSubjectData(pin,subject);
+  data.checks=data.checks||{};
+  data.checks[sid]=data.checks[sid]||{};
+  data.checks[sid][colId]=!data.checks[sid][colId];
+  render(true); // อัปเดตหน้าจอทันที ไม่ต้องรอ server ตอบ
+  await saveSubjectData();
+}
 
 
 function doSetTaskInfo(){
@@ -2931,24 +2923,6 @@ async function doMarkAllDone(sid){
   const s=DB.students[sid];if(!s)return;
   SUBJECTS.forEach(subj=>{s.hw[subj]={done:true,date:today()};});
   await api('PATCH',`/students/${sid}`,{hw:s.hw});render();
-}
-async function doUploadExamplePhoto(input){
-  const file=input.files[0];if(!file)return;
-  S.msg='กำลังอัพโหลดรูปตัวอย่าง...';render();
-  try{
-    const url=await uploadToCloudinary(file,'rs9/examples');
-    DB.exampleHwPhoto=url;
-    await api('POST','/data',DB);
-    S.msg='';render();
-  }catch(e){
-    S.msg='อัพโหลดไม่สำเร็จ: '+e.message;render();
-  }
-}
-async function doDeleteExamplePhoto(){
-  if(!confirm('ลบรูปตัวอย่างงานครบนี้?'))return;
-  DB.exampleHwPhoto=null;
-  await api('POST','/data',DB);
-  render();
 }
 async function doRedeem(name,cost){
   const s=DB.students[S.sid];if(!s||tot(s)<cost){alert('คะแนนไม่พอ');return;}
