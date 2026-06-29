@@ -2422,19 +2422,27 @@ function closeGrowthChartModal(){
 }
 
 // คำนวณข้อมูลคะแนนรายวันของนักเรียนคนหนึ่ง จาก s.logs ที่มี ts — รวมยอดสุทธิต่อวัน ข้ามวันที่ไม่มีการเคลื่อนไหว
+// คำนวณคะแนนสะสม "ทีละรายการ" เรียงตามเวลาจริง (ไม่รวมเป็นยอดต่อวัน) — ใช้วาดกราฟแบบหุ้นที่เห็นทุกจังหวะขึ้น-ลง
 function computeDailyScoreData(sid){
   const s = DB.students[sid];
   if(!s) return [];
-  const byDay = {}; // key: 'YYYY-MM-DD' (ใช้ค่าวันจริงจาก Date ไม่ใช่ string ไทย กันปัญหาเรียงลำดับผิด)
-  (s.logs||[]).forEach(l=>{
-    // log ใหม่มี ts (timestamp แน่นอน) ใช้ก่อน — log เก่าไม่มี ts ให้แปลงจาก date string ไทยแทน (แม่นยำระดับวัน ไม่มีเวลานาทีที่แน่นอน)
+  // s.logs ถูกเก็บแบบ unshift (รายการใหม่สุดอยู่หน้า array) — reverse ก่อนเพื่อให้ลำดับ index ตรงกับเวลาจริง (เก่าสุดก่อน)
+  const logsChronological = [...(s.logs||[])].reverse();
+  const events = [];
+  logsChronological.forEach((l, idx)=>{
     const d = l.ts ? new Date(l.ts) : parseThaiDateStr(l.date);
     if(!d) return; // แปลงไม่ได้เลยทั้งสองทาง ข้ามรายการนี้ไป
-    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    if(!byDay[key]) byDay[key] = {date: d, total: 0};
-    byDay[key].total += (l.score||0);
+    // ใช้ ts จริงถ้ามี — ถ้าไม่มี (log เก่า) ใช้เวลาของวันนั้น + ลำดับ idx เพื่อกันชนกันตอน sort (รายการในวันเดียวกันจะเรียงตามลำดับเวลาที่บันทึกจริง)
+    const sortKey = l.ts || (d.getTime() + idx);
+    events.push({date: d, sortKey, score: l.score||0, desc: l.desc||''});
   });
-  return Object.values(byDay).sort((a,b)=>a.date-b.date);
+  events.sort((a,b)=>a.sortKey-b.sortKey);
+  let running = 0;
+  const points = events.map(e=>{
+    running += e.score;
+    return {date: e.date, cumulative: running, desc: e.desc, delta: e.score};
+  });
+  return points;
 }
 
 // คำนวณข้อมูลงานรายสัปดาห์ จาก DB.weeklySnapshots — เทียบสัปดาห์ปัจจุบันกับสัปดาห์ก่อนหน้าเพื่อหา "ที่เพิ่มขึ้นจริง"
@@ -2481,22 +2489,30 @@ function renderGrowthCharts(){
     }
     canvas.style.display='block'; emptyMsg.style.display='none';
     const labels = data.map(d=>`${d.date.getDate()}/${d.date.getMonth()+1}`);
-    const values = data.map(d=>d.total);
+    const values = data.map(d=>d.cumulative);
+    // คำนวณเพดานบน/ล่างให้พอดีกับข้อมูลจริง โดยมี 0 อยู่กึ่งกลางเสมอ (ใช้ค่า absolute สูงสุดของทั้งบวกและลบ)
+    const maxAbs = Math.max(10, ...values.map(v=>Math.abs(v))); // อย่างน้อย 10 กันกราฟแบนเกินไปตอนข้อมูลน้อย
+    const yPad = Math.ceil(maxAbs * 1.15 / 5) * 5; // เผื่อขอบ 15% แล้วปัดเป็นเลขลงตัวที่ 5
     _gcChartInstance = new Chart(canvas, {
       type: 'line',
       data: { labels, datasets: [{
-        label: 'คะแนนสุทธิรายวัน',
+        label: 'คะแนนสะสม',
         data: values,
         borderColor: '#1A6BC4',
-        backgroundColor: 'rgba(26,107,196,.12)',
-        fill: true, stepped: true,
-        pointBackgroundColor: values.map(v=>v>=0?'#0B7A6B':'#D9304E'),
-        pointRadius: 4,
+        backgroundColor: 'rgba(26,107,196,.08)',
+        fill: { target: { value: 0 } }, // แต้มสีพื้นจากเส้น 0 ไม่ใช่จากพื้นล่างสุด ให้เห็นชัดว่าส่วนไหนบวก/ลบ
+        tension: 0,
+        pointBackgroundColor: data.map(d=>d.delta>=0?'#0B7A6B':'#D9304E'),
+        pointRadius: 3,
+        borderWidth: 2,
       }]},
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: { legend: { display: false } },
-        scales: { y: { beginAtZero: true, min: 0, max: 100, grid: { color: '#eee' } }, x: { grid: { display: false } } }
+        scales: {
+          y: { min: -yPad, max: yPad, grid: { color: (ctx)=>ctx.tick.value===0?'#999':'#eee' } },
+          x: { grid: { display: false } }
+        }
       }
     });
   } else {
