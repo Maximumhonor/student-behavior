@@ -2309,6 +2309,7 @@ function vMList(){
     const checks=data.checks[sid]||{};
     const doneCount=cols.filter(c=>checks[c.id]).length;
     const notDoneCount=cols.length-doneCount;
+    const allDone=cols.length>0&&doneCount===cols.length;
     const cells=cols.map(c=>{
       const checked=!!checks[c.id];
       return`<td style="padding:6px;text-align:center;border-bottom:1px solid var(--border-soft);background:${checked?'var(--green-bg)':'var(--pink-bg)'}">
@@ -2318,6 +2319,9 @@ function vMList(){
     return`<tr>
       <td style="padding:8px 10px;font-size:13px;font-weight:600;border-bottom:1px solid var(--border-soft);white-space:nowrap;position:sticky;left:0;background:var(--surface);z-index:1">${s.no||''}. ${s.name}</td>
       ${cells}
+      <td style="padding:6px;text-align:center;border-bottom:1px solid var(--border-soft);white-space:nowrap">
+        <button onclick="doMMarkRowAllDone('${sid}')" ${cols.length===0?'disabled':''} title="ติ๊กส่งครบทุกงานให้คนนี้" style="padding:6px 10px;border-radius:8px;border:1.5px solid ${allDone?'var(--green-bd)':'var(--border)'};background:${allDone?'var(--green-bg)':'var(--surface)'};color:${allDone?'#0B7A6B':'var(--muted)'};font-size:11px;font-weight:700;cursor:${cols.length===0?'not-allowed':'pointer'};white-space:nowrap;opacity:${cols.length===0?'.5':'1'}">${allDone?'✅ ครบแล้ว':'✓ ติ๊กครบ'}</button>
+      </td>
       <td style="padding:8px 10px;text-align:center;border-bottom:1px solid var(--border-soft);white-space:nowrap;font-size:12px">
         <span style="color:var(--green);font-weight:700">${doneCount}</span> / <span style="color:var(--red);font-weight:700">${notDoneCount}</span>
       </td>
@@ -2339,10 +2343,11 @@ function vMList(){
             <tr>
               <th style="padding:8px 10px;font-size:12px;font-weight:700;text-align:left;border-bottom:2px solid var(--border);position:sticky;left:0;background:var(--surface);z-index:2;white-space:nowrap">ชื่อนักเรียน</th>
               ${headerCols}
+              <th style="padding:8px 10px;font-size:12px;font-weight:700;text-align:center;border-bottom:2px solid var(--border);white-space:nowrap">ครบทุกงาน</th>
               <th style="padding:8px 10px;font-size:12px;font-weight:700;text-align:center;border-bottom:2px solid var(--border);white-space:nowrap">ส่ง/ไม่ส่ง</th>
             </tr>
           </thead>
-          <tbody>${rows || `<tr><td colspan="${cols.length+2}" style="padding:2rem;text-align:center;color:var(--muted)">ไม่มีนักเรียน</td></tr>`}</tbody>
+          <tbody>${rows || `<tr><td colspan="${cols.length+3}" style="padding:2rem;text-align:center;color:var(--muted)">ไม่มีนักเรียน</td></tr>`}</tbody>
         </table>
       </div>
       ${cols.length===0?'<div style="text-align:center;color:var(--muted);font-size:13px;padding:1rem">ยังไม่มีงาน — กดปุ่ม "เพิ่มงาน" ด้านบนเพื่อเริ่มสร้างคอลัมน์เช็คงาน</div>':''}
@@ -2350,39 +2355,86 @@ function vMList(){
 }
 
 async function doMAddColumn(){
+  if(_isSaving) return;
   const pin=S.subjectTeacherPin,subject=S.subjectTeacherSubject;
   if(!pin||!subject)return;
   const name=prompt('ตั้งชื่องาน (เช่น ใบงานที่ 1)');
   if(!name||!name.trim())return;
+  _isSaving = true; showSavingToast();
+  stopPoll(); // กัน poll แทรกกลางทาง เขียนทับงานที่เพิ่งเพิ่มก่อน server จะบันทึกเสร็จ
   const data=getSubjectData(pin,subject);
   data.columns=data.columns||[];
   data.columns.push({id:'col'+Date.now(),name:name.trim()});
-  await saveSubjectData();
+  render(true);
+  try{
+    await saveSubjectData();
+  } finally {
+    startPoll();
+    _isSaving = false; hideSavingToast();
+  }
   render(true);
 }
 
 async function doMDeleteColumn(colId){
+  if(_isSaving) return;
   const pin=S.subjectTeacherPin,subject=S.subjectTeacherSubject;
   if(!pin||!subject)return;
   if(!confirm('ลบงานนี้? ข้อมูลการเช็คของงานนี้จะหายไปด้วย'))return;
+  _isSaving = true; showSavingToast();
+  stopPoll();
   const data=getSubjectData(pin,subject);
   data.columns=(data.columns||[]).filter(c=>c.id!==colId);
   // ลบข้อมูลเช็คของคอลัมน์นี้ออกจากทุกคนด้วย
   Object.values(data.checks||{}).forEach(rowChecks=>{ delete rowChecks[colId]; });
-  await saveSubjectData();
+  render(true);
+  try{
+    await saveSubjectData();
+  } finally {
+    startPoll();
+    _isSaving = false; hideSavingToast();
+  }
   render(true);
 }
 
 async function doMToggleCheck(sid,colId){
   const pin=S.subjectTeacherPin,subject=S.subjectTeacherSubject;
   if(!pin||!subject)return;
+  stopPoll(); // กัน poll แทรกกลางทางตอนกำลังบันทึกการติ๊ก
   const data=getSubjectData(pin,subject);
   data.checks=data.checks||{};
   data.checks[sid]=data.checks[sid]||{};
   data.checks[sid][colId]=!data.checks[sid][colId];
   render(true); // อัปเดตหน้าจอทันที ไม่ต้องรอ server ตอบ
-  await saveSubjectData();
+  try{
+    await saveSubjectData();
+  } finally {
+    startPoll();
+  }
 }
+
+// ปุ่ม "ติ๊กครบ" ต่อแถว — ติ๊กส่งครบทุกงานให้นักเรียนคนเดียวทีเดียว (กดซ้ำ = ยกเลิกครบทั้งหมดของคนนั้น)
+async function doMMarkRowAllDone(sid){
+  if(_isSaving) return;
+  const pin=S.subjectTeacherPin,subject=S.subjectTeacherSubject;
+  if(!pin||!subject)return;
+  _isSaving = true; showSavingToast();
+  stopPoll();
+  const data=getSubjectData(pin,subject);
+  const cols=data.columns||[];
+  data.checks=data.checks||{};
+  data.checks[sid]=data.checks[sid]||{};
+  const allDone = cols.length>0 && cols.every(c=>data.checks[sid][c.id]);
+  cols.forEach(c=>{ data.checks[sid][c.id] = !allDone; }); // ถ้าครบอยู่แล้ว กดซ้ำ = ยกเลิกครบทั้งหมด, ถ้ายังไม่ครบ = ติ๊กให้ครบ
+  render(true);
+  try{
+    await saveSubjectData();
+  } finally {
+    startPoll();
+    _isSaving = false; hideSavingToast();
+  }
+  render(true);
+}
+
 
 
 function doSetTaskInfo(){
