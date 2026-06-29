@@ -564,6 +564,26 @@ function compressImage(file, maxW=1200, quality=0.82){
 const SUBJECTS=[];
 let S={view:'loading',role:null,sid:null,tab:'score',msg:'',search:'',newName:'',newId:'',monitorGroup:null};
 let pollTimer=null;
+// ป้องกันกดซ้ำตอนกำลังบันทึกคะแนน/งาน — แสดง toast "กำลังบันทึก..." ให้เห็นชัดว่าต้องรอ ไม่ใช่กรอกซ้ำ
+let _isSaving = false;
+function showSavingToast(){
+  if(document.getElementById('_savingToast')) return;
+  const el = document.createElement('div');
+  el.id = '_savingToast';
+  el.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:white;padding:10px 20px;border-radius:999px;font-size:13px;font-weight:600;z-index:999999;box-shadow:0 4px 16px rgba(0,0,0,.3);display:flex;align-items:center;gap:8px;font-family:Sarabun,sans-serif';
+  el.innerHTML = '<span style="display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite"></span> กำลังบันทึก...';
+  document.body.appendChild(el);
+  if(!document.getElementById('_spinKeyframe')){
+    const style = document.createElement('style');
+    style.id = '_spinKeyframe';
+    style.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+    document.head.appendChild(style);
+  }
+}
+function hideSavingToast(){
+  document.getElementById('_savingToast')?.remove();
+}
+
 
 function ini(name){
   if(!name)return'?';
@@ -811,6 +831,8 @@ async function loadDB(){
   if(S.role === 'teacher') checkAllExpiredBuddyMissions();
   // Don't re-render if user is scrolling the activity log box (กันเด้งกลับขึ้นบนสุดตอน poll)
   if(S._isScrollingActivity) return;
+  // กันเหตุการณ์ poll แทรกมาตอนกำลังบันทึกคะแนน/งานอยู่พอดี (เผื่อ stopPoll ยังไม่ทันทำงาน)
+  if(_isSaving) return;
   // Don't re-render if user is typing in chat box
   const active = document.activeElement;
   if(active && (active.id==='chat_input'||active.id==='chat_input_p')){
@@ -2600,6 +2622,7 @@ async function doEditTaskTotal(){
   render();
 }
 async function doEditTaskDone(){
+  if(_isSaving) return;
   const s=DB.students[S.sid];if(!s)return;
   const total=s.taskTotal||0;
   const cur=s.taskDone||0;
@@ -2608,14 +2631,23 @@ async function doEditTaskDone(){
   if(val===null)return;
   const n=parseInt(val);
   if(isNaN(n)||n<0||n>total){alert(`กรอกตัวเลข 0-${total}`);return;}
+  _isSaving = true; showSavingToast();
+  stopPoll(); // กัน poll แทรกกลางทาง เขียนทับค่าที่เพิ่งกรอกก่อน server จะบันทึกเสร็จ
   s.taskDone=n;
   if((s.sig||0)>n) s.sig=n; // ตัดมีลายเซ็นไม่ให้เกินจำนวนที่ส่งแล้ว
-  await api('PATCH',`/students/${S.sid}`,{taskDone:n,sig:s.sig||0});
-  await checkQuestProgress(S.sid);
-  await checkBuddyMissions(S.sid);
-  render();
+  render(true); // อัปเดตหน้าจอให้เห็นค่าใหม่ทันที ไม่ต้องรอ server ตอบ
+  try{
+    await api('PATCH',`/students/${S.sid}`,{taskDone:n,sig:s.sig||0});
+    await checkQuestProgress(S.sid);
+    await checkBuddyMissions(S.sid);
+  } finally {
+    startPoll();
+    _isSaving = false; hideSavingToast();
+  }
+  render(true);
 }
 async function doEditSigned(){
+  if(_isSaving) return;
   const s=DB.students[S.sid];if(!s)return;
   const done=s.taskDone||0;
   const cur=s.sig||0;
@@ -2624,11 +2656,20 @@ async function doEditSigned(){
   if(val===null)return;
   const n=parseInt(val);
   if(isNaN(n)||n<0||n>done){alert(`กรอกตัวเลข 0-${done}`);return;}
+  _isSaving = true; showSavingToast();
+  stopPoll();
   s.sig=n;
-  await api('PATCH',`/students/${S.sid}`,{sig:n});
-  render();
+  render(true);
+  try{
+    await api('PATCH',`/students/${S.sid}`,{sig:n});
+  } finally {
+    startPoll();
+    _isSaving = false; hideSavingToast();
+  }
+  render(true);
 }
 async function doMEditTaskDone(){
+  if(_isSaving) return;
   const s=DB.students[S.sid];if(!s)return;
   const total=s.taskTotal||0;
   const cur=s.taskDone||0;
@@ -2637,14 +2678,23 @@ async function doMEditTaskDone(){
   if(val===null)return;
   const n=parseInt(val);
   if(isNaN(n)||n<0||n>total){alert(`กรอกตัวเลข 0-${total}`);return;}
+  _isSaving = true; showSavingToast();
+  stopPoll();
   s.taskDone=n;
   if((s.sig||0)>n) s.sig=n; // ตัดมีลายเซ็นไม่ให้เกินจำนวนที่ส่งแล้ว
-  await api('PATCH',`/students/${S.sid}`,{taskDone:n,sig:s.sig||0});
-  await checkQuestProgress(S.sid);
-  await checkBuddyMissions(S.sid);
-  render();
+  render(true);
+  try{
+    await api('PATCH',`/students/${S.sid}`,{taskDone:n,sig:s.sig||0});
+    await checkQuestProgress(S.sid);
+    await checkBuddyMissions(S.sid);
+  } finally {
+    startPoll();
+    _isSaving = false; hideSavingToast();
+  }
+  render(true);
 }
 async function doMEditSigned(){
+  if(_isSaving) return;
   const s=DB.students[S.sid];if(!s)return;
   const done=s.taskDone||0;
   const cur=s.sig||0;
@@ -2653,9 +2703,17 @@ async function doMEditSigned(){
   if(val===null)return;
   const n=parseInt(val);
   if(isNaN(n)||n<0||n>done){alert(`กรอกตัวเลข 0-${done}`);return;}
+  _isSaving = true; showSavingToast();
+  stopPoll();
   s.sig=n;
-  await api('PATCH',`/students/${S.sid}`,{sig:n});
-  render();
+  render(true);
+  try{
+    await api('PATCH',`/students/${S.sid}`,{sig:n});
+  } finally {
+    startPoll();
+    _isSaving = false; hideSavingToast();
+  }
+  render(true);
 }
 async function doEditHwCount(type){
   const s=DB.students[S.sid];if(!s)return;
@@ -2721,7 +2779,9 @@ async function doDelete(sid){
 function openLog(mode){S.addMode=mode;S.view='taddlog';render();}
 
 async function doPreset(score,desc){
+  if(_isSaving) return; // กันกดซ้ำระหว่างกำลังบันทึกรายการก่อนหน้าอยู่
   const s=DB.students[S.sid];if(!s)return;
+  _isSaving = true; showSavingToast();
   stopPoll();
   s.logs=[{desc,score,date:today(),ts:Date.now()},...(s.logs||[])];
   s.score=(s.score||0)+score;
@@ -2729,8 +2789,10 @@ async function doPreset(score,desc){
   try{
     await api('PATCH',`/students/${S.sid}`,{logs:s.logs,score:s.score});
     await checkQuestProgress(S.sid);
-  }catch(e){console.log('preset error:',e);}
-  startPoll();
+  } finally {
+    startPoll();
+    _isSaving = false; hideSavingToast();
+  }
   render(true);
 }
 async function doDeleteRedeemLog(sid, idx){
@@ -2829,9 +2891,11 @@ async function deletePreset(){
   render(true);
 }
 async function doAddCustom(){
+  if(_isSaving) return;
   const desc=document.getElementById('cd')?.value?.trim()||'';const score=parseInt(document.getElementById('cs')?.value||'');
   if(!desc||isNaN(score)){alert('กรุณากรอกข้อมูลให้ครบ');return;}
   const s=DB.students[S.sid];if(!s)return;
+  _isSaving = true; showSavingToast();
   stopPoll();
   s.logs=[{desc,score,date:today(),ts:Date.now()},...(s.logs||[])];
   s.score=(s.score||0)+score;
@@ -2839,8 +2903,11 @@ async function doAddCustom(){
   try{
     await api('PATCH',`/students/${S.sid}`,{logs:s.logs,score:s.score});
     await checkQuestProgress(S.sid);
-  }catch(e){console.log('custom error:',e);}
-  startPoll();
+  } finally {
+    startPoll();
+    _isSaving = false; hideSavingToast();
+  }
+  render(true);
 }
 async function doAddStudent(){
   const name=document.getElementById('nn')?.value?.trim()||'';const idcard=document.getElementById('nc')?.value?.trim()||'';
