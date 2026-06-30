@@ -2850,8 +2850,11 @@ async function doPreset(score,desc){
 }
 async function doDeleteRedeemLog(sid, idx){
   if(!confirm('ลบประวัติการแลกนี้?')) return;
+  if(_isSaving) return;
   const s = DB.students[sid];
   if(!s||!s.redeemLogs) return;
+  _isSaving = true; showSavingToast();
+  stopPoll();
   const log = s.redeemLogs[idx];
   s.redeemLogs.splice(idx, 1);
   // คืนคะแนนให้นักเรียน
@@ -2859,23 +2862,38 @@ async function doDeleteRedeemLog(sid, idx){
   // คืน log คะแนนด้วย
   s.logs = s.logs||[];
   s.logs.unshift({desc:`คืนคะแนน: ${log.name}`, score:log.cost||0, date:today(), ts:Date.now()});
-  await api('PATCH', `/students/${sid}`, {redeemLogs:s.redeemLogs, score:s.score, logs:s.logs});
-  await checkQuestProgress(sid);
+  render(true);
+  try{
+    await api('PATCH', `/students/${sid}`, {redeemLogs:s.redeemLogs, score:s.score, logs:s.logs});
+    await checkQuestProgress(sid);
+  } finally {
+    startPoll();
+    _isSaving = false; hideSavingToast();
+  }
   render(true);
 }
 
 async function doDeleteLog(sid, idx){
   if(!confirm('ลบประวัติรายการนี้?')) return;
+  if(_isSaving) return;
   const s = DB.students[sid];
   if(!s||!s.logs) return;
+  _isSaving = true; showSavingToast();
+  stopPoll(); // กัน poll แทรกกลางทาง ทำให้รายการที่เพิ่งลบโผล่กลับมาก่อน server จะบันทึกเสร็จ
   // คำนวณคะแนนที่ต้องลบออก
   const log = s.logs[idx];
   s.logs.splice(idx, 1);
   // อัปเดต score
   s.score = (s.score||0) - (log.score||0);
+  render(true); // อัปเดตหน้าจอทันที ไม่ต้องรอ server ตอบ
   // บันทึกประวัติการลบ ไว้ดูใน "ประวัติให้คะแนนวันนี้" ของครู
   recordDeletionLog(sid, s.name, log);
-  await api('PATCH', `/students/${sid}`, {logs: s.logs, score: s.score});
+  try{
+    await api('PATCH', `/students/${sid}`, {logs: s.logs, score: s.score});
+  } finally {
+    startPoll();
+    _isSaving = false; hideSavingToast();
+  }
   render(true);
 }
 
