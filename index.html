@@ -239,6 +239,25 @@ label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px;font-wei
 #lightbox-img{max-width:100%;max-height:90vh;object-fit:contain;border-radius:8px;touch-action:pinch-zoom;cursor:zoom-in;transition:transform .2s}
 #lightbox-close{position:fixed;top:16px;right:16px;background:rgba(255,255,255,.15);border:none;border-radius:50%;width:40px;height:40px;color:white;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10000}
 #lightbox-hint{color:rgba(255,255,255,.5);font-size:12px;margin-top:10px}
+/* หมุนตารางเช็คงานครูประจำวิชา 90 องศา สำหรับมือถือจอแคบ ให้เห็นคอลัมน์ได้มากขึ้นโดยไม่ต้องพึ่งการหมุนเครื่องจริง */
+.mtable-rotate-wrap{
+  transform: rotate(90deg);
+  transform-origin: top left;
+  width: 100vh;
+  max-width: 100vh;
+  /* เลื่อนลงมาตามความกว้างเดิมของจอ เพื่อให้ตารางที่หมุนแล้วอยู่ในตำแหน่งที่มองเห็นพอดี ไม่ล้นออกขอบจอ */
+  margin-top: 100vw;
+  margin-left: 0;
+  position: relative;
+}
+.mtable-rotate-btn-mobile-only{ display:none; }
+@media (max-width: 768px){
+  .mtable-rotate-btn-mobile-only{ display:inline-flex; align-items:center; gap:4px; }
+}
+@media (min-width: 769px){
+  /* บนคอมพิวเตอร์ไม่ต้องหมุนเลย เพราะเห็นตารางเต็มอยู่แล้ว */
+  .mtable-rotate-wrap{ transform:none; width:100%; max-width:100%; margin:0; position:static; }
+}
 </style>
 </head>
 <body>
@@ -2343,10 +2362,15 @@ function vMList(){
     </div>
     ${subjectSwitcher}
     <div style="padding:0 1rem 1rem">
-      <button onclick="doMAddColumn()" style="width:100%;padding:10px;border-radius:12px;border:2px dashed var(--blue);background:var(--blue-bg);color:var(--blue);font-family:Sarabun,sans-serif;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:.75rem">
-        <i class="ti ti-plus"></i> เพิ่มงาน
-      </button>
-      <div style="overflow-x:auto;border-radius:14px;border:1px solid var(--border)">
+      <div style="display:flex;gap:8px;margin-bottom:.75rem">
+        <button onclick="doMAddColumn()" style="flex:1;padding:10px;border-radius:12px;border:2px dashed var(--blue);background:var(--blue-bg);color:var(--blue);font-family:Sarabun,sans-serif;font-size:14px;font-weight:600;cursor:pointer">
+          <i class="ti ti-plus"></i> เพิ่มงาน
+        </button>
+        <button onclick="S._mtableRotated=!S._mtableRotated;render(true)" class="mtable-rotate-btn-mobile-only" style="padding:10px 14px;border-radius:12px;border:1.5px solid ${S._mtableRotated?'var(--blue)':'var(--border)'};background:${S._mtableRotated?'var(--blue)':'var(--surface)'};color:${S._mtableRotated?'white':'var(--text)'};font-family:Sarabun,sans-serif;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap" title="หมุนตารางเป็นแนวนอนบนมือถือ">
+          <i class="ti ti-rotate-clockwise"></i> หมุนจอ
+        </button>
+      </div>
+      <div class="${S._mtableRotated?'mtable-rotate-wrap':''}" style="overflow-x:auto;border-radius:14px;border:1px solid var(--border)">
         <table style="border-collapse:collapse;width:100%;background:var(--surface)">
           <thead>
             <tr>
