@@ -2244,14 +2244,9 @@ function doMLogin(){
     else localStorage.removeItem('subject_pin');
     S.msg='';S.role='monitor';
     S.subjectTeacherPin=v;
-    if(teacher.subjects.length===1){
-      // มีวิชาเดียว เข้าตารางเลย ไม่ต้องให้เลือก
-      S.subjectTeacherSubject=teacher.subjects[0];
-      S.view='mlist';
-    } else {
-      // มีหลายวิชา ให้เลือกก่อน
-      S.view='msubjectpick';
-    }
+    // เข้าตารางวิชาแรกเลยทันที ไม่ต้องผ่านหน้าเลือกวิชา เพราะในหน้าตารางมีปุ่มสลับวิชาให้อยู่แล้ว (กรณีสอนหลายวิชา)
+    S.subjectTeacherSubject=teacher.subjects[0];
+    S.view='mlist';
     startPoll();render();
   } else {
     S.msg='รหัสไม่ถูกต้อง';render();
