@@ -20,6 +20,11 @@
 summary::-webkit-details-marker{display:none}
 summary::after{content:'\25BE';margin-left:8px;font-size:11px;color:var(--muted);transition:transform .15s}
 details[open] summary::after{transform:rotate(180deg)}
+.subj-summary::after{content:none}
+.subj-summary-label-open{display:none}
+details[open] .subj-summary .chev{transform:rotate(180deg)}
+details[open] .subj-summary-label-closed{display:none}
+details[open] .subj-summary-label-open{display:inline}
 :root{
   --bg:#F2F4FF;
   --surface:#FFFFFF;
@@ -1297,15 +1302,15 @@ function vTList(){
     <!-- Quest Manager Button -->
     <!-- เมนูไอคอน 4 ช่อง: Quest / Buddy / ประวัติ / กราฟ -->
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:.75rem">
-      <div onclick="S.showQuestMgr=!S.showQuestMgr;render(true)" style="cursor:pointer;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:12px 4px;display:flex;flex-direction:column;align-items:center;gap:5px">
+      <div onclick="S.showQuestMgr=!S.showQuestMgr;if(S.showQuestMgr){S.showBuddyMgr=false;S.showActivityLog=false;}render(true)" style="cursor:pointer;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:12px 4px;display:flex;flex-direction:column;align-items:center;gap:5px">
         <div style="width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,#7B2FBE,#C44569);display:flex;align-items:center;justify-content:center;font-size:18px">🎯</div>
         <div style="font-size:10.5px;font-weight:700;color:var(--text);text-align:center;line-height:1.25">Quest<br><span style="font-weight:400;color:var(--muted)">${(DB.quests||[]).length} ภารกิจ</span></div>
       </div>
-      <div onclick="S.showBuddyMgr=!S.showBuddyMgr;render(true)" style="cursor:pointer;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:12px 4px;display:flex;flex-direction:column;align-items:center;gap:5px">
+      <div onclick="S.showBuddyMgr=!S.showBuddyMgr;if(S.showBuddyMgr){S.showQuestMgr=false;S.showActivityLog=false;}render(true)" style="cursor:pointer;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:12px 4px;display:flex;flex-direction:column;align-items:center;gap:5px">
         <div style="width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,#0B7A6B,#17C1A8);display:flex;align-items:center;justify-content:center;font-size:18px">🤝</div>
         <div style="font-size:10.5px;font-weight:700;color:var(--text);text-align:center;line-height:1.25">Buddy<br><span style="font-weight:400;color:var(--muted)">${(DB.buddyMissions||[]).filter(b=>b.active).length} คู่</span></div>
       </div>
-      <div onclick="S.showActivityLog=!S.showActivityLog;render(true)" style="cursor:pointer;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:12px 4px;display:flex;flex-direction:column;align-items:center;gap:5px;position:relative">
+      <div onclick="S.showActivityLog=!S.showActivityLog;if(S.showActivityLog){S.showQuestMgr=false;S.showBuddyMgr=false;}render(true)" style="cursor:pointer;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:12px 4px;display:flex;flex-direction:column;align-items:center;gap:5px;position:relative">
         ${todayActivityCount()>0?'<div style="position:absolute;top:7px;right:7px;width:7px;height:7px;background:#E24B4A;border-radius:50%"></div>':''}
         <div style="width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,#1A6BC4,#4DA0F0);display:flex;align-items:center;justify-content:center;font-size:18px">📋</div>
         <div style="font-size:10.5px;font-weight:700;color:var(--text);text-align:center;line-height:1.25">ประวัติ<br><span style="font-weight:400;color:var(--muted)">${todayActivityCount()} วันนี้</span></div>
@@ -2314,12 +2319,17 @@ function renderStudentSubjectWork(sid){
           ${pill(pendingItems.length,'#C9760A','#FFF4E0','รอตรวจ')}
         </div>`;
     return `<details style="background:var(--surface);border-radius:14px;border:1px solid var(--border);border-left:4px solid ${accent};padding:.875rem 1rem;margin-bottom:.625rem;box-shadow:0 1px 3px rgba(20,30,60,.04)">
-      <summary style="display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none;-webkit-tap-highlight-color:transparent">
+      <summary class="subj-summary" style="display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none;-webkit-tap-highlight-color:transparent">
         <span style="font-size:20px;line-height:1">${subjectIcon(subject)}</span>
         <div style="flex:1;min-width:0">
           <div style="font-size:14.5px;font-weight:700;font-family:Prompt,sans-serif">${subject}</div>
           ${statsRow}
           ${bar}
+        </div>
+        <div style="display:flex;align-items:center;gap:3px;flex-shrink:0;background:var(--blue-bg);border:1px solid var(--blue-bd);color:var(--blue);border-radius:999px;padding:5px 10px;font-size:11px;font-weight:700;white-space:nowrap">
+          <span class="subj-summary-label-closed">ดูรายละเอียด</span>
+          <span class="subj-summary-label-open">ซ่อนรายละเอียด</span>
+          <span class="chev" style="display:inline-block;transition:transform .15s;font-size:9px">▾</span>
         </div>
       </summary>
       <div style="margin-top:.75rem;padding-top:.625rem;border-top:1px dashed var(--border-soft)">
