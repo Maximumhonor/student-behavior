@@ -2269,6 +2269,14 @@ const STATUS_STYLE = {
   missing:{bg:'var(--pink-bg)',  icon:'❌', color:'#D9304E', label:'ยังไม่ส่ง'},
   pending:{bg:'#FFF4E0',         icon:'⏳', color:'#C9760A', label:'ยังไม่ได้ตรวจ'},
 };
+// ไอคอนประจำวิชา ใช้แค่ตกแต่งให้กวาดตาหาวิชาได้ไวขึ้น ไม่กระทบ logic ใดๆ
+const SUBJECT_ICON = {
+  'วิทยาศาสตร์':'🔬','สุขศึกษา':'💪','ภาษาไทย':'📖',
+  'ภาษาอังกฤษพื้นฐาน':'🔤','ภาษาอังกฤษเพิ่มเติม':'🔤',
+  'สังคมศึกษา':'🌍','ประวัติศาสตร์':'🏛️','คณิตศาสตร์':'➗',
+  'ต้านทุจริตศึกษา':'⚖️','คอมพิวเตอร์':'💻','ดนตรี':'🎵',
+};
+function subjectIcon(subject){ return SUBJECT_ICON[subject] || '📚'; }
 
 function renderStudentSubjectWork(sid){
   if(ALL_SUBJECTS.length===0){
@@ -2281,6 +2289,7 @@ function renderStudentSubjectWork(sid){
     const doneItems = cols.filter(c=>getCheckStatus(checks,c.id)==='done');
     const missingItems = cols.filter(c=>getCheckStatus(checks,c.id)==='missing');
     const pendingItems = cols.filter(c=>getCheckStatus(checks,c.id)==='pending');
+    const total = cols.length;
     const itemRow = (c) => {
       const st = STATUS_STYLE[getCheckStatus(checks,c.id)];
       return `<div style="display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:8px;background:${st.bg};margin-bottom:4px">
@@ -2288,12 +2297,32 @@ function renderStudentSubjectWork(sid){
       <span style="font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name}</span>
     </div>`;
     };
-    return `<details style="background:var(--surface);border-radius:14px;border:1px solid var(--border);padding:.875rem;margin-bottom:.75rem">
-      <summary style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;list-style:none;-webkit-tap-highlight-color:transparent">
-        <div style="font-size:14px;font-weight:700">${subject}</div>
-        <div style="font-size:11px;color:var(--muted)"><span style="color:var(--green);font-weight:700">${doneItems.length}</span> เสร็จ / <span style="color:var(--red);font-weight:700">${missingItems.length}</span> ไม่เสร็จ / <span style="color:#C9760A;font-weight:700">${pendingItems.length}</span> ยังไม่ตรวจ</div>
+    // แถบสีขอบซ้าย: แดงถ้ามีงานยังไม่ส่ง, เหลืองถ้ามีรอตรวจ, เขียวถ้าครบหมดแล้ว, เทาถ้ายังไม่มีงาน
+    const accent = total===0 ? 'var(--border)' : missingItems.length>0 ? '#D9304E' : pendingItems.length>0 ? '#C9760A' : '#0B7A6B';
+    const pct = (n)=> total===0?0:Math.round(n/total*100);
+    const bar = total===0 ? '' : `<div style="display:flex;height:6px;border-radius:999px;overflow:hidden;background:var(--border-soft);margin-top:8px">
+        ${doneItems.length>0?`<div style="width:${pct(doneItems.length)}%;background:#0B7A6B"></div>`:''}
+        ${pendingItems.length>0?`<div style="width:${pct(pendingItems.length)}%;background:#F0A630"></div>`:''}
+        ${missingItems.length>0?`<div style="width:${pct(missingItems.length)}%;background:#D9304E"></div>`:''}
+      </div>`;
+    const pill = (n,color,bg,label)=> n>0 ? `<span style="font-size:10.5px;font-weight:700;color:${color};background:${bg};border-radius:999px;padding:2px 8px;white-space:nowrap">${n} ${label}</span>` : '';
+    const statsRow = total===0
+      ? `<span style="font-size:11px;color:var(--muted)">ยังไม่มีงานในวิชานี้</span>`
+      : `<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">
+          ${pill(doneItems.length,'#0B7A6B','var(--green-bg)','เสร็จ')}
+          ${pill(missingItems.length,'#D9304E','var(--pink-bg)','ไม่เสร็จ')}
+          ${pill(pendingItems.length,'#C9760A','#FFF4E0','รอตรวจ')}
+        </div>`;
+    return `<details style="background:var(--surface);border-radius:14px;border:1px solid var(--border);border-left:4px solid ${accent};padding:.875rem 1rem;margin-bottom:.625rem;box-shadow:0 1px 3px rgba(20,30,60,.04)">
+      <summary style="display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none;-webkit-tap-highlight-color:transparent">
+        <span style="font-size:20px;line-height:1">${subjectIcon(subject)}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14.5px;font-weight:700;font-family:Prompt,sans-serif">${subject}</div>
+          ${statsRow}
+          ${bar}
+        </div>
       </summary>
-      <div style="margin-top:.625rem">
+      <div style="margin-top:.75rem;padding-top:.625rem;border-top:1px dashed var(--border-soft)">
       ${cols.length===0
         ? `<div style="text-align:center;color:var(--muted);font-size:12px;padding:.5rem">ยังไม่มีงานในวิชานี้</div>`
         : cols.map(c=>itemRow(c)).join('')}
