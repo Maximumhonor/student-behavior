@@ -2253,6 +2253,20 @@ function doMLogout(){stopPoll();S.role=null;S.subjectTeacherPin=null;S.subjectTe
 
 // แสดงสถานะงานของนักเรียน 1 คน แยกตามวิชา — ใช้ทั้งหน้าครูและหน้าผู้ปกครอง
 // ดึงข้อมูลจาก DB.subjectTeacherData ที่ครูประจำวิชาติ๊กไว้โดยตรง (real-time)
+// แปลงค่าเก่า (true/false/undefined) เป็นสถานะใหม่ 3 แบบ: 'done' (ส่งแล้ว), 'missing' (ยังไม่ส่ง), 'pending' (ยังไม่ได้ตรวจ — ค่าเริ่มต้น)
+// กันข้อมูลเก่าที่เคยติ๊กไว้ก่อนหน้านี้เพี้ยน: true เก่า -> done, false/ไม่มีค่า -> pending (ไม่ใช่ missing เพราะของเก่าไม่เคยมีสถานะนี้)
+function getCheckStatus(checks, colId){
+  const v = checks[colId];
+  if(v===true || v==='done') return 'done';
+  if(v==='missing') return 'missing';
+  return 'pending';
+}
+const STATUS_STYLE = {
+  done:   {bg:'var(--green-bg)', icon:'✅', color:'#0B7A6B', label:'ส่งแล้ว'},
+  missing:{bg:'var(--pink-bg)',  icon:'❌', color:'#D9304E', label:'ยังไม่ส่ง'},
+  pending:{bg:'#FFF4E0',         icon:'⏳', color:'#C9760A', label:'ยังไม่ได้ตรวจ'},
+};
+
 function renderStudentSubjectWork(sid){
   if(ALL_SUBJECTS.length===0){
     return `<div style="text-align:center;color:var(--muted);font-size:13px;padding:1.5rem">ยังไม่มีวิชาในระบบ</div>`;
@@ -2261,20 +2275,24 @@ function renderStudentSubjectWork(sid){
     const data = getSubjectData(teacher.pin, subject);
     const cols = data.columns||[];
     const checks = (data.checks||{})[sid]||{};
-    const doneItems = cols.filter(c=>checks[c.id]);
-    const notDoneItems = cols.filter(c=>!checks[c.id]);
-    const itemRow = (c, done) => `<div style="display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:8px;background:${done?'var(--green-bg)':'var(--pink-bg)'};margin-bottom:4px">
-      <span style="font-size:13px">${done?'✅':'❌'}</span>
+    const doneItems = cols.filter(c=>getCheckStatus(checks,c.id)==='done');
+    const missingItems = cols.filter(c=>getCheckStatus(checks,c.id)==='missing');
+    const pendingItems = cols.filter(c=>getCheckStatus(checks,c.id)==='pending');
+    const itemRow = (c) => {
+      const st = STATUS_STYLE[getCheckStatus(checks,c.id)];
+      return `<div style="display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:8px;background:${st.bg};margin-bottom:4px">
+      <span style="font-size:13px">${st.icon}</span>
       <span style="font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name}</span>
     </div>`;
+    };
     return `<div style="background:var(--surface);border-radius:14px;border:1px solid var(--border);padding:.875rem;margin-bottom:.75rem">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
         <div style="font-size:14px;font-weight:700">${subject}</div>
-        <div style="font-size:11px;color:var(--muted)"><span style="color:var(--green);font-weight:700">${doneItems.length}</span> เสร็จ / <span style="color:var(--red);font-weight:700">${notDoneItems.length}</span> ไม่เสร็จ</div>
+        <div style="font-size:11px;color:var(--muted)"><span style="color:var(--green);font-weight:700">${doneItems.length}</span> เสร็จ / <span style="color:var(--red);font-weight:700">${missingItems.length}</span> ไม่เสร็จ / <span style="color:#C9760A;font-weight:700">${pendingItems.length}</span> ยังไม่ตรวจ</div>
       </div>
       ${cols.length===0
         ? `<div style="text-align:center;color:var(--muted);font-size:12px;padding:.5rem">ยังไม่มีงานในวิชานี้</div>`
-        : cols.map(c=>itemRow(c, !!checks[c.id])).join('')}
+        : cols.map(c=>itemRow(c)).join('')}
     </div>`;
   }));
   return cards.join('');
@@ -2326,13 +2344,15 @@ function vMList(){
 
   const rows=students.map(([sid,s])=>{
     const checks=data.checks[sid]||{};
-    const doneCount=cols.filter(c=>checks[c.id]).length;
-    const notDoneCount=cols.length-doneCount;
+    const doneCount=cols.filter(c=>getCheckStatus(checks,c.id)==='done').length;
+    const notDoneCount=cols.filter(c=>getCheckStatus(checks,c.id)==='missing').length;
+    const pendingCount=cols.filter(c=>getCheckStatus(checks,c.id)==='pending').length;
     const allDone=cols.length>0&&doneCount===cols.length;
     const cells=cols.map(c=>{
-      const checked=!!checks[c.id];
-      return`<td style="padding:6px;text-align:center;border-bottom:1px solid var(--border-soft);background:${checked?'var(--green-bg)':'var(--pink-bg)'}">
-        <input type="checkbox" ${checked?'checked':''} onchange="doMToggleCheck('${sid}','${c.id}')" style="width:22px;height:22px;accent-color:${checked?'#0B7A6B':'#D9304E'};cursor:pointer">
+      const status=getCheckStatus(checks,c.id);
+      const st=STATUS_STYLE[status];
+      return`<td style="padding:6px;text-align:center;border-bottom:1px solid var(--border-soft);background:${st.bg}">
+        <button onclick="doMCycleCheck('${sid}','${c.id}')" title="กดเพื่อสลับสถานะ: ยังไม่ได้ตรวจ → ส่งแล้ว → ยังไม่ส่ง" style="width:34px;height:34px;border-radius:8px;border:1.5px solid ${st.color};background:white;font-size:17px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center">${st.icon}</button>
       </td>`;
     }).join('');
     return`<tr>
@@ -2342,7 +2362,7 @@ function vMList(){
         <button onclick="doMMarkRowAllDone('${sid}')" ${cols.length===0?'disabled':''} title="ติ๊กส่งครบทุกงานให้คนนี้" style="padding:6px 10px;border-radius:8px;border:1.5px solid ${allDone?'var(--green-bd)':'var(--border)'};background:${allDone?'var(--green-bg)':'var(--surface)'};color:${allDone?'#0B7A6B':'var(--muted)'};font-size:11px;font-weight:700;cursor:${cols.length===0?'not-allowed':'pointer'};white-space:nowrap;opacity:${cols.length===0?'.5':'1'}">${allDone?'✅ ครบแล้ว':'✓ ติ๊กครบ'}</button>
       </td>
       <td style="padding:8px 10px;text-align:center;border-bottom:1px solid var(--border-soft);white-space:nowrap;font-size:12px">
-        <span style="color:var(--green);font-weight:700">${doneCount}</span> / <span style="color:var(--red);font-weight:700">${notDoneCount}</span>
+        <span style="color:var(--green);font-weight:700">${doneCount}</span> / <span style="color:var(--red);font-weight:700">${notDoneCount}</span> / <span style="color:#C9760A;font-weight:700">${pendingCount}</span>
       </td>
     </tr>`;
   }).join('');
@@ -2377,7 +2397,7 @@ function vMList(){
               <th style="padding:8px 10px;font-size:12px;font-weight:700;text-align:left;border-bottom:2px solid var(--border);position:sticky;left:0;background:var(--surface);z-index:2;white-space:nowrap">ชื่อนักเรียน</th>
               ${headerCols}
               <th style="padding:8px 10px;font-size:12px;font-weight:700;text-align:center;border-bottom:2px solid var(--border);white-space:nowrap">ครบทุกงาน</th>
-              <th style="padding:8px 10px;font-size:12px;font-weight:700;text-align:center;border-bottom:2px solid var(--border);white-space:nowrap">ส่ง/ไม่ส่ง</th>
+              <th style="padding:8px 10px;font-size:12px;font-weight:700;text-align:center;border-bottom:2px solid var(--border);white-space:nowrap">ส่ง/ไม่ส่ง/ยังไม่ตรวจ</th>
             </tr>
           </thead>
           <tbody>${rows || `<tr><td colspan="${cols.length+3}" style="padding:2rem;text-align:center;color:var(--muted)">ไม่มีนักเรียน</td></tr>`}</tbody>
@@ -2429,14 +2449,19 @@ async function doMDeleteColumn(colId){
   render(true);
 }
 
-async function doMToggleCheck(sid,colId){
+// วนสถานะ 3 แบบ: ยังไม่ได้ตรวจ (pending) → ส่งแล้ว (done) → ยังไม่ส่ง (missing) → กลับไปยังไม่ได้ตรวจ
+async function doMCycleCheck(sid,colId){
   const pin=S.subjectTeacherPin,subject=S.subjectTeacherSubject;
   if(!pin||!subject)return;
   stopPoll(); // กัน poll แทรกกลางทางตอนกำลังบันทึกการติ๊ก
   const data=getSubjectData(pin,subject);
   data.checks=data.checks||{};
   data.checks[sid]=data.checks[sid]||{};
-  data.checks[sid][colId]=!data.checks[sid][colId];
+  const cur=data.checks[sid][colId];
+  // รองรับค่าเก่า true/false ด้วย แปลงเป็นสถานะใหม่ก่อนวน
+  const curStatus = (cur===true||cur==='done') ? 'done' : (cur==='missing' ? 'missing' : 'pending');
+  const next = curStatus==='pending' ? 'done' : curStatus==='done' ? 'missing' : 'pending';
+  data.checks[sid][colId]=next;
   render(true); // อัปเดตหน้าจอทันที ไม่ต้องรอ server ตอบ
   try{
     await saveSubjectData();
@@ -2444,6 +2469,7 @@ async function doMToggleCheck(sid,colId){
     startPoll();
   }
 }
+
 
 // ปุ่ม "ติ๊กครบ" ต่อแถว — ติ๊กส่งครบทุกงานให้นักเรียนคนเดียวทีเดียว (กดซ้ำ = ยกเลิกครบทั้งหมดของคนนั้น)
 async function doMMarkRowAllDone(sid){
@@ -2456,8 +2482,9 @@ async function doMMarkRowAllDone(sid){
   const cols=data.columns||[];
   data.checks=data.checks||{};
   data.checks[sid]=data.checks[sid]||{};
-  const allDone = cols.length>0 && cols.every(c=>data.checks[sid][c.id]);
-  cols.forEach(c=>{ data.checks[sid][c.id] = !allDone; }); // ถ้าครบอยู่แล้ว กดซ้ำ = ยกเลิกครบทั้งหมด, ถ้ายังไม่ครบ = ติ๊กให้ครบ
+  const isDone = v => v===true || v==='done';
+  const allDone = cols.length>0 && cols.every(c=>isDone(data.checks[sid][c.id]));
+  cols.forEach(c=>{ data.checks[sid][c.id] = allDone ? 'pending' : 'done'; }); // ถ้าครบอยู่แล้ว กดซ้ำ = ยกเลิกกลับเป็นยังไม่ได้ตรวจ, ถ้ายังไม่ครบ = ติ๊กส่งแล้วให้ครบ
   render(true);
   try{
     await saveSubjectData();
