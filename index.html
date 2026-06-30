@@ -17,6 +17,9 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
+summary::-webkit-details-marker{display:none}
+summary::after{content:'\25BE';margin-left:8px;font-size:11px;color:var(--muted);transition:transform .15s}
+details[open] summary::after{transform:rotate(180deg)}
 :root{
   --bg:#F2F4FF;
   --surface:#FFFFFF;
@@ -570,7 +573,19 @@ function compressImage(file, maxW=1200, quality=0.82){
   });
 }
 
-const SUBJECTS=[];
+// ===== ครูประจำวิชา (เช็คงานแบบตาราง Excel) =====
+const SUBJECT_TEACHERS=[
+  {pin:'Ko0636635356',subjects:['วิทยาศาสตร์','สุขศึกษา']},
+  {pin:'kploy0909763863',subjects:['ภาษาไทย']},
+  {pin:'kaoy0986753198',subjects:['ภาษาอังกฤษพื้นฐาน','ภาษาอังกฤษเพิ่มเติม']},
+  {pin:'ktoi123456',subjects:['สังคมศึกษา','ประวัติศาสตร์']},
+  {pin:'knot0851755712',subjects:['คณิตศาสตร์']},
+  {pin:'kpo0896732048',subjects:['ต้านทุจริตศึกษา','คอมพิวเตอร์']},
+  {pin:'kpik0821721993',subjects:['ดนตรี']},
+];
+// รายชื่อวิชาทั้งหมดในระบบ (รวมทุกรหัสครู) — ใช้แสดงผลในหน้าส่งงานของนักเรียน
+const ALL_SUBJECTS=SUBJECT_TEACHERS.flatMap(t=>t.subjects);
+const SUBJECTS=ALL_SUBJECTS;
 let S={view:'loading',role:null,sid:null,tab:'score',msg:'',search:'',newName:'',newId:'',subjectTeacher:null};
 let pollTimer=null;
 // ป้องกันกดซ้ำตอนกำลังบันทึกคะแนน/งาน — แสดง toast "กำลังบันทึก..." ให้เห็นชัดว่าต้องรอ ไม่ใช่กรอกซ้ำ
@@ -2196,19 +2211,6 @@ function doTLogin(){
 }
 function doTLogout(){stopPoll();S.role=null;S.view='menu';render();}
 
-// ===== ครูประจำวิชา (เช็คงานแบบตาราง Excel) =====
-const SUBJECT_TEACHERS=[
-  {pin:'Ko0636635356',subjects:['วิทยาศาสตร์','สุขศึกษา']},
-  {pin:'kploy0909763863',subjects:['ภาษาไทย']},
-  {pin:'kaoy0986753198',subjects:['ภาษาอังกฤษพื้นฐาน','ภาษาอังกฤษเพิ่มเติม']},
-  {pin:'ktoi123456',subjects:['สังคมศึกษา','ประวัติศาสตร์']},
-  {pin:'knot0851755712',subjects:['คณิตศาสตร์']},
-  {pin:'kpo0896732048',subjects:['ต้านทุจริตศึกษา','คอมพิวเตอร์']},
-  {pin:'kpik0821721993',subjects:['ดนตรี']},
-];
-// รายชื่อวิชาทั้งหมดในระบบ (รวมทุกรหัสครู) — ใช้แสดงผลในหน้าส่งงานของนักเรียน
-const ALL_SUBJECTS=SUBJECT_TEACHERS.flatMap(t=>t.subjects);
-
 function vMLogin(){
   const saved=localStorage.getItem('subject_pin')||'';
   return`
@@ -2286,15 +2288,17 @@ function renderStudentSubjectWork(sid){
       <span style="font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name}</span>
     </div>`;
     };
-    return `<div style="background:var(--surface);border-radius:14px;border:1px solid var(--border);padding:.875rem;margin-bottom:.75rem">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+    return `<details style="background:var(--surface);border-radius:14px;border:1px solid var(--border);padding:.875rem;margin-bottom:.75rem">
+      <summary style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;list-style:none;-webkit-tap-highlight-color:transparent">
         <div style="font-size:14px;font-weight:700">${subject}</div>
         <div style="font-size:11px;color:var(--muted)"><span style="color:var(--green);font-weight:700">${doneItems.length}</span> เสร็จ / <span style="color:var(--red);font-weight:700">${missingItems.length}</span> ไม่เสร็จ / <span style="color:#C9760A;font-weight:700">${pendingItems.length}</span> ยังไม่ตรวจ</div>
-      </div>
+      </summary>
+      <div style="margin-top:.625rem">
       ${cols.length===0
         ? `<div style="text-align:center;color:var(--muted);font-size:12px;padding:.5rem">ยังไม่มีงานในวิชานี้</div>`
         : cols.map(c=>itemRow(c)).join('')}
-    </div>`;
+      </div>
+    </details>`;
   }));
   return cards.join('');
 }
@@ -4540,34 +4544,39 @@ function vAckStatusContent(){
       </div>
       ${ackQuest?`<div style="font-size:11px;color:var(--muted);margin-top:6px">🎯 ภารกิจ "${ackQuest.name}" · +${ackReward} คะแนน เมื่อครูยืนยันหลักฐาน</div>`:''}
     </div>
-    ${(()=>{
-      if(!ackQuest) return '';
-      const pendingConfirm = students.filter(s=>{
-        const acked = (s.parentAcks||[]).some(a=>a.roundKey===curKey);
-        const ackedQuestList = (s.questProgress||{})[ackQuest.id]||[];
-        return acked && !ackedQuestList.includes('confirmed');
-      });
-      if(pendingConfirm.length===0) return '';
-      return `<button onclick="confirmAckQuestAll('${ackQuest.id}')" style="width:100%;padding:10px;border-radius:10px;border:2px solid #0B7A6B;background:var(--green-bg);color:#0B7A6B;font-family:Sarabun,sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:.875rem">✅ ยืนยันรับหลักฐานทั้งหมด (${pendingConfirm.length} คนที่รับทราบแล้ว)</button>`;
-    })()}
-    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:.875rem">
-      ${students.map(s=>{
-        const acked = (s.parentAcks||[]).some(a=>a.roundKey===curKey);
-        const ackedQuestList = ackQuest ? ((s.questProgress||{})[ackQuest.id]||[]) : [];
-        const confirmed = ackedQuestList.includes('confirmed');
-        return `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:${acked?'var(--green-bg)':'var(--pink-bg)'};border:1px solid ${acked?'var(--green-bd)':'var(--red-bd)'}">
-          <span style="font-size:14px">${acked?'✅':'⚠️'}</span>
-          <span style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${s.no||''}. ${shortName(s.name||'-')}</span>
-          ${ackQuest ? (
-            confirmed
-              ? `<span style="font-size:10px;font-weight:700;color:var(--green);background:white;border:1px solid var(--green-bd);border-radius:999px;padding:3px 8px;white-space:nowrap">✅ ยืนยันแล้ว</span>`
-              : acked
-                ? `<button onclick="confirmAckQuest('${s.id}','${ackQuest.id}')" style="font-size:10px;font-weight:700;color:white;background:linear-gradient(135deg,#0B7A6B,#17C1A8);border:none;border-radius:999px;padding:4px 10px;cursor:pointer;white-space:nowrap;font-family:Sarabun,sans-serif">✅ ยืนยันรับหลักฐาน</button>`
-                : `<span style="font-size:10px;color:var(--muted);white-space:nowrap">รอผู้ปกครองรับทราบก่อน</span>`
-          ) : ''}
-        </div>`;
-      }).join('')}
-    </div>
+    <details style="margin-bottom:.875rem">
+      <summary style="cursor:pointer;list-style:none;-webkit-tap-highlight-color:transparent;text-align:center;font-size:13px;font-weight:700;color:var(--blue);padding:8px;background:var(--blue-bg);border-radius:10px;border:1px solid var(--blue-bd)">📋 ดูรายชื่อทั้งหมด (${students.length} คน)</summary>
+      <div style="margin-top:.625rem">
+        ${(()=>{
+          if(!ackQuest) return '';
+          const pendingConfirm = students.filter(s=>{
+            const acked = (s.parentAcks||[]).some(a=>a.roundKey===curKey);
+            const ackedQuestList = (s.questProgress||{})[ackQuest.id]||[];
+            return acked && !ackedQuestList.includes('confirmed');
+          });
+          if(pendingConfirm.length===0) return '';
+          return `<button onclick="confirmAckQuestAll('${ackQuest.id}')" style="width:100%;padding:10px;border-radius:10px;border:2px solid #0B7A6B;background:var(--green-bg);color:#0B7A6B;font-family:Sarabun,sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:.875rem">✅ ยืนยันรับหลักฐานทั้งหมด (${pendingConfirm.length} คนที่รับทราบแล้ว)</button>`;
+        })()}
+        <div style="display:flex;flex-direction:column;gap:6px">
+          ${students.map(s=>{
+            const acked = (s.parentAcks||[]).some(a=>a.roundKey===curKey);
+            const ackedQuestList = ackQuest ? ((s.questProgress||{})[ackQuest.id]||[]) : [];
+            const confirmed = ackedQuestList.includes('confirmed');
+            return `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:${acked?'var(--green-bg)':'var(--pink-bg)'};border:1px solid ${acked?'var(--green-bd)':'var(--red-bd)'}">
+              <span style="font-size:14px">${acked?'✅':'⚠️'}</span>
+              <span style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${s.no||''}. ${shortName(s.name||'-')}</span>
+              ${ackQuest ? (
+                confirmed
+                  ? `<span style="font-size:10px;font-weight:700;color:var(--green);background:white;border:1px solid var(--green-bd);border-radius:999px;padding:3px 8px;white-space:nowrap">✅ ยืนยันแล้ว</span>`
+                  : acked
+                    ? `<button onclick="confirmAckQuest('${s.id}','${ackQuest.id}')" style="font-size:10px;font-weight:700;color:white;background:linear-gradient(135deg,#0B7A6B,#17C1A8);border:none;border-radius:999px;padding:4px 10px;cursor:pointer;white-space:nowrap;font-family:Sarabun,sans-serif">✅ ยืนยันรับหลักฐาน</button>`
+                    : `<span style="font-size:10px;color:var(--muted);white-space:nowrap">รอผู้ปกครองรับทราบก่อน</span>`
+              ) : ''}
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </details>
     <button onclick="downloadAckSummaryImage()" style="width:100%;padding:11px;border-radius:12px;border:none;background:linear-gradient(135deg,#1A6BC4,#4DA0F0);color:white;font-family:Sarabun,sans-serif;font-size:14px;font-weight:700;cursor:pointer">💾 บันทึกรูปภาพ (ส่งไลน์กลุ่ม)</button>
   </div>`;
 }
