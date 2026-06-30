@@ -818,7 +818,7 @@ async function loadDB(){
     if(DB.settings.weeklySnapshots) DB.weeklySnapshots=[...DB.settings.weeklySnapshots];
     if(DB.settings.subjectTeacherData) DB.subjectTeacherData=JSON.parse(JSON.stringify(DB.settings.subjectTeacherData));
   }
-  // ตรวจ Buddy Mission ที่หมดเขตแล้ว แจก partial credit (เฉพาะฝั่งครู เพื่อไม่ให้แข่งกันเขียนพร้อมกัน)
+  // ปิดภารกิจ Buddy Mission ที่หมดเขตแล้วอัตโนมัติ ไม่แจกคะแนนใดๆเพิ่ม (เฉพาะฝั่งครู เพื่อไม่ให้แข่งกันเขียนพร้อมกัน)
   if(S.role === 'teacher') checkAllExpiredBuddyMissions();
   // Don't re-render if user is scrolling the activity log box (กันเด้งกลับขึ้นบนสุดตอน poll)
   if(S._isScrollingActivity) return;
@@ -4248,7 +4248,6 @@ async function checkBuddyMissions(sid){
   let anyChanged = false;
   for(const mission of DB.buddyMissions){
     if(!mission.active) continue;
-    const isExpired = mission.deadline && new Date() > new Date(mission.deadline+'T23:59:59');
     for(const pairObj of (mission.pairs||[])){
       // รองรับทั้ง format เก่า [sidA,sidB] และใหม่ {sids:[sidA,sidB], reward}
       const sids = Array.isArray(pairObj) ? pairObj : (pairObj.sids||[]);
@@ -4257,7 +4256,7 @@ async function checkBuddyMissions(sid){
       const [sidA, sidB] = sids;
       if(sidA !== sid && sidB !== sid) continue;
       const pairKey = [sidA, sidB].sort().join('_');
-      if((mission.completed||{})[pairKey]) continue; // ได้รับไปแล้ว (เต็มหรือ partial) ไม่ให้ซ้ำ
+      if((mission.completed||{})[pairKey]) continue; // ได้รับไปแล้ว ไม่ให้ซ้ำ
       const sA = DB.students[sidA];
       const sB = DB.students[sidB];
       if(!sA || !sB || pairTarget<=0) continue;
@@ -4266,7 +4265,7 @@ async function checkBuddyMissions(sid){
       const doneB = getBuddyMetricValue(sB, metric);
 
       if(doneA >= pairTarget && doneB >= pairTarget){
-        // ครบเป้าทั้งคู่ → ได้รางวัลเต็ม ทันที ไม่ต้องรอหมดเขต
+        // ครบเป้าทั้งคู่ → ได้รางวัลเต็ม ทันที (วิธีเดียวที่ Buddy Mission จะให้คะแนนได้ในระบบนี้)
         if(!mission.completed) mission.completed = {};
         mission.completed[pairKey] = true;
         for(const [csid, cs] of [[sidA, sA],[sidB, sB]]){
@@ -4284,31 +4283,6 @@ async function checkBuddyMissions(sid){
           document.body.appendChild(popup);
           setTimeout(()=>popup.remove(), 3500);
         }, 800);
-      } else if(isExpired){
-        // หมดเขตแล้ว แต่ยังไม่ครบเป้า → ให้ partial credit ตามสัดส่วนเฉลี่ยของทั้งคู่ (ครั้งเดียว)
-        const pctA = Math.min(1, doneA/pairTarget);
-        const pctB = Math.min(1, doneB/pairTarget);
-        const avgPct = (pctA+pctB)/2;
-        const partialReward = Math.round(pairReward * avgPct);
-        if(!mission.completed) mission.completed = {};
-        mission.completed[pairKey] = true; // mark ว่าจัดการแล้ว กันคิดซ้ำ
-        if(partialReward > 0){
-          for(const [csid, cs] of [[sidA, sA],[sidB, sB]]){
-            cs.score = (cs.score||0) + partialReward;
-            cs.logs = cs.logs||[];
-            cs.logs.unshift({desc:`🤝 Buddy Mission: ${mission.name} (สำเร็จ ${Math.round(avgPct*100)}% +${partialReward} คะแนน)`, score:partialReward, date:today(), ts:Date.now()});
-            anyChanged = true;
-            await api('PATCH', `/students/${csid}`, {score:cs.score, logs:cs.logs});
-            await checkQuestProgress(csid);
-          }
-          setTimeout(()=>{
-            const popup = document.createElement('div');
-            popup.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#5B8DEF,#7B9EFF);color:white;padding:12px 24px;border-radius:999px;font-size:14px;font-weight:700;z-index:99999;box-shadow:0 4px 20px rgba(0,0,0,.3)';
-            popup.textContent = `🤝 Buddy Mission หมดเขต — ได้ ${Math.round(avgPct*100)}% (+${partialReward} คะแนน)`;
-            document.body.appendChild(popup);
-            setTimeout(()=>popup.remove(), 3500);
-          }, 800);
-        }
       }
     }
   }
@@ -4317,49 +4291,19 @@ async function checkBuddyMissions(sid){
   }
 }
 
-// ตรวจ Buddy Mission ที่หมดเขตแล้วทั้งหมด (รันตอนโหลดข้อมูล ไม่ต้องรอใครแก้ taskDone)
-// แจก partial credit ให้คู่ที่ยังไม่ครบเป้าตอนหมดเขต
+// ปิดภารกิจที่หมดเขตแล้วให้หายไปเองอัตโนมัติ (active=false) — ไม่มีการแจกคะแนนใดๆ ตอนหมดเขต
+// คู่ที่ยังไม่ครบเป้าตอนหมดเขต = พลาดภารกิจนั้นไปเฉยๆ ไม่ได้คะแนน (ตัดปัญหาคะแนนเด้งซ้ำจาก partial credit เดิม)
 let _buddyExpiryCheckDone = false;
 async function checkAllExpiredBuddyMissions(){
   if(!DB.buddyMissions || DB.buddyMissions.length === 0) return;
-  if(_buddyExpiryCheckDone) return; // กันรันซ้ำในรอบ session เดียวกัน (เบาๆ ไม่ต้องเช็คทุก poll)
+  if(_buddyExpiryCheckDone) return; // กันรันซ้ำในรอบ session เดียวกัน
   let anyChanged = false;
   for(const mission of DB.buddyMissions){
     if(!mission.active) continue;
     const isExpired = mission.deadline && new Date() > new Date(mission.deadline+'T23:59:59');
     if(!isExpired) continue;
-    for(const pairObj of (mission.pairs||[])){
-      const sids = Array.isArray(pairObj) ? pairObj : (pairObj.sids||[]);
-      const pairReward = Array.isArray(pairObj) ? (mission.reward||1) : (pairObj.reward||1);
-      const pairTarget = Array.isArray(pairObj) ? (mission.target||0) : (pairObj.target||mission.target||0);
-      const [sidA, sidB] = sids;
-      const pairKey = [sidA, sidB].sort().join('_');
-      if((mission.completed||{})[pairKey]) continue; // จัดการไปแล้ว (เต็มหรือ partial)
-      const sA = DB.students[sidA];
-      const sB = DB.students[sidB];
-      if(!sA || !sB || pairTarget<=0) continue;
-      const metric = mission.metric || 'taskDone';
-      const doneA = getBuddyMetricValue(sA, metric);
-      const doneB = getBuddyMetricValue(sB, metric);
-      const pctA = Math.min(1, doneA/pairTarget);
-      const pctB = Math.min(1, doneB/pairTarget);
-      const avgPct = (pctA+pctB)/2;
-      const partialReward = Math.round(pairReward * avgPct);
-      if(!mission.completed) mission.completed = {};
-      mission.completed[pairKey] = true;
-      if(partialReward > 0){
-        for(const [csid, cs] of [[sidA, sA],[sidB, sB]]){
-          cs.score = (cs.score||0) + partialReward;
-          cs.logs = cs.logs||[];
-          cs.logs.unshift({desc:`🤝 Buddy Mission: ${mission.name} (สำเร็จ ${Math.round(avgPct*100)}% +${partialReward} คะแนน)`, score:partialReward, date:today(), ts:Date.now()});
-          anyChanged = true;
-          await api('PATCH', `/students/${csid}`, {score:cs.score, logs:cs.logs});
-          await checkQuestProgress(csid);
-        }
-      } else {
-        anyChanged = true; // mark completed ไว้แม้ partialReward=0 กันเช็คซ้ำ
-      }
-    }
+    mission.active = false; // ปิดภารกิจทันทีที่หมดเขต ไม่ต้องเช็คซ้ำอีก ไม่แจกคะแนนใดๆเพิ่ม
+    anyChanged = true;
   }
   if(anyChanged){
     try{ await api('PATCH', '/settings/buddyMissions', {buddyMissions: DB.buddyMissions}); }catch(e){}
@@ -4367,6 +4311,7 @@ async function checkAllExpiredBuddyMissions(){
   }
   _buddyExpiryCheckDone = true;
 }
+
 
 // Panel แสดงใน teacher list
 // นับว่าวันนี้มีรายการให้/ลบคะแนนกี่รายการ (สำหรับ badge บนปุ่ม)
@@ -4558,27 +4503,29 @@ function vAckStatusContent(){
 }
 
 function vBuddyMgrPanel(){
-  const missions = DB.buddyMissions||[];
+  // ซ่อนภารกิจที่หมดเขตแล้วออกจากรายการทั้งหมด (ไม่ลบข้อมูลจริง แค่ไม่แสดงผล)
+  const allMissions = DB.buddyMissions||[];
+  const missions = allMissions.filter(m=>!(m.deadline && new Date() > new Date(m.deadline+'T23:59:59')));
   return `<div style="background:var(--surface);border-radius:16px;padding:1rem;margin-bottom:.75rem;border:1px solid rgba(11,122,107,.3)">
     <button onclick="openBuddyModal()" style="width:100%;padding:10px;border-radius:12px;border:2px dashed #17C1A8;background:rgba(23,193,168,.08);color:#0B7A6B;font-family:Sarabun,sans-serif;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:.75rem">
       <i class="ti ti-plus"></i> สร้าง Buddy Mission ใหม่
     </button>
     ${missions.length===0?'<div style="text-align:center;color:var(--muted);font-size:13px;padding:.5rem">ยังไม่มี Buddy Mission<br>กดสร้างเพื่อจับคู่นักเรียน</div>':''}
     ${missions.map((m,mi)=>{
-      const expired = m.deadline && new Date() > new Date(m.deadline+'T23:59:59');
-      const dlLabel = m.deadline ? (expired?'⛔ หมดเขตแล้ว':'📅 ถึง '+m.deadline) : '';
-      return `<div style="border-radius:12px;background:${expired?'#FEF0EE':m.active?'rgba(23,193,168,.08)':'var(--bg)'};border:1px solid ${expired?'var(--red-bd)':m.active?'rgba(23,193,168,.35)':'var(--border)'};padding:10px 12px;margin-bottom:6px">
+      const realIdx = allMissions.indexOf(m);
+      const dlLabel = m.deadline ? '📅 ถึง '+m.deadline : '';
+      return `<div style="border-radius:12px;background:${m.active?'rgba(23,193,168,.08)':'var(--bg)'};border:1px solid ${m.active?'rgba(23,193,168,.35)':'var(--border)'};padding:10px 12px;margin-bottom:6px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-        <span style="font-size:16px">${expired?'🔒':m.active?'🤝':'⏸'}</span>
+        <span style="font-size:16px">${m.active?'🤝':'⏸'}</span>
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.name}</div>
-          <div style="font-size:11px;color:var(--muted)">${(m.pairs||[]).length} คู่ · วัดจาก${buddyMetricLabel(m.metric||'taskDone')} · ${Object.keys(m.completed||{}).length} คู่สำเร็จ${dlLabel?' · <span style="color:'+(expired?'var(--red)':'var(--muted)')+'">'+dlLabel+'</span>':''}</div>
+          <div style="font-size:11px;color:var(--muted)">${(m.pairs||[]).length} คู่ · วัดจาก${buddyMetricLabel(m.metric||'taskDone')} · ${Object.keys(m.completed||{}).length} คู่สำเร็จ${dlLabel?' · <span style="color:var(--muted)">'+dlLabel+'</span>':''}</div>
         </div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
-        <button onclick="openBuddyModal(${mi})" style="background:var(--blue-bg);border:1px solid var(--blue);color:var(--blue);border-radius:8px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:Sarabun,sans-serif">✏️ แก้ไข</button>
-        <button onclick="toggleBuddyMissionActive(${mi})" style="background:${m.active?'var(--amber-bg)':'var(--green-bg)'};border:1px solid ${m.active?'var(--amber-bd)':'var(--green-bd)'};color:${m.active?'var(--amber)':'var(--green)'};border-radius:8px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:Sarabun,sans-serif">${m.active?'⏸ หยุด':'▶ เปิดใช้'}</button>
-        <button onclick="doDeleteBuddyMission(${mi})" style="background:var(--pink-bg);border:1px solid var(--red);color:var(--red);border-radius:8px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:Sarabun,sans-serif">🗑 ลบ</button>
+        <button onclick="openBuddyModal(${realIdx})" style="background:var(--blue-bg);border:1px solid var(--blue);color:var(--blue);border-radius:8px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:Sarabun,sans-serif">✏️ แก้ไข</button>
+        <button onclick="toggleBuddyMissionActive(${realIdx})" style="background:${m.active?'var(--amber-bg)':'var(--green-bg)'};border:1px solid ${m.active?'var(--amber-bd)':'var(--green-bd)'};color:${m.active?'var(--amber)':'var(--green)'};border-radius:8px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:Sarabun,sans-serif">${m.active?'⏸ หยุด':'▶ เปิดใช้'}</button>
+        <button onclick="doDeleteBuddyMission(${realIdx})" style="background:var(--pink-bg);border:1px solid var(--red);color:var(--red);border-radius:8px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:Sarabun,sans-serif">🗑 ลบ</button>
       </div>
     </div>`;
     }).join('')}
@@ -4589,7 +4536,8 @@ function vBuddyMgrPanel(){
 function vBuddyTabForStudent(sid){
   const s = DB.students[sid];
   if(!s) return '';
-  const missions = DB.buddyMissions||[];
+  // ซ่อนภารกิจที่หมดเขตแล้วออกจากหน้านักเรียนด้วยเช่นกัน (หายไปเองทันทีที่หมดเขต)
+  const missions = (DB.buddyMissions||[]).filter(m=>!(m.deadline && new Date() > new Date(m.deadline+'T23:59:59')));
   // หา missions ที่ sid นี้อยู่
   const myMissions = missions.filter(m=> (m.pairs||[]).some(p=>{
     const sids = Array.isArray(p) ? p : (p.sids||[]);
@@ -4618,20 +4566,17 @@ function vBuddyTabForStudent(sid){
     const metric = m.metric || 'taskDone';
     const myDone = getBuddyMetricValue(s, metric);
     const buddyDone = getBuddyMetricValue(buddy, metric);
-    const isExpired = m.deadline && new Date() > new Date(m.deadline+'T23:59:59');
     const isFullSuccess = isCompleted && myDone>=pairTarget && buddyDone>=pairTarget;
-    const isPartialDone = isCompleted && !isFullSuccess; // ได้ partial credit ตอนหมดเขต
     const myPct = Math.min(100, Math.round(myDone/pairTarget*100));
     const buddyPct = Math.min(100, Math.round(buddyDone/pairTarget*100));
-    const avgPctNum = Math.round(((Math.min(1,myDone/pairTarget)+Math.min(1,buddyDone/pairTarget))/2)*100);
-    return `<div style="background:var(--surface);border-radius:16px;padding:1rem;border:2px solid ${isFullSuccess?'var(--green)':isPartialDone?'var(--blue)':m.active?'rgba(23,193,168,.4)':'var(--border)'};margin-bottom:.75rem;${isFullSuccess?'box-shadow:0 0 12px rgba(46,160,67,.2)':''}">
+    return `<div style="background:var(--surface);border-radius:16px;padding:1rem;border:2px solid ${isFullSuccess?'var(--green)':m.active?'rgba(23,193,168,.4)':'var(--border)'};margin-bottom:.75rem;${isFullSuccess?'box-shadow:0 0 12px rgba(46,160,67,.2)':''}">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:.875rem">
-        <span style="font-size:22px">${isFullSuccess?'🏆':isPartialDone?'⏰':m.active?'🤝':'⏸'}</span>
+        <span style="font-size:22px">${isFullSuccess?'🏆':m.active?'🤝':'⏸'}</span>
         <div style="flex:1">
           <div style="font-size:14px;font-weight:700">${m.name}</div>
-          <div style="font-size:11px;color:var(--muted)">เป้าคู่นี้ ${pairTarget} ${metric==='sig'?'ใบ':'ชิ้น'} (${buddyMetricLabel(metric)}) · รางวัลคู่นี้ +${pairReward} คะแนน/คน${m.deadline?` · <span style="color:${isExpired?'var(--red)':'var(--muted)'}">📅 ${m.deadline}</span>`:''}</div>
+          <div style="font-size:11px;color:var(--muted)">เป้าคู่นี้ ${pairTarget} ${metric==='sig'?'ใบ':'ชิ้น'} (${buddyMetricLabel(metric)}) · รางวัลคู่นี้ +${pairReward} คะแนน/คน${m.deadline?` · <span style="color:var(--muted)">📅 ${m.deadline}</span>`:''}</div>
         </div>
-        ${isFullSuccess?`<div style="background:var(--green);color:white;border-radius:999px;padding:3px 12px;font-size:12px;font-weight:700">✅ สำเร็จ</div>`:isPartialDone?`<div style="background:var(--blue);color:white;border-radius:999px;padding:3px 12px;font-size:12px;font-weight:700">⏰ หมดเขต ${avgPctNum}%</div>`:''}
+        ${isFullSuccess?`<div style="background:var(--green);color:white;border-radius:999px;padding:3px 12px;font-size:12px;font-weight:700">✅ สำเร็จ</div>`:''}
       </div>
       <!-- คู่ของฉัน -->
       <div style="display:flex;gap:10px;margin-bottom:.875rem">
@@ -4653,9 +4598,6 @@ function vBuddyTabForStudent(sid){
           </div>
         </div>
       </div>
-      ${isPartialDone?`<div style="background:var(--blue-bg);border:1px solid var(--blue-bd);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--blue);text-align:center">
-        ⏰ ภารกิจหมดเขตแล้ว — ได้รับคะแนนตามความพยายามเฉลี่ย ${avgPctNum}%
-      </div>`:''}
       ${!isCompleted&&m.active?`<div style="background:var(--amber-bg);border:1px solid var(--amber-bd);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--amber);text-align:center">
         ${myDone>=pairTarget&&buddyDone<pairTarget?`⏳ รอบัดดี้ส่งงานอีก ${pairTarget-buddyDone} ชิ้น!`:
           buddyDone>=pairTarget&&myDone<pairTarget?`📚 ส่งงานอีก ${pairTarget-myDone} ชิ้น เพื่อรับรางวัล!`:
