@@ -2292,9 +2292,13 @@ function renderStudentSubjectWork(sid){
     const total = cols.length;
     const itemRow = (c) => {
       const st = STATUS_STYLE[getCheckStatus(checks,c.id)];
+      const dateLine = colDateLine(c);
       return `<div style="display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:8px;background:${st.bg};margin-bottom:4px">
       <span style="font-size:13px">${st.icon}</span>
-      <span style="font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name}</div>
+        ${dateLine?`<div style="font-size:10px;color:var(--muted)">${dateLine}</div>`:''}
+      </div>
     </div>`;
     };
     // แถบสีขอบซ้าย: แดงถ้ามีงานยังไม่ส่ง, เหลืองถ้ามีรอตรวจ, เขียวถ้าครบหมดแล้ว, เทาถ้ายังไม่มีงาน
@@ -2377,8 +2381,9 @@ function vMList(){
   const headerCols=cols.map(c=>`<th style="padding:8px 10px;font-size:12px;font-weight:700;text-align:center;border-bottom:2px solid var(--border);min-width:90px;white-space:nowrap">
     <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
       <span style="overflow:hidden;text-overflow:ellipsis;max-width:90px" title="${c.name}">${c.name}</span>
+      ${colDateLine(c)?`<span style="font-size:10px;font-weight:400;color:var(--muted);white-space:nowrap">${colDateLine(c)}</span>`:''}
       <div style="display:flex;gap:6px">
-        <button onclick="doMRenameColumn('${c.id}')" title="แก้ไขชื่องานนี้" style="background:none;border:none;color:var(--blue);font-size:11px;cursor:pointer">✏️ แก้ไข</button>
+        <button onclick="openColModal('${c.id}')" title="แก้ไขงานนี้" style="background:none;border:none;color:var(--blue);font-size:11px;cursor:pointer">✏️ แก้ไข</button>
         <button onclick="doMDeleteColumn('${c.id}')" title="ลบงานนี้" style="background:none;border:none;color:var(--red);font-size:11px;cursor:pointer">✕ ลบ</button>
       </div>
     </div>
@@ -2425,7 +2430,7 @@ function vMList(){
     ${subjectSwitcher}
     <div style="padding:0 1rem 1rem">
       <div style="display:flex;gap:8px;margin-bottom:.75rem">
-        <button onclick="doMAddColumn()" style="flex:1;padding:10px;border-radius:12px;border:2px dashed var(--blue);background:var(--blue-bg);color:var(--blue);font-family:Sarabun,sans-serif;font-size:14px;font-weight:600;cursor:pointer">
+        <button onclick="openColModal(null)" style="flex:1;padding:10px;border-radius:12px;border:2px dashed var(--blue);background:var(--blue-bg);color:var(--blue);font-family:Sarabun,sans-serif;font-size:14px;font-weight:600;cursor:pointer">
           <i class="ti ti-plus"></i> เพิ่มงาน
         </button>
         <button onclick="S._mtableRotated=!S._mtableRotated;render(true)" class="mtable-rotate-btn-mobile-only" style="padding:10px 14px;border-radius:12px;border:1.5px solid ${S._mtableRotated?'var(--blue)':'var(--border)'};background:${S._mtableRotated?'var(--blue)':'var(--surface)'};color:${S._mtableRotated?'white':'var(--text)'};font-family:Sarabun,sans-serif;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap" title="หมุนตารางเป็นแนวนอนบนมือถือ">
@@ -2446,43 +2451,89 @@ function vMList(){
         </table>
       </div>
       ${cols.length===0?'<div style="text-align:center;color:var(--muted);font-size:13px;padding:1rem">ยังไม่มีงาน — กดปุ่ม "เพิ่มงาน" ด้านบนเพื่อเริ่มสร้างคอลัมน์เช็คงาน</div>':''}
+    </div>
+    <!-- Add/Edit Column Modal -->
+    <div id="addColModal" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.5);align-items:center;justify-content:center;padding:1rem">
+      <div style="background:var(--surface);border-radius:20px;padding:1.5rem;width:100%;max-width:360px">
+        <div style="font-size:16px;font-weight:700;margin-bottom:1.25rem;display:flex;justify-content:space-between;align-items:center">
+          <span id="colModalTitle">เพิ่มงานใหม่</span>
+          <button onclick="closeColModal()" style="background:var(--bg);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:18px;color:var(--text)">✕</button>
+        </div>
+        <div class="frow"><label>ชื่องาน</label><input type="text" id="colName" placeholder="เช่น ใบงานที่ 1"></div>
+        <div class="frow"><label>วันที่สั่งงาน</label><input type="date" id="colAssignDate"></div>
+        <div class="frow" style="margin-bottom:0"><label>วันที่กำหนดส่ง</label><input type="date" id="colDueDate"></div>
+        <button onclick="saveColModal()" style="width:100%;margin-top:1.25rem;padding:12px;border-radius:12px;border:none;background:var(--blue);color:white;font-family:Sarabun,sans-serif;font-size:14px;font-weight:700;cursor:pointer">
+          <i class="ti ti-device-floppy"></i> บันทึก
+        </button>
+      </div>
     </div>`;
 }
 
-async function doMAddColumn(){
-  if(_isSaving) return;
-  const pin=S.subjectTeacherPin,subject=S.subjectTeacherSubject;
-  if(!pin||!subject)return;
-  const name=prompt('ตั้งชื่องาน (เช่น ใบงานที่ 1)');
-  if(!name||!name.trim())return;
-  _isSaving = true; showSavingToast();
-  stopPoll(); // กัน poll แทรกกลางทาง เขียนทับงานที่เพิ่งเพิ่มก่อน server จะบันทึกเสร็จ
-  const data=getSubjectData(pin,subject);
-  data.columns=data.columns||[];
-  data.columns.push({id:'col'+Date.now(),name:name.trim()});
-  render(true);
-  try{
-    await saveSubjectData();
-  } finally {
-    startPoll();
-    _isSaving = false; hideSavingToast();
-  }
-  render(true);
+// แปลงวันที่ (YYYY-MM-DD จาก input date) เป็นข้อความสั้นๆ แบบไทย เช่น "1 ก.ค."
+function fmtColDate(iso){
+  if(!iso) return '';
+  const parts=iso.split('-');
+  if(parts.length!==3) return '';
+  const d=parseInt(parts[2],10), m=parseInt(parts[1],10);
+  const months=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  if(!d||!m||!months[m-1]) return '';
+  return `${d} ${months[m-1]}`;
+}
+// สร้างข้อความบรรทัดวันที่สำหรับแสดงใต้ชื่องาน (สั่ง ... · ส่ง ...) ไม่มีวันไหนก็ไม่แสดงส่วนนั้น
+function colDateLine(c){
+  const a=fmtColDate(c.assignDate), d=fmtColDate(c.dueDate);
+  if(!a&&!d) return '';
+  if(a&&d) return `สั่ง ${a} · ส่ง ${d}`;
+  if(a) return `สั่ง ${a}`;
+  return `ส่ง ${d}`;
 }
 
-async function doMRenameColumn(colId){
+let _colModalId=null; // null = กำลังเพิ่มงานใหม่, ไม่ null = กำลังแก้ไขงานเดิม (เก็บ id ไว้)
+function openColModal(colId){
+  const pin=S.subjectTeacherPin,subject=S.subjectTeacherSubject;
+  if(!pin||!subject)return;
+  _colModalId=colId;
+  if(colId){
+    const data=getSubjectData(pin,subject);
+    const col=(data.columns||[]).find(c=>c.id===colId);
+    if(!col)return;
+    document.getElementById('colModalTitle').textContent='แก้ไขงาน';
+    document.getElementById('colName').value=col.name||'';
+    document.getElementById('colAssignDate').value=col.assignDate||'';
+    document.getElementById('colDueDate').value=col.dueDate||'';
+  } else {
+    const today=new Date();
+    const todayIso=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    document.getElementById('colModalTitle').textContent='เพิ่มงานใหม่';
+    document.getElementById('colName').value='';
+    document.getElementById('colAssignDate').value=todayIso;
+    document.getElementById('colDueDate').value='';
+  }
+  document.getElementById('addColModal').style.display='flex';
+}
+function closeColModal(){
+  document.getElementById('addColModal').style.display='none';
+}
+async function saveColModal(){
   if(_isSaving) return;
   const pin=S.subjectTeacherPin,subject=S.subjectTeacherSubject;
   if(!pin||!subject)return;
+  const name=document.getElementById('colName').value.trim();
+  const assignDate=document.getElementById('colAssignDate').value;
+  const dueDate=document.getElementById('colDueDate').value;
+  if(!name){alert('กรุณากรอกชื่องาน');return;}
+  if(assignDate&&dueDate&&dueDate<assignDate){alert('วันที่กำหนดส่งต้องไม่มาก่อนวันที่สั่งงาน');return;}
+  _isSaving=true; showSavingToast();
+  stopPoll(); // กัน poll แทรกกลางทาง เขียนทับงานที่เพิ่งแก้ก่อน server จะบันทึกเสร็จ
   const data=getSubjectData(pin,subject);
-  const col=(data.columns||[]).find(c=>c.id===colId);
-  if(!col)return;
-  const name=prompt('แก้ไขชื่องาน',col.name);
-  if(name===null)return; // กดยกเลิก
-  if(!name.trim()){alert('กรุณากรอกชื่องาน');return;}
-  _isSaving = true; showSavingToast();
-  stopPoll();
-  col.name=name.trim();
+  data.columns=data.columns||[];
+  if(_colModalId){
+    const col=data.columns.find(c=>c.id===_colModalId);
+    if(col){ col.name=name; col.assignDate=assignDate; col.dueDate=dueDate; }
+  } else {
+    data.columns.push({id:'col'+Date.now(),name,assignDate,dueDate});
+  }
+  closeColModal();
   render(true);
   try{
     await saveSubjectData();
